@@ -1,0 +1,33 @@
+{
+  "source": "AGENCY-OS Golden",
+  "source_revision": "c18415fce8780c9ca76a7961794fd0eaf1825b88",
+  "version": "0.1.0-phase3",
+  "distribution_name": "agency-os",
+  "distribution_status": "candidate",
+  "release_eligibility": "candidate",
+  "member_ready": false,
+  "provenance_findings": [],
+  "files": [
+    ".gitignore",
+    "LICENSE.md",
+    "README.md",
+    "SOUL.md",
+    "config.yaml",
+    "distribution.yaml",
+    "skills/agency-os-orchestration/SKILL.md",
+    "skills/agency-os-project-context/SKILL.md",
+    "skills/agency-os-sanitization-runbook/SKILL.md",
+    "skills/agency-os-workforce-roles/SKILL.md",
+    "templates/project-state/PROJECT.md",
+    "templates/project-state/WORK.md",
+    "workforce/agency-hr/SKILL.md",
+    "workforce/agency-hr/references/behavior-policy.md",
+    "workforce/agency-hr/references/project-readiness.md",
+    "workforce/agency-hr/templates/role-contract.md",
+    "workforce/architecture.md",
+    "workforce/roles/architect.md",
+    "workforce/roles/qa.md",
+    "workforce/roles/release-engineer.md",
+    "workforce/roles/sanitizer.md"
+  ]
+}

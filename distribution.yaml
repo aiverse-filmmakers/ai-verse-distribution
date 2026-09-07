@@ -1,0 +1,14 @@
+name: agency-os
+version: 0.1.0-phase3
+description: "Private AGENCY-OS Architect profile for organized, state-driven project leadership."
+hermes_requires: ">=0.20.5"
+author: "AI-VERSE / AGENCY-OS"
+license: "Proprietary / all rights reserved"
+distribution_owned:
+  - SOUL.md
+  - config.yaml
+  - README.md
+  - skills
+  - templates
+  - workforce
+  - distribution.yaml

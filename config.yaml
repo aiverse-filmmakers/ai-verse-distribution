@@ -1,0 +1,3 @@
+# Safe defaults only. Provider credentials and personal settings stay local.
+agent:
+  reasoning_effort: ultra
