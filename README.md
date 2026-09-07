@@ -20,7 +20,7 @@ The package does **not** include Hermes, Codex, or Claude Code itself; their bui
 Install as a separate profile beside your existing Hermes profiles:
 
 ```bash
-hermes profile install github.com/aiverse-filmmakers/agency-os-distribution --name ai-verse --alias
+hermes profile install github.com/aiverse-filmmakers/ai-verse-distribution --name ai-verse --alias
 ```
 
 The `--name ai-verse` option keeps this profile separate. Do not use `--force` unless you intentionally want to replace an existing profile with that name.
@@ -30,7 +30,7 @@ The `--name ai-verse` option keeps this profile separate. Do not use `--force` u
 Clone the private repository and start Codex from its root:
 
 ```bash
-git clone https://github.com/aiverse-filmmakers/agency-os-distribution.git ai-verse
+git clone https://github.com/aiverse-filmmakers/ai-verse-distribution.git ai-verse
 cd ai-verse
 codex
 ```
@@ -42,7 +42,7 @@ Codex reads `AGENTS.md` and discovers the project skills under `.agents/skills/`
 Clone the private repository and start Claude Code from its root:
 
 ```bash
-git clone https://github.com/aiverse-filmmakers/agency-os-distribution.git ai-verse
+git clone https://github.com/aiverse-filmmakers/ai-verse-distribution.git ai-verse
 cd ai-verse
 claude
 ```

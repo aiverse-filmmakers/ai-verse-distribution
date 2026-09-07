@@ -1,1 +1,1 @@
-GENERATED FILE. Source: Golden. Revision: 83758b326528e8ba07447874e28bd04a8d3346ca. Version: 0.2.0-ai-verse-candidate. Status: candidate. Digest: 46f33dd5ec6d96337517d839e6a21b064fb6bfa4d7e2610055e1fc28cf065691
+GENERATED FILE. Source: Golden. Revision: 133a31ce353e29711d342dd71280c236ac069cff. Version: 0.2.0-ai-verse-candidate. Status: candidate. Digest: 4b327f9bb6952600d8a47e47f77bc441eb2bced82e3ab2b7c2af8511e5c2c3c1
