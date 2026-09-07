@@ -1,4 +1,4 @@
-# Work Ledger
+# AI-VERSE Work Ledger
 
 Use one row per legitimate work item. Keep this file current; do not use chat history as the project tracker.
 

@@ -1,4 +1,4 @@
-# AGENCY-OS Workforce Architecture
+# AI-VERSE Workforce Architecture
 
 This is a generic source contract, not a deployed team or a copy of any private runtime.
 
@@ -6,7 +6,7 @@ This is a generic source contract, not a deployed team or a copy of any private 
 
 ```text
 OWNER
-├── AGENCY · HR                  workforce infrastructure
+├── AI-VERSE · WORKFORCE         workforce infrastructure
 └── PROJECT LEADER · ARCHITECT   operational project leader
     ├── PROJECT · QA             independent acceptance authority
     ├── PROJECT · RELEASE        reproducible shipping authority

@@ -1,4 +1,4 @@
-# Project Brain
+# AI-VERSE Project Brain
 
 Copy this template into a project's `project-state/PROJECT.md` and replace every bracketed value with a verified fact.
 
