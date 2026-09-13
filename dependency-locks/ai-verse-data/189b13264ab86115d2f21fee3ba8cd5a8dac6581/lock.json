@@ -11,7 +11,7 @@
   "package_manager": "npm",
   "package_manager_major": 10,
   "node_major_min": 22,
-  "dependency_tree_sha256": "01a3951c255efc16fe3898f04d553540ab647cf8824ce49aa4748013fc25bca5",
+  "dependency_tree_sha256": "a3ac0422af7c690006e88dcbf917a27fa6101b3497662128774d315463d0b221",
   "resolved_packages": [
     {
       "name": "@types/better-sqlite3",
@@ -54,5 +54,6 @@
     "owner": "AI-Verse Distribution",
     "reason": "The frozen historical AI-Verse Data source revision has no package-manager lockfile. Distribution owns this release-scoped companion dependency lock solely to make installation of that exact immutable source artifact reproducible without changing Data runtime/domain ownership.",
     "source_commit_modified": false
-  }
+  },
+  "dependency_tree_digest_scheme": "sha256-canonical-package-path-version-v1"
 }
