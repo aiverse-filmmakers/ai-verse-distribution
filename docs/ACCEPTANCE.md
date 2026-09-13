@@ -121,6 +121,20 @@ Unit coverage includes:
 - Distribution lock behavior;
 - shell-free argv execution.
 
+## Isolated implementation evidence
+
+While hosted GitHub runner allocation is unavailable, the exact PR branch has also been reconstructed from authenticated GitHub file contents in an isolated Linux container and executed there.
+
+Current isolated evidence for the branch implementation:
+
+- all 42 Distribution Python unit tests pass;
+- package installation succeeds from the reconstructed PR tree;
+- `aiverse --version` reports `0.1.0b1`;
+- the CLI catalog resolves `core-public-beta-2026-09-13` as released and Agent as blocked;
+- the committed Data companion manifest and package lock SHA-256 values independently recompute to the exact digests declared by the release set.
+
+This evidence catches implementation defects and validates the companion-lock binding, but it is **not** a substitute for the required hosted Ubuntu/macOS/Windows clean-machine acceptance.
+
 ## Evidence rule
 
 Configuration of a workflow is not equivalent to a passed release.
