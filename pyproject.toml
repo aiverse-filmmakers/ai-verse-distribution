@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-verse-distribution"
+version = "0.1.0b1"
+description = "Canonical one-product installer and compatible release-set orchestrator for AI-Verse"
+requires-python = ">=3.9"
+readme = "README.md"
+license = {text = "MIT"}
+dependencies = []
+
+[project.scripts]
+aiverse = "aiverse_distribution.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+aiverse_distribution = ["catalog/*.json"]
