@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "profiles": {
+    "core": ["ai-verse-os", "ai-verse-brain", "ai-verse-memory", "ai-verse-skills", "ai-verse-data"],
+    "agent": [
+      "ai-verse-os",
+      "ai-verse-brain",
+      "ai-verse-memory",
+      "ai-verse-skills",
+      "ai-verse-data",
+      "ai-verse-gateway",
+      "ai-verse-automations",
+      "ai-verse-multiple-bots"
+    ],
+    "full": [
+      "ai-verse-os",
+      "ai-verse-brain",
+      "ai-verse-memory",
+      "ai-verse-skills",
+      "ai-verse-data",
+      "ai-verse-gateway",
+      "ai-verse-automations",
+      "ai-verse-multiple-bots",
+      "ai-verse-connections",
+      "ai-verse-dashboard",
+      "ai-verse-apps"
+    ],
+    "custom": []
+  },
+  "conditional": {
+    "agent": ["ai-verse-token when public-beta-ready"],
+    "full": ["ai-verse-token when public-beta-ready"]
+  },
+  "authority": {
+    "grants_permissions": false,
+    "transfers_brain_strategy": false
+  }
+}
