@@ -1,6 +1,6 @@
 import unittest
 
-from aiverse_distribution.catalog import Catalog, ReleaseBlockedError
+from aiverse_distribution.release_catalog import Catalog, ReleaseBlockedError
 
 
 class CatalogTests(unittest.TestCase):
