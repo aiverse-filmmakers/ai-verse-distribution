@@ -77,6 +77,40 @@ class OrchestratorPlanningTests(unittest.TestCase):
             with self.assertRaises(DistributionError):
                 app.setup("ai-verse-memory", workspaces=["INVALID WORKSPACE"])
 
+    def test_install_rejects_profile_or_selection_reconfiguration(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            store = StateStore(Path(td) / "distribution")
+            store.write(
+                {
+                    "schema_version": 1,
+                    "release_set_id": "core-first-member-beta-2026-09-13",
+                    "profile": "custom",
+                    "root": str(root),
+                    "components": {
+                        "ai-verse-memory": {
+                            "revision": "f5b417f9e7ce1b3f05bc80d10a483d10f6ad10ee",
+                            "source": str(Path(td) / "Memory"),
+                            "setup_completed_at": None,
+                            "uninstalled_at": None,
+                        }
+                    },
+                },
+                archive_previous=False,
+            )
+            app = Orchestrator(state=store)
+            app.preflight = lambda release: {}
+
+            with self.assertRaises(DistributionError):
+                app.install(profile="core", root=root)
+
+            with self.assertRaises(DistributionError):
+                app.install(
+                    profile="custom",
+                    root=root,
+                    components=["ai-verse-brain"],
+                )
+
     def test_absent_custom_component_does_not_create_false_update_change(self):
         with tempfile.TemporaryDirectory() as td:
             store = StateStore(Path(td))
