@@ -177,6 +177,40 @@ class Orchestrator:
     def _sha256_file(cls, path: Path) -> str:
         return cls._sha256_bytes(path.read_bytes())
 
+    @staticmethod
+    def _dependency_tree_entries(lock_payload: Dict[str, Any]) -> List[Dict[str, str]]:
+        packages = lock_payload.get("packages")
+        if not isinstance(packages, dict):
+            raise DistributionError("npm lock does not contain a packages map")
+        entries: List[Dict[str, str]] = []
+        for package_path, metadata in packages.items():
+            if package_path == "":
+                continue
+            if (
+                not isinstance(package_path, str)
+                or not package_path.startswith("node_modules/")
+                or not isinstance(metadata, dict)
+                or not isinstance(metadata.get("version"), str)
+                or not metadata["version"]
+            ):
+                raise DistributionError("npm dependency tree contains an invalid package identity")
+            entries.append({"path": package_path, "version": metadata["version"]})
+        if not entries:
+            raise DistributionError("npm dependency tree is empty")
+        entries.sort(key=lambda item: item["path"])
+        return entries
+
+    @classmethod
+    def _dependency_tree_digest_from_lock(cls, lock_payload: Dict[str, Any]) -> str:
+        entries = cls._dependency_tree_entries(lock_payload)
+        canonical = json.dumps(
+            entries,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+        return cls._sha256_bytes(canonical)
+
     def _load_companion_lock(
         self,
         component: ComponentRef,
@@ -248,6 +282,33 @@ class Orchestrator:
             raise DistributionError(f"{component.id} companion package lock is invalid") from exc
         if lock_payload.get("lockfileVersion") != manifest.get("lockfile_version"):
             raise DistributionError(f"{component.id} companion lockfile version mismatch")
+        if manifest.get("dependency_tree_digest_scheme") != "sha256-canonical-package-path-version-v1":
+            raise DistributionError(f"{component.id} companion dependency-tree digest scheme is unsupported")
+        calculated_tree_digest = self._dependency_tree_digest_from_lock(lock_payload)
+        if calculated_tree_digest != manifest.get("dependency_tree_sha256"):
+            raise DistributionError(
+                f"{component.id} companion dependency tree digest mismatch: "
+                f"expected {manifest.get('dependency_tree_sha256')}, got {calculated_tree_digest}"
+            )
+
+        resolved_packages = manifest.get("resolved_packages")
+        if not isinstance(resolved_packages, list) or not resolved_packages:
+            raise DistributionError(f"{component.id} companion dependency list is missing")
+        declared_tree = sorted(
+            [
+                {
+                    "path": "node_modules/" + str(item.get("name", "")),
+                    "version": str(item.get("version", "")),
+                }
+                for item in resolved_packages
+                if isinstance(item, dict)
+            ],
+            key=lambda item: item["path"],
+        )
+        if declared_tree != self._dependency_tree_entries(lock_payload):
+            raise DistributionError(
+                f"{component.id} resolved package list does not match the companion package lock"
+            )
 
         if source is not None:
             source_manifest = source / str(manifest.get("source_manifest", "package.json"))
@@ -284,10 +345,27 @@ class Orchestrator:
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst, follow_symlinks=False)
 
-    def _verify_installed_dependency_tree(self, runtime: Path, manifest: Dict[str, Any]) -> None:
+    def _verify_installed_dependency_tree(self, runtime: Path, manifest: Dict[str, Any]) -> str:
         expected = manifest.get("resolved_packages")
         if not isinstance(expected, list) or not expected:
             raise DistributionError("companion dependency lock has no resolved package tree")
+
+        hidden_lock = runtime / "node_modules" / ".package-lock.json"
+        if not hidden_lock.is_file():
+            raise DistributionError("npm did not produce an installed dependency-tree lock")
+        try:
+            installed_lock = json.loads(hidden_lock.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise DistributionError("installed npm dependency-tree lock is invalid") from exc
+        if installed_lock.get("lockfileVersion") != manifest.get("lockfile_version"):
+            raise DistributionError("installed npm dependency-tree lockfile version drifted")
+        actual_tree_digest = self._dependency_tree_digest_from_lock(installed_lock)
+        if actual_tree_digest != manifest.get("dependency_tree_sha256"):
+            raise DistributionError(
+                "deterministic Data dependency tree drifted: "
+                f"expected {manifest.get('dependency_tree_sha256')}, got {actual_tree_digest}"
+            )
+
         for item in expected:
             if not isinstance(item, dict):
                 raise DistributionError("companion dependency tree entry is invalid")
@@ -304,6 +382,7 @@ class Orchestrator:
                     f"deterministic Data dependency drifted: {name} "
                     f"expected {version}, got {installed.get('version')}"
                 )
+        return actual_tree_digest
 
     def _prepare_data(
         self,
@@ -336,7 +415,7 @@ class Orchestrator:
 
         if self._sha256_file(runtime_lock) != manifest["lockfile_sha256"]:
             raise DistributionError("npm modified the immutable Data companion lock")
-        self._verify_installed_dependency_tree(runtime, manifest)
+        actual_tree_digest = self._verify_installed_dependency_tree(runtime, manifest)
         if not (runtime / "dist" / "src" / "cli.js").is_file():
             raise DistributionError("deterministic Data build did not produce dist/src/cli.js")
         self._verify_exact_source(component, source)
@@ -346,7 +425,7 @@ class Orchestrator:
             "dependency_lock_manifest_sha256": component.dependency_lock["manifest_sha256"],
             "dependency_lock_sha256": manifest["lockfile_sha256"],
             "source_package_sha256": manifest["source_manifest_sha256"],
-            "dependency_tree_sha256": manifest["dependency_tree_sha256"],
+            "dependency_tree_sha256": actual_tree_digest,
             "package_manager": f"npm {manifest['package_manager_major']}.x",
         }
 
@@ -365,9 +444,9 @@ class Orchestrator:
         runtime_lock = runtime / manifest["lockfile"]
         if not runtime_lock.is_file() or self._sha256_file(runtime_lock) != manifest["lockfile_sha256"]:
             raise DistributionError("AI-Verse Data staged companion lock drifted")
-        if receipt.get("dependency_tree_sha256") != manifest["dependency_tree_sha256"]:
+        actual_tree_digest = self._verify_installed_dependency_tree(runtime, manifest)
+        if receipt.get("dependency_tree_sha256") != actual_tree_digest:
             raise DistributionError("AI-Verse Data dependency-tree receipt drifted")
-        self._verify_installed_dependency_tree(runtime, manifest)
         if not (runtime / "dist" / "src" / "cli.js").is_file():
             raise DistributionError("AI-Verse Data deterministic runtime build is missing")
 
