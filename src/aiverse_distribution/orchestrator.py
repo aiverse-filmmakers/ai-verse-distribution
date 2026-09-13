@@ -549,11 +549,14 @@ class Orchestrator:
                 system = _safe_result(owner)
                 ok = ok and owner.returncode == 0
 
+        depth = ["structural", "attachment", "runtime", "dependency", "operational"]
+        if system is not None:
+            depth.append("system-composed")
         return {
             "ok": ok,
             "release_set_id": release.id,
             "root": lock["root"],
-            "depth": ["structural", "attachment", "runtime", "dependency", "operational", "system-composed"],
+            "depth": depth,
             "components": results,
             "system": system,
         }
