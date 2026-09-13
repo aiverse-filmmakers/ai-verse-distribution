@@ -1023,10 +1023,11 @@ class Orchestrator:
                     new_lock["components"][component.id]["uninstalled_at"] = previous_absent[component.id]
                     continue
                 if was_setup:
+                    owner_source = Path(receipt.get("runtime_source", receipt["source"]))
                     owner_update(
                         component.id,
                         root=root,
-                        source=Path(receipt["source"]),
+                        source=owner_source,
                         revision=component.revision,
                         state=self.state,
                     )
