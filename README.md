@@ -38,7 +38,7 @@ Then install AI-Verse:
 aiverse install
 ```
 
-Interactive terminals ask for Core, Agent, Full, or Custom. Non-interactive installation defaults to Core.
+Interactive terminals ask for Core, Agent, Full, or Custom. Choosing Custom then presents the components available in the admitted release set and accepts comma-separated numbers or component IDs. Distribution closes required dependencies after that choice. Non-interactive installation defaults to Core.
 
 Explicit examples:
 
