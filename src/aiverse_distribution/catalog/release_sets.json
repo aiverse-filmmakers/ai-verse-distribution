@@ -43,7 +43,7 @@
           "dependency_lock": {
             "scheme": "distribution-companion-npm-lock-v1",
             "manifest": "ai-verse-data/189b13264ab86115d2f21fee3ba8cd5a8dac6581/lock.json",
-            "manifest_sha256": "32194745235d8bca63bbdc9f89dcd73a48ff251be67c87196a4c9d93a35dafd6"
+            "manifest_sha256": "758fb5a3de9a5fff31a638a72fe4797b100a5fd84456dab02eb768882b6e0b14"
           }
         }
       ],
@@ -95,7 +95,7 @@
           "dependency_lock": {
             "scheme": "distribution-companion-npm-lock-v1",
             "manifest": "ai-verse-data/189b13264ab86115d2f21fee3ba8cd5a8dac6581/lock.json",
-            "manifest_sha256": "32194745235d8bca63bbdc9f89dcd73a48ff251be67c87196a4c9d93a35dafd6"
+            "manifest_sha256": "758fb5a3de9a5fff31a638a72fe4797b100a5fd84456dab02eb768882b6e0b14"
           }
         }
       ],
