@@ -30,6 +30,10 @@ aiverse install --profile core
 -> Data disable / enable
 -> Memory disable / enable
 -> aiverse doctor
+-> Brain / Memory / Skills / Data uninstall-reinstall
+-> verify Brain ownership remains explicit
+-> verify Memory/Data canonical state survives
+-> aiverse doctor
 -> same-set aiverse update --apply
 -> aiverse open
 ```
@@ -46,6 +50,9 @@ Acceptance asserts:
 - Skills resolves a package from one immutable active generation;
 - structured Data create/read works through the OS host;
 - disable/enable preserves the installation and structured Data record;
+- owner-safe uninstall/reinstall works for Brain, Memory, Skills, and Data;
+- Memory and Data canonical user state survive uninstall/reinstall;
+- OS is not uninstalled because the host root may contain user-owned canonical state;
 - the current same-set update is a no-op;
 - the product can hand the user to the installed root.
 
