@@ -26,7 +26,7 @@
     {
       "id": "ai-verse-skills",
       "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
-      "revision": "bbef286bfcd56588dcacb251132830365918cc3b",
+      "revision": "042fda1ea2ddd8b79b74f1db9d3f65212953b64a",
       "install_order": 40
     },
     {
@@ -70,12 +70,12 @@
       ]
     },
     "skills": {
-      "revision": "bbef286bfcd56588dcacb251132830365918cc3b",
+      "revision": "042fda1ea2ddd8b79b74f1db9d3f65212953b64a",
       "hosted_workflows": [
-        34770040717,
-        34770040711,
-        34770040726
-      ]
+        34781546151,
+        34781546160
+      ],
+      "portability_fix": "provider manifest package paths use POSIX separators on Windows"
     },
     "data": {
       "revision": "189b13264ab86115d2f21fee3ba8cd5a8dac6581",
