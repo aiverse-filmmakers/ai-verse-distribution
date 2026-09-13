@@ -41,10 +41,9 @@
       "python_min": "3.9",
       "node_min": "22.5",
       "blockers": [
-        "Gateway 0.1.0-beta.1 has local implementation and acceptance evidence, but the canonical aiverse-filmmakers/AI-Verse-Gateway remote/tag/hosted-CI release evidence is not available",
-        "canonical aiverse-filmmakers/AI-Verse-Automations repository/release evidence is not available",
-        "AI-Verse-Multiple-Bots public-beta lifecycle gate not complete",
-        "Token 0.1.0-beta.1 has local 255/255 normal plus 3/3 release acceptance evidence, but the canonical aiverse-filmmakers/AI-Verse-Token remote release and hosted cross-platform CI evidence are not available"
+        "AI-Verse-Multiple-Bots Phase 5 productization is incomplete; Phase 5.6 production health/doctor and later release slices, including full release acceptance, remain outstanding",
+        "No complete immutable Agent release set can be admitted until Multiple Bots supplies its accepted public-beta artifact alongside the accepted Gateway, Automations and Token candidates",
+        "The complete Agent clean-machine install/setup/onboard/doctor/use acceptance has not yet passed"
       ]
     },
     "full-public-beta-pending": {
