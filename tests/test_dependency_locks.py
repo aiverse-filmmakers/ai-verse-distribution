@@ -1,5 +1,6 @@
 import json
 import tempfile
+from importlib import resources as importlib_resources
 import unittest
 from dataclasses import replace
 from pathlib import Path
@@ -36,7 +37,7 @@ class CompanionDependencyLockTests(unittest.TestCase):
             target = fake_package / "dependency_locks" / Path(*rel[:-1])
             target.mkdir(parents=True)
 
-            real_root = __import__("importlib").resources.files("aiverse_distribution").joinpath(
+            real_root = importlib_resources.files("aiverse_distribution").joinpath(
                 "dependency_locks"
             )
             manifest_bytes = real_root.joinpath(*rel).read_bytes()
