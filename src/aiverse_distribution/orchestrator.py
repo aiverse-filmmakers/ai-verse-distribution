@@ -201,10 +201,17 @@ class Orchestrator:
         root.mkdir(parents=True, exist_ok=True)
         current = self.state.load()
         if current:
-            same = current.get("release_set_id") == release.id and Path(current.get("root", "")).resolve() == root
-            if not same:
+            same_release = current.get("release_set_id") == release.id
+            same_root = Path(current.get("root", "")).resolve() == root
+            same_profile = current.get("profile") == profile
+            current_selection = set(current.get("components", {}))
+            resolved_selection = {component.id for component in release.components}
+            same_selection = current_selection == resolved_selection
+            if not (same_release and same_root and same_profile and same_selection):
                 raise DistributionError(
-                    "a different Distribution installation is already locked; use aiverse update/rollback or a separate AIVERSE_DISTRIBUTION_HOME"
+                    "a different Distribution installation/profile selection is already locked; "
+                    "use the locked profile, component lifecycle commands, update/rollback, "
+                    "or a separate AIVERSE_DISTRIBUTION_HOME"
                 )
             lock = current
         else:
@@ -214,6 +221,10 @@ class Orchestrator:
                 "profile": profile,
                 "root": str(root),
                 "state": "installing",
+                "selection": {
+                    "requested": list(release.raw.get("custom_requested", [component.id for component in release.components])),
+                    "resolved": [component.id for component in release.components],
+                },
                 "components": {},
                 "authority": {
                     "permissions_granted": False,
