@@ -9,6 +9,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
 class DistributionError(RuntimeError):
@@ -35,6 +36,7 @@ class ComponentRef:
     repository: str
     revision: str
     install_order: int
+    dependency_lock: Optional[Dict[str, Any]] = None
 
 
 @dataclass(frozen=True)
@@ -127,6 +129,24 @@ class Catalog:
                 order = item.get("install_order")
                 if not isinstance(order, int):
                     raise CatalogValidationError(f"{rid}/{cid}: install_order must be an integer")
+
+                dependency_lock = item.get("dependency_lock")
+                if dependency_lock is not None:
+                    if not isinstance(dependency_lock, dict):
+                        raise CatalogValidationError(f"{rid}/{cid}: dependency_lock must be an object")
+                    if dependency_lock.get("scheme") != "distribution-companion-npm-lock-v1":
+                        raise CatalogValidationError(f"{rid}/{cid}: unsupported dependency lock scheme")
+                    manifest = dependency_lock.get("manifest")
+                    manifest_sha = dependency_lock.get("manifest_sha256")
+                    if (
+                        not isinstance(manifest, str)
+                        or not manifest
+                        or manifest.startswith("/")
+                        or ".." in manifest.split("/")
+                    ):
+                        raise CatalogValidationError(f"{rid}/{cid}: invalid dependency lock manifest path")
+                    if not isinstance(manifest_sha, str) or not _SHA256.fullmatch(manifest_sha):
+                        raise CatalogValidationError(f"{rid}/{cid}: invalid dependency lock manifest digest")
             authority = raw.get("authority", {})
             if authority.get("grants_permissions") is not False:
                 raise CatalogValidationError(f"{rid}: release sets may not grant permissions")
@@ -171,6 +191,7 @@ class Catalog:
                 repository=x["repository"],
                 revision=x["revision"],
                 install_order=x["install_order"],
+                dependency_lock=x.get("dependency_lock"),
             )
             for x in sorted(raw.get("components", []), key=lambda x: x["install_order"])
         )
