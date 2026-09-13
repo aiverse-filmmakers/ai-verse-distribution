@@ -660,7 +660,14 @@ class Orchestrator:
             "permission_grants": False,
         }
 
-    def apply_update(self, target_release_set: Optional[str] = None) -> Dict[str, Any]:
+    def apply_update(
+        self,
+        target_release_set: Optional[str] = None,
+        *,
+        transition_kind: str = "update",
+    ) -> Dict[str, Any]:
+        if transition_kind not in {"update", "rollback"}:
+            raise DistributionError(f"unsupported transition kind: {transition_kind}")
         plan = self.update_plan(target_release_set)
         if not plan["changes"]:
             return {**plan, "applied": True, "changed": False}
@@ -672,12 +679,20 @@ class Orchestrator:
         self.preflight(target)
 
         if target.id != lock["release_set_id"]:
-            transition = self.catalog.compatibility_for(target.id)
-            allowed_from = set(transition.get("update_from", []))
-            if lock["release_set_id"] not in allowed_from:
-                raise DistributionError(
-                    f"release set {target.id} is not explicitly admitted for update from {lock['release_set_id']}"
-                )
+            if transition_kind == "update":
+                transition = self.catalog.compatibility_for(target.id)
+                allowed_from = set(transition.get("update_from", []))
+                if lock["release_set_id"] not in allowed_from:
+                    raise DistributionError(
+                        f"release set {target.id} is not explicitly admitted for update from {lock['release_set_id']}"
+                    )
+            else:
+                current_transition = self.catalog.compatibility_for(lock["release_set_id"])
+                allowed_targets = set(current_transition.get("rollback_to", []))
+                if target.id not in allowed_targets:
+                    raise DistributionError(
+                        f"release set {lock['release_set_id']} is not explicitly admitted for rollback to {target.id}"
+                    )
 
         known_ids = set(lock.get("components", {}))
         active_ids = {
@@ -813,7 +828,7 @@ class Orchestrator:
         plan["rollback"] = True
         if not apply:
             return plan
-        result = self.apply_update(target.id)
+        result = self.apply_update(target.id, transition_kind="rollback")
         result["rollback"] = True
         return result
 
