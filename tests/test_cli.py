@@ -1,11 +1,12 @@
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from types import SimpleNamespace
 
-from aiverse_distribution.cli import _temporary_brain_answers
-from aiverse_distribution.release_catalog import DistributionError
+from aiverse_distribution.cli import _choose_custom_components, _temporary_brain_answers
+from aiverse_distribution.release_catalog import Catalog, DistributionError
 
 
 class _FakeState:
@@ -16,6 +17,24 @@ class _FakeState:
 class _FakeApp:
     def __init__(self, home: Path):
         self.state = _FakeState(home)
+
+
+class CustomSelectionTests(unittest.TestCase):
+    def test_explicit_custom_components_are_preserved(self):
+        app = SimpleNamespace(catalog=Catalog())
+        self.assertEqual(
+            _choose_custom_components(app, ["ai-verse-memory"]),
+            ["ai-verse-memory"],
+        )
+
+    def test_interactive_custom_selection_accepts_numbers_and_ids(self):
+        app = SimpleNamespace(catalog=Catalog())
+        with patch("aiverse_distribution.cli.sys.stdin.isatty", return_value=True), patch(
+            "builtins.input",
+            return_value="1, ai-verse-data",
+        ):
+            selected = _choose_custom_components(app, [])
+        self.assertEqual(selected, ["ai-verse-os", "ai-verse-data"])
 
 
 class OnboardingArgumentTests(unittest.TestCase):
