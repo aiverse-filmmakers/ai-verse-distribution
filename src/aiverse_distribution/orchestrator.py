@@ -17,7 +17,7 @@ from .adapters import (
     owner_uninstall,
     owner_update,
 )
-from .catalog import Catalog, ComponentRef, DistributionError, ReleaseSet
+from .release_catalog import Catalog, ComponentRef, DistributionError, ReleaseSet
 from .process import ProcessError, run, version_line, which
 from .state import StateStore, now_iso
 
