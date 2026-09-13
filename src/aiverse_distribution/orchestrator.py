@@ -486,9 +486,14 @@ class Orchestrator:
             "system": system,
         }
 
-    def component_action(self, component_id: str, action: str) -> Dict[str, Any]:
+    def component_action(
+        self,
+        component_id: str,
+        action: str,
+        workspaces: Optional[Iterable[str]] = None,
+    ) -> Dict[str, Any]:
         if action == "setup":
-            return self.setup(component_id)
+            return self.setup(component_id, workspaces=workspaces)
         if action == "status":
             return self.status(component_id)
         if action == "doctor":
