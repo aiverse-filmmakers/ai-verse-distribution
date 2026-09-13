@@ -227,7 +227,11 @@ class Orchestrator:
             return [component.id for component in release.components if component.id in selected]
         return [component.id for component in release.components]
 
-    def setup(self, component_id: Optional[str] = None) -> Dict[str, Any]:
+    def setup(
+        self,
+        component_id: Optional[str] = None,
+        workspaces: Optional[Iterable[str]] = None,
+    ) -> Dict[str, Any]:
         lock = self.state.load()
         if not lock:
             raise DistributionError("AI-Verse is not installed through Distribution")
@@ -249,6 +253,41 @@ class Orchestrator:
             lock["components"][cid]["setup_completed_at"] = now_iso()
             lock["components"][cid]["last_setup_result"] = "success"
             self.state.write(lock, archive_previous=False)
+
+        selected_workspaces = list(workspaces or [])
+        if selected_workspaces and "ai-verse-data" in wanted:
+            data_host = root / "scripts" / "data-host.mjs"
+            if not data_host.is_file():
+                raise DistributionError(
+                    "selected Data workspace initialization requires an AI-Verse OS data host"
+                )
+            workspace_results = []
+            for workspace_id in selected_workspaces:
+                if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,127}", workspace_id):
+                    raise DistributionError(f"invalid workspace id: {workspace_id}")
+                request = {
+                    "protocol": "ai-verse-os-data-host/1.0",
+                    "request_id": f"distribution-setup-{workspace_id}",
+                    "operation": "init",
+                    "scope": f"workspace:{workspace_id}",
+                    "reason": "Explicit workspace initialization selected through aiverse setup.",
+                }
+                result = run(
+                    ["node", str(data_host), "--root", str(root)],
+                    input_text=json.dumps(request) + "\n",
+                )
+                try:
+                    response = json.loads(result.stdout.strip().splitlines()[-1])
+                except (json.JSONDecodeError, IndexError) as exc:
+                    raise DistributionError(
+                        f"Data host returned invalid setup response for workspace {workspace_id}"
+                    ) from exc
+                if response.get("ok") is not True:
+                    raise DistributionError(
+                        f"Data workspace initialization failed for {workspace_id}: {response}"
+                    )
+                workspace_results.append({"workspace": workspace_id, "response": response})
+            results["ai-verse-data-workspaces"] = workspace_results
 
         if component_id is None:
             host_adapter = root / "scripts" / "ai_verse_host_adapter.py"
