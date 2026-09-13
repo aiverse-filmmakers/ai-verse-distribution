@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from aiverse_distribution.orchestrator import Orchestrator
 from aiverse_distribution.release_catalog import DistributionError
@@ -52,6 +53,63 @@ class OrchestratorPlanningTests(unittest.TestCase):
                 set(doctor["components"]),
                 {"ai-verse-os", "ai-verse-memory"},
             )
+
+    def test_full_setup_runs_component_owners_before_os_reconcile(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            root.mkdir()
+            store = StateStore(Path(td) / "distribution")
+            app = Orchestrator(state=store)
+            release = app.catalog.resolve("core")
+            components = {
+                component.id: {
+                    "revision": component.revision,
+                    "source": str(root if component.id == "ai-verse-os" else Path(td) / component.id),
+                    "setup_completed_at": None,
+                    "uninstalled_at": None,
+                }
+                for component in release.components
+            }
+            store.write(
+                {
+                    "schema_version": 1,
+                    "release_set_id": release.id,
+                    "profile": "core",
+                    "root": str(root),
+                    "components": components,
+                },
+                archive_previous=False,
+            )
+
+            def fake_context(component_id):
+                current = store.load()
+                component = next(item for item in release.components if item.id == component_id)
+                return current, release, component, root, Path(components[component_id]["source"])
+
+            order = []
+
+            def fake_owner_setup(component_id, **kwargs):
+                order.append(component_id)
+                return []
+
+            app._context = fake_context
+            with patch("aiverse_distribution.orchestrator.owner_setup", side_effect=fake_owner_setup):
+                result = app.setup()
+
+            self.assertEqual(
+                order,
+                [
+                    "ai-verse-brain",
+                    "ai-verse-memory",
+                    "ai-verse-skills",
+                    "ai-verse-data",
+                    "ai-verse-os",
+                ],
+            )
+            self.assertEqual(result["release_set_id"], release.id)
+            persisted = store.load()
+            for component_id in order:
+                self.assertTrue(persisted["components"][component_id]["setup_completed_at"])
 
     def test_workspace_selection_is_rejected_before_non_data_setup(self):
         with tempfile.TemporaryDirectory() as td:
