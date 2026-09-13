@@ -142,6 +142,25 @@ class Catalog:
             if release_status.get(release_id) != "released":
                 raise CatalogValidationError(f"channel {channel}: target release set is not released")
 
+        for release_id, compatibility in compatibility_sets.items():
+            if release_id not in ids:
+                raise CatalogValidationError(
+                    f"compatibility matrix contains unknown release set {release_id}"
+                )
+            for field in ("update_from", "rollback_to"):
+                refs = compatibility.get(field, [])
+                if not isinstance(refs, list) or any(
+                    not isinstance(item, str) or not item for item in refs
+                ):
+                    raise CatalogValidationError(
+                        f"{release_id}: {field} must be a list of release-set ids"
+                    )
+                unknown = sorted(set(refs) - ids)
+                if unknown:
+                    raise CatalogValidationError(
+                        f"{release_id}: {field} references unknown release sets: {', '.join(unknown)}"
+                    )
+
     def release_sets(self) -> List[ReleaseSet]:
         return [self._release(raw) for raw in self.release_data["release_sets"]]
 
