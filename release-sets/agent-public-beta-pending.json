@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "agent-public-beta-pending",
+  "profile": "agent",
+  "status": "blocked",
+  "created_at": "2026-09-13",
+  "components": [],
+  "blockers": [
+    "AI-Verse-Multiple-Bots is complete through Phase 5.9; remaining Phase 5 release slices and final public-beta release acceptance are still outstanding",
+    "No complete immutable Agent release set can be admitted until Multiple Bots supplies its accepted public-beta artifact alongside the accepted Gateway, Automations and Token candidates",
+    "The complete Agent clean-machine install/setup/onboard/doctor/use acceptance has not yet passed"
+  ],
+  "authority": {
+    "grants_permissions": false,
+    "transfers_brain_strategy": false,
+    "initializes_all_workspaces": false,
+    "exposes_gateway_remotely": false
+  },
+  "candidates": {
+    "gateway": {
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Gateway.git",
+      "revision": "b20d56eddec6514ec4bc65b510318289b9cffa41",
+      "version": "0.1.0-beta.1",
+      "hosted_ci": [
+        34777260839
+      ],
+      "accepted_candidate": true
+    },
+    "automations": {
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Automations.git",
+      "revision": "494469a496d479cfec618bcd9511033c0cd3e815",
+      "hosted_ci": [
+        34777316822
+      ],
+      "accepted_candidate": true
+    },
+    "token": {
+      "repository": "https://github.com/aiverse-filmmakers/ai-verse-token.git",
+      "revision": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
+      "version": "0.1.0-beta.3",
+      "hosted_ci": [
+        34778240376
+      ],
+      "accepted_candidate": true
+    }
+  }
+}

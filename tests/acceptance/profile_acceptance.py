@@ -1,0 +1,479 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from typing import Optional
+
+
+def run_process(argv: list[str], *, input_text: Optional[str] = None, expect: int = 0) -> subprocess.CompletedProcess:
+    completed = subprocess.run(
+        argv,
+        input=input_text,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if completed.returncode != expect:
+        raise RuntimeError(
+            f"{' '.join(argv)} returned {completed.returncode}, expected {expect}\n"
+            f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
+        )
+    return completed
+
+
+def run_cli(*args: str, expect: int = 0) -> dict:
+    cmd = [sys.executable, "-m", "aiverse_distribution.cli", *args, "--json"]
+    completed = run_process(cmd, expect=expect)
+    try:
+        return json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"command did not emit JSON: {' '.join(cmd)}\n{completed.stdout}") from exc
+
+
+def write_acceptance_workspace(root: Path) -> None:
+    workspace = root / "workspaces" / "alpha"
+    (workspace / "context").mkdir(parents=True, exist_ok=True)
+    (workspace / "WORKSPACE.yaml").write_text(
+        """schema_version: "2.0"
+id: "alpha"
+name: "Alpha"
+type: "test"
+status: "active"
+purpose: "Distribution clean-machine Core acceptance."
+""",
+        encoding="utf-8",
+    )
+    (workspace / "context" / "CURRENT.md").write_text(
+        "# Current Workspace Context\n\nDistribution clean-machine acceptance is active.\n",
+        encoding="utf-8",
+    )
+
+
+def sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def prove_exact_sources(install: dict) -> None:
+    for component_id, receipt in install["components"].items():
+        source = Path(receipt["source"])
+        head = run_process(["git", "-C", str(source), "rev-parse", "HEAD"]).stdout.strip()
+        if head != receipt["revision"]:
+            raise RuntimeError(
+                f"{component_id} source revision mismatch: {head} != {receipt['revision']}"
+            )
+
+
+def prove_data_dependency_lock(install: dict) -> str:
+    receipt = install["components"]["ai-verse-data"]
+    required = {
+        "dependency_lock_sha256",
+        "dependency_lock_manifest_sha256",
+        "source_package_sha256",
+        "dependency_tree_sha256",
+        "runtime_source",
+    }
+    missing = sorted(required - set(receipt))
+    if missing:
+        raise RuntimeError(f"Data deterministic dependency receipt is incomplete: {missing}")
+
+    source = Path(receipt["source"])
+    dirty = run_process(
+        ["git", "-C", str(source), "status", "--porcelain", "--untracked-files=all"]
+    ).stdout.strip()
+    if dirty:
+        raise RuntimeError(f"Data source checkout was modified during package installation: {dirty}")
+
+    runtime = Path(receipt["runtime_source"])
+    lock = runtime / "package-lock.json"
+    if sha256_file(lock) != receipt["dependency_lock_sha256"]:
+        raise RuntimeError("staged Data dependency lock digest does not match install receipt")
+    if sha256_file(runtime / "package.json") != receipt["source_package_sha256"]:
+        raise RuntimeError("staged Data package.json digest does not match frozen source receipt")
+    if not (runtime / "dist" / "src" / "cli.js").is_file():
+        raise RuntimeError("deterministic Data staging did not produce the runtime CLI")
+    return str(receipt["dependency_tree_sha256"])
+
+
+def prove_brain_no_silent_handover(install: dict, root: Path) -> None:
+    revision = install["components"]["ai-verse-brain"]["revision"]
+    dist_home = Path(os.environ["AIVERSE_DISTRIBUTION_HOME"])
+    if os.name == "nt":
+        brain = dist_home / "venvs" / "ai-verse-brain" / revision / "Scripts" / "ai-verse-brain.exe"
+    else:
+        brain = dist_home / "venvs" / "ai-verse-brain" / revision / "bin" / "ai-verse-brain"
+    result = run_process([str(brain), "direction-owner", str(root), "--scope", "operator"])
+    payload = json.loads(result.stdout)
+    owner_text = json.dumps(payload).lower()
+    if '"owner": "brain"' in owner_text:
+        raise RuntimeError(f"Distribution silently transferred Brain strategic ownership: {payload}")
+
+
+def prove_memory(root: Path) -> None:
+    engine = root / "scripts" / "ai-verse-memory" / "memory.py"
+    marker = "distribution-core-memory-marker"
+    run_process([
+        sys.executable, str(engine), "--root", str(root), "remember",
+        "--type", "experience", "--workspace", "alpha", "--text", marker,
+    ])
+    recalled = run_process([
+        sys.executable, str(engine), "--root", str(root), "recall",
+        marker, "--workspace", "alpha",
+    ])
+    if marker not in recalled.stdout:
+        raise RuntimeError("Memory representative recall did not return the acceptance marker")
+
+
+def prove_skills(install: dict) -> str:
+    source = Path(install["components"]["ai-verse-skills"]["source"])
+    result = run_process([
+        sys.executable,
+        str(source / "installer" / "aiverse_skills.py"),
+        "pin",
+        "--package",
+        "weekly-review-planning",
+        "--json",
+    ])
+    payload = json.loads(result.stdout)
+    if payload.get("package_id") != "weekly-review-planning":
+        raise RuntimeError(f"Skills pin did not resolve the requested immutable package: {payload}")
+    generation_id = payload.get("generation_id")
+    if not generation_id:
+        raise RuntimeError("Skills pin did not return an immutable generation id")
+    return str(generation_id)
+
+
+def brain_onboarding_payload(onboard_result: dict) -> dict:
+    brain = onboard_result.get("brain")
+    if not isinstance(brain, dict):
+        raise RuntimeError(f"Brain onboarding result is missing: {onboard_result}")
+    stdout = str(brain.get("stdout") or "").strip()
+    if not stdout:
+        raise RuntimeError(f"Brain onboarding emitted no structured result: {brain}")
+    return json.loads(stdout)
+
+
+def call_data(root: Path, request: dict) -> dict:
+    host = root / "scripts" / "data-host.mjs"
+    result = run_process(
+        ["node", str(host), "--root", str(root)],
+        input_text=json.dumps(request) + "\n",
+    )
+    line = result.stdout.strip().splitlines()[-1]
+    return json.loads(line)
+
+
+def prove_data(root: Path) -> None:
+    requests = [
+        {
+            "protocol": "ai-verse-os-data-host/1.0",
+            "request_id": "distribution-space",
+            "operation": "request",
+            "scope": "workspace:alpha",
+            "reason": "Create acceptance Data space.",
+            "data": {
+                "operation": "data.space.create",
+                "payload": {"spaceId": "acceptance", "name": "Acceptance", "authority": "local_canonical"}
+            }
+        },
+        {
+            "protocol": "ai-verse-os-data-host/1.0",
+            "request_id": "distribution-schema",
+            "operation": "request",
+            "scope": "workspace:alpha",
+            "reason": "Create acceptance schema.",
+            "data": {
+                "operation": "data.schema.create",
+                "payload": {
+                    "spaceId": "acceptance",
+                    "entity": "items",
+                    "name": "Items",
+                    "fields": {"title": {"type": "string", "required": True}}
+                }
+            }
+        },
+        {
+            "protocol": "ai-verse-os-data-host/1.0",
+            "request_id": "distribution-record",
+            "operation": "request",
+            "scope": "workspace:alpha",
+            "reason": "Create acceptance record.",
+            "data": {
+                "operation": "data.record.create",
+                "payload": {
+                    "spaceId": "acceptance",
+                    "entity": "items",
+                    "idempotencyKey": "distribution:create",
+                    "data": {"title": "distribution-core-data-marker"}
+                }
+            }
+        }
+    ]
+    for request in requests:
+        response = call_data(root, request)
+        if response.get("ok") is False:
+            raise RuntimeError(f"Data acceptance operation failed: {response}")
+
+    listed = call_data(root, {
+        "protocol": "ai-verse-os-data-host/1.0",
+        "request_id": "distribution-list",
+        "operation": "request",
+        "scope": "workspace:alpha",
+        "reason": "Verify acceptance record.",
+        "data": {
+            "operation": "data.record.list",
+            "payload": {"spaceId": "acceptance", "entity": "items"}
+        }
+    })
+    if "distribution-core-data-marker" not in json.dumps(listed):
+        raise RuntimeError(f"Data representative read did not return the acceptance marker: {listed}")
+
+
+def main() -> int:
+    if len(sys.argv) != 2 or sys.argv[1] not in {"core", "agent"}:
+        print("usage: profile_acceptance.py core|agent", file=sys.stderr)
+        return 2
+
+    profile = sys.argv[1]
+    base = Path(os.environ.get("RUNNER_TEMP") or tempfile.mkdtemp(prefix="aiverse-acceptance-"))
+    os.environ["AIVERSE_DISTRIBUTION_HOME"] = str(base / f"distribution-{profile}")
+    isolated_home = base / f"home-{profile}"
+    isolated_home.mkdir(parents=True, exist_ok=True)
+    os.environ["HOME"] = str(isolated_home)
+    os.environ["USERPROFILE"] = str(isolated_home)
+    root = base / f"AI-Verse-{profile}"
+
+    if profile == "agent":
+        blocked = run_cli("install", "--profile", "agent", "--root", str(root), expect=3)
+        if blocked.get("error") != "RELEASE_BLOCKED":
+            raise RuntimeError(f"Agent did not fail closed: {blocked}")
+        print(json.dumps({"profile": "agent", "released": False, "gate": blocked}, indent=2))
+        # A blocked profile is not an acceptance pass. Keep this release gate red
+        # until an immutable Agent release set exists and the full flow is implemented.
+        return 3
+
+    install = run_cli("install", "--profile", "core", "--root", str(root))
+    if install.get("state") != "installed":
+        raise RuntimeError(f"unexpected install state: {install.get('state')}")
+
+    prove_exact_sources(install)
+    initial_data_tree = prove_data_dependency_lock(install)
+
+    write_acceptance_workspace(root)
+    setup = run_cli("setup", "--workspace", "alpha")
+
+    brain_practice = "distribution-core-brain-practice-marker"
+    onboard = run_cli(
+        "onboard",
+        "--practice",
+        brain_practice,
+    )
+    onboard_payload = brain_onboarding_payload(onboard)
+    created_brain_refs = set(onboard_payload.get("created_refs", []))
+    if not created_brain_refs:
+        raise RuntimeError(
+            f"Brain practice onboarding did not create durable Brain-owned state: {onboard_payload}"
+        )
+    prove_brain_no_silent_handover(install, root)
+
+    status = run_cli("status")
+    if status.get("state") != "ready":
+        raise RuntimeError(f"Core status is not ready: {json.dumps(status, indent=2)}")
+    data_status = status["components"]["ai-verse-data"]
+    if data_status.get("dependency_tree_sha256") != initial_data_tree:
+        raise RuntimeError("Data live status does not preserve the deterministic dependency-tree receipt")
+
+    doctor = run_cli("doctor")
+    if not doctor.get("ok"):
+        raise RuntimeError(f"Core doctor failed: {json.dumps(doctor, indent=2)}")
+
+    prove_memory(root)
+    initial_skills_generation = prove_skills(install)
+    prove_data(root)
+
+    run_cli("component", "disable", "ai-verse-data")
+    run_cli("component", "enable", "ai-verse-data")
+    run_cli("component", "disable", "ai-verse-memory")
+    run_cli("component", "enable", "ai-verse-memory")
+
+    doctor_after = run_cli("doctor")
+    if not doctor_after.get("ok"):
+        raise RuntimeError("doctor failed after disable/enable preservation cycle")
+
+    data_after = call_data(root, {
+        "protocol": "ai-verse-os-data-host/1.0",
+        "request_id": "distribution-list-after-enable",
+        "operation": "request",
+        "scope": "workspace:alpha",
+        "reason": "Verify Data preservation after disable/enable.",
+        "data": {
+            "operation": "data.record.list",
+            "payload": {"spaceId": "acceptance", "entity": "items"}
+        }
+    })
+    if "distribution-core-data-marker" not in json.dumps(data_after):
+        raise RuntimeError("Data record was not preserved across disable/enable")
+
+    # Prove owner-safe uninstall/reinstall while preserving canonical user state.
+    for component in (
+        "ai-verse-brain",
+        "ai-verse-memory",
+        "ai-verse-skills",
+        "ai-verse-data",
+    ):
+        run_cli("component", "uninstall", component)
+        absent = run_cli("component", "status", component, expect=1)
+        if absent["components"][component]["state"] != "absent":
+            raise RuntimeError(f"{component} did not become absent after uninstall: {absent}")
+        run_cli("component", "install", component)
+        run_cli("component", "setup", component)
+
+    prove_brain_no_silent_handover(install, root)
+    onboard_after_reinstall = run_cli(
+        "onboard",
+        "--practice",
+        brain_practice,
+    )
+    onboard_after_payload = brain_onboarding_payload(onboard_after_reinstall)
+    existing_brain_refs = set(onboard_after_payload.get("existing_refs", []))
+    if not created_brain_refs.issubset(existing_brain_refs):
+        raise RuntimeError(
+            "Brain-owned practice state was not preserved across uninstall/reinstall: "
+            f"created={sorted(created_brain_refs)} existing={sorted(existing_brain_refs)}"
+        )
+    if onboard_after_payload.get("created_refs"):
+        raise RuntimeError(
+            f"Brain practice was recreated instead of preserved: {onboard_after_payload}"
+        )
+
+    memory_recalled = run_process([
+        sys.executable,
+        str(root / "scripts" / "ai-verse-memory" / "memory.py"),
+        "--root",
+        str(root),
+        "recall",
+        "distribution-core-memory-marker",
+        "--workspace",
+        "alpha",
+    ])
+    if "distribution-core-memory-marker" not in memory_recalled.stdout:
+        raise RuntimeError("Memory canonical state was not preserved across uninstall/reinstall")
+
+    reinstalled_skills_generation = prove_skills(install)
+    skills_source = Path(install["components"]["ai-verse-skills"]["source"])
+    skills_status_result = run_process([
+        sys.executable,
+        str(skills_source / "installer" / "aiverse_skills.py"),
+        "status",
+        "--json",
+    ])
+    skills_status = json.loads(skills_status_result.stdout)
+    recoverable = set(str(x) for x in skills_status.get("recoverable_generations", []))
+    active_generation = str(skills_status.get("generation_id") or "")
+    if initial_skills_generation != active_generation and initial_skills_generation not in recoverable:
+        raise RuntimeError(
+            "Skills immutable state was not preserved across uninstall/reinstall: "
+            f"initial={initial_skills_generation} active={active_generation} "
+            f"recoverable={sorted(recoverable)}"
+        )
+
+    data_reinstalled = call_data(root, {
+        "protocol": "ai-verse-os-data-host/1.0",
+        "request_id": "distribution-list-after-reinstall",
+        "operation": "request",
+        "scope": "workspace:alpha",
+        "reason": "Verify Data preservation after uninstall/reinstall.",
+        "data": {
+            "operation": "data.record.list",
+            "payload": {"spaceId": "acceptance", "entity": "items"}
+        }
+    })
+    if "distribution-core-data-marker" not in json.dumps(data_reinstalled):
+        raise RuntimeError("Data canonical state was not preserved across uninstall/reinstall")
+
+    data_status_reinstalled = run_cli("component", "status", "ai-verse-data")
+    reinstalled_tree = data_status_reinstalled["components"]["ai-verse-data"].get(
+        "dependency_tree_sha256"
+    )
+    if reinstalled_tree != initial_data_tree:
+        raise RuntimeError(
+            f"Data dependency tree changed across deterministic reinstall: "
+            f"{initial_data_tree} -> {reinstalled_tree}"
+        )
+    data_source = Path(install["components"]["ai-verse-data"]["source"])
+    dirty_after = run_process(
+        ["git", "-C", str(data_source), "status", "--porcelain", "--untracked-files=all"]
+    ).stdout.strip()
+    if dirty_after:
+        raise RuntimeError(f"Data source checkout changed after deterministic reinstall: {dirty_after}")
+
+    doctor_reinstalled = run_cli("doctor")
+    if not doctor_reinstalled.get("ok"):
+        raise RuntimeError("doctor failed after owner-safe uninstall/reinstall cycle")
+
+    update = run_cli("update", "--apply")
+    if update.get("changed") is not False:
+        raise RuntimeError(f"same-set update should be a no-op: {update}")
+
+    rollback = run_cli(
+        "rollback",
+        "--to",
+        "core-public-beta-2026-09-13",
+        "--apply",
+    )
+    if rollback.get("changed") is not False or rollback.get("rollback") is not True:
+        raise RuntimeError(f"same-set rollback should be a safe no-op: {rollback}")
+
+    opened = run_cli("open")
+    if Path(opened["root"]).resolve() != root.resolve():
+        raise RuntimeError("open handoff returned the wrong root")
+
+    print(json.dumps({
+        "profile": "core",
+        "released": True,
+        "root": str(root),
+        "install": install["release_set_id"],
+        "setup": bool(setup.get("results")),
+        "onboard": bool(onboard),
+        "brain_no_silent_handover": True,
+        "status": status["state"],
+        "doctor": doctor_after["ok"],
+        "representative_use": {
+            "memory_recall": True,
+            "skills_generation_pin": True,
+            "data_create_read": True
+        },
+        "source_verification": True,
+        "data_dependency_lock": {
+            "deterministic_tree": initial_data_tree,
+            "reinstall_same_tree": True,
+            "source_checkout_unchanged": True
+        },
+        "disable_enable": ["ai-verse-data", "ai-verse-memory"],
+        "state_preserved": True,
+        "state_preservation_evidence": {
+            "brain_practice": True,
+            "memory_recall": True,
+            "skills_prior_generation_active_or_recoverable": True,
+            "data_record": True
+        },
+        "uninstall_reinstall": [
+            "ai-verse-brain",
+            "ai-verse-memory",
+            "ai-verse-skills",
+            "ai-verse-data"
+        ],
+        "update_noop": True,
+        "rollback_noop": True,
+        "open": True,
+    }, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

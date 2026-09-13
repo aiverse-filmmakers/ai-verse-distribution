@@ -1,0 +1,8 @@
+# Distribution release metadata and companion locks are cryptographic artifacts.
+# Keep their checked-out bytes identical to Git blob bytes on every platform.
+dependency-locks/** text eol=lf
+src/aiverse_distribution/dependency_locks/** text eol=lf
+src/aiverse_distribution/catalog/*.json text eol=lf
+release-sets/*.json text eol=lf
+profiles/*.json text eol=lf
+compatibility/*.json text eol=lf

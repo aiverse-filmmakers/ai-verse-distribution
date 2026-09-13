@@ -1,73 +1,108 @@
 # AI-Verse Distribution Roadmap
 
-**Status:** Rebuild roadmap  
-**Date:** 2026-09-13
+**Status:** Core implementation built; Distribution hosted acceptance pending runner execution; Agent release blocked on Multiple Bots + composed Agent acceptance  
+**Updated:** 2026-09-13
 
-## Phase 0 - Reset and contract
+## Phase 0: Reset and contract
 
-- [x] retire the pre-current-project profile/package tree;
-- [x] redefine Distribution as the canonical AI-Verse packaging/orchestration layer;
-- [x] preserve legacy history through Git;
-- [x] record the frozen five-component beta release set;
-- [x] align with the System install/setup contract.
+- [x] preserve the pre-current-project package/profile experiment in Git history;
+- [x] redefine Distribution as the canonical one-product packaging/orchestration owner;
+- [x] align with the System install/setup contract;
+- [x] retain the frozen five-component release evidence.
 
-## Phase 1 - Release-set engine
+## Phase 1: Release-set engine
 
-- [ ] define machine-readable release-set schema;
-- [ ] validate exact immutable component refs;
-- [ ] model Core / Agent / Full / Custom profiles;
-- [ ] compatibility resolver;
-- [ ] local Distribution lock/receipt;
-- [ ] dry-run install plan;
-- [ ] tests.
+- [x] machine-readable release-set schema/catalog;
+- [x] exact 40-character immutable refs;
+- [x] Core / Agent / Full / Custom profiles;
+- [x] compatibility matrix;
+- [x] local Distribution lock/receipt;
+- [x] fail-closed resolver;
+- [x] unit tests.
 
-## Phase 2 - Unified CLI
+## Phase 2: Unified CLI
 
-Target:
+Implemented:
 
 ```text
 aiverse install
 aiverse setup
+aiverse onboard
 aiverse status
 aiverse doctor
 aiverse component ...
+aiverse open
+aiverse support-bundle
 ```
 
-- [ ] cross-platform CLI;
-- [ ] structured `--json` output;
-- [ ] component lifecycle adapter contract;
-- [ ] Core profile install;
-- [ ] Core setup;
-- [ ] Core doctor;
-- [ ] failure/recovery UX.
+- [x] cross-platform Python CLI;
+- [x] structured JSON output;
+- [x] trusted owner lifecycle adapter boundary;
+- [x] Core exact install;
+- [x] Core owner setup;
+- [x] live Core status/doctor;
+- [x] explicit onboarding handoff;
+- [x] recoverable Distribution lock.
 
-## Phase 3 - Update and rollback
+## Phase 3: Update and rollback
 
-- [ ] release channels;
-- [ ] update plan;
-- [ ] migration-required presentation;
-- [ ] known-good rollback;
-- [ ] state-preservation verification;
-- [ ] partial-failure recovery.
+- [x] immutable release-set update planning;
+- [x] exact target compatibility validation;
+- [x] explicit update-from / rollback-to transition gates;
+- [x] non-live Skills staging during release-set updates;
+- [x] setup-required state preservation during software update;
+- [x] same-set safe no-op;
+- [x] dirty tracked OS protection;
+- [x] known-compatible software rollback path;
+- [x] owner-preserved state rule;
+- [x] explicit no-Brain-handover/no-permission-grant facts.
 
-## Phase 4 - Agent profile
+The catalog preserves the historical first-member Core set and the current public-beta Core set, but no cross-version transition is currently admitted between them. The first-member set is frozen reproducibility evidence, not an asserted upgrade source for the current public-beta product. The next Core set that declares a cross-version update or rollback edge must exercise that exact transition in CI before the edge is admitted.
 
-After Gateway, Automations, Multiple Bots and Token are public-beta ready:
+## Phase 4: Core clean-machine acceptance
 
-- [ ] Agent profile release set;
-- [ ] unified setup;
-- [ ] clean-machine acceptance;
-- [ ] Gateway launch/open flow.
+- [x] real acceptance harness;
+- [x] Linux workflow;
+- [x] macOS workflow;
+- [x] Windows workflow;
+- [x] install -> setup -> onboarding -> status -> doctor;
+- [x] Memory/Data disable-enable preservation cycle;
+- [x] same-set update;
+- [x] open/use handoff.
 
-## Phase 5 - Full profile
+Remote workflow results are release evidence only after GitHub Actions completes successfully on the implementation PR.
 
-After Connections, Dashboard and Apps are release-ready:
+## Phase 5: Agent profile
 
-- [ ] Full profile;
-- [ ] UI launch;
-- [ ] connection onboarding;
-- [ ] app/runtime packaging.
+Profile contract is implemented.
+
+Current Agent state:
+
+- [x] Gateway exact accepted candidate: `b20d56eddec6514ec4bc65b510318289b9cffa41`;
+- [x] Automations exact accepted candidate: `494469a496d479cfec618bcd9511033c0cd3e815`;
+- [x] Token `0.1.0-beta.3` exact accepted candidate: `23b7b8ecbc9d9ef267f5e10449f785eb11107dd4`;
+- [ ] Multiple Bots complete public-beta lifecycle/readiness/release gate;
+- [ ] complete immutable Agent composition acceptance across the claimed platforms.
+
+The Agent clean-machine workflow exists as a release gate, currently proves fail-closed behavior, and deliberately exits non-zero while the profile is blocked. It must not turn green or be reported as an Agent acceptance pass until an admitted immutable Agent set exists and the full flow runs.
+
+## Phase 6: Full profile
+
+After Agent plus Connections, Dashboard and Apps are released:
+
+- [ ] admit exact Full version set;
+- [ ] complete Full setup/onboarding;
+- [ ] native UI/open flow;
+- [ ] clean-machine Full acceptance.
 
 ## Release rule
 
-Distribution must not claim a profile is installable until a clean-machine acceptance workflow proves the documented public path on exact artifacts.
+No profile is called installable merely because its repositories exist.
+
+A profile becomes released only when Distribution has:
+
+1. exact immutable artifacts;
+2. an admitted compatibility entry;
+3. trusted owner lifecycle adapters;
+4. clean-machine acceptance on the claimed platforms;
+5. truthful System documentation.
