@@ -58,15 +58,22 @@ class Orchestrator:
         if not git_path:
             raise DistributionError("Git is required")
 
+        component_ids = {component.id for component in release.components}
+        node_required = bool(component_ids & {"ai-verse-os", "ai-verse-data"})
         node_line = version_line("node")
         node_min = str(compatibility.get("node_min", "22.0"))
-        if not node_line or not _at_least(node_line, node_min):
+        if node_required and (not node_line or not _at_least(node_line, node_min)):
             raise DistributionError(f"Node.js {node_min}+ is required; found {node_line or 'missing'}")
+
+        npm_line = version_line("npm")
+        if "ai-verse-data" in component_ids and not npm_line:
+            raise DistributionError("npm is required when AI-Verse Data is selected")
 
         return {
             "platform": platform,
             "python": py_actual,
             "node": node_line,
+            "npm": npm_line,
             "git": version_line("git"),
             "release_set_id": release.id,
         }
