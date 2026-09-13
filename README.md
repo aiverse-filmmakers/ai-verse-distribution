@@ -55,7 +55,7 @@ The current released Core set is:
 
 `core-public-beta-2026-09-13`
 
-The Agent profile remains deliberately blocked until the complete immutable Agent set exists and its composed clean-machine acceptance passes. Gateway, Automations, and Token now have exact accepted candidate artifacts recorded in the pending Agent manifest; Multiple Bots productization and final Agent composition acceptance remain outstanding. Distribution fails closed instead of constructing a partial Agent release.
+The Agent profile remains deliberately blocked until the complete immutable Agent set exists and its composed clean-machine acceptance passes. Gateway, Automations, and Token have exact accepted candidate artifacts recorded in the pending Agent manifest. Multiple Bots is complete through Phase 5.9; its remaining Phase 5 release slices and final Agent composition acceptance are still outstanding. Distribution fails closed instead of constructing a partial Agent release.
 
 The Full profile is also explicitly blocked until Agent has an admitted immutable release set and Connections, Dashboard, and Apps have one compatible Full release set.
 
