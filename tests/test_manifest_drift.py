@@ -31,6 +31,7 @@ class ManifestDriftTests(unittest.TestCase):
 
         mapping = {
             "core-first-member-beta-2026-09-13": ROOT / "release-sets" / "core-first-member-beta.json",
+            "core-public-beta-2026-09-13": ROOT / "release-sets" / "core-public-beta-2026-09-13.json",
             "agent-public-beta-pending": ROOT / "release-sets" / "agent-public-beta-pending.json",
             "full-public-beta-pending": ROOT / "release-sets" / "full-public-beta-pending.json",
         }
