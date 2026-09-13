@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -52,6 +53,51 @@ purpose: "Distribution clean-machine Core acceptance."
         "# Current Workspace Context\n\nDistribution clean-machine acceptance is active.\n",
         encoding="utf-8",
     )
+
+
+def sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def prove_exact_sources(install: dict) -> None:
+    for component_id, receipt in install["components"].items():
+        source = Path(receipt["source"])
+        head = run_process(["git", "-C", str(source), "rev-parse", "HEAD"]).stdout.strip()
+        if head != receipt["revision"]:
+            raise RuntimeError(
+                f"{component_id} source revision mismatch: {head} != {receipt['revision']}"
+            )
+
+
+def prove_data_dependency_lock(install: dict) -> str:
+    receipt = install["components"]["ai-verse-data"]
+    required = {
+        "dependency_lock_sha256",
+        "dependency_lock_manifest_sha256",
+        "source_package_sha256",
+        "dependency_tree_sha256",
+        "runtime_source",
+    }
+    missing = sorted(required - set(receipt))
+    if missing:
+        raise RuntimeError(f"Data deterministic dependency receipt is incomplete: {missing}")
+
+    source = Path(receipt["source"])
+    dirty = run_process(
+        ["git", "-C", str(source), "status", "--porcelain", "--untracked-files=all"]
+    ).stdout.strip()
+    if dirty:
+        raise RuntimeError(f"Data source checkout was modified during package installation: {dirty}")
+
+    runtime = Path(receipt["runtime_source"])
+    lock = runtime / "package-lock.json"
+    if sha256_file(lock) != receipt["dependency_lock_sha256"]:
+        raise RuntimeError("staged Data dependency lock digest does not match install receipt")
+    if sha256_file(runtime / "package.json") != receipt["source_package_sha256"]:
+        raise RuntimeError("staged Data package.json digest does not match frozen source receipt")
+    if not (runtime / "dist" / "src" / "cli.js").is_file():
+        raise RuntimeError("deterministic Data staging did not produce the runtime CLI")
+    return str(receipt["dependency_tree_sha256"])
 
 
 def prove_brain_no_silent_handover(install: dict, root: Path) -> None:
@@ -203,6 +249,9 @@ def main() -> int:
     if install.get("state") != "installed":
         raise RuntimeError(f"unexpected install state: {install.get('state')}")
 
+    prove_exact_sources(install)
+    initial_data_tree = prove_data_dependency_lock(install)
+
     write_acceptance_workspace(root)
     setup = run_cli("setup", "--workspace", "alpha")
 
@@ -220,6 +269,9 @@ def main() -> int:
     status = run_cli("status")
     if status.get("state") != "ready":
         raise RuntimeError(f"Core status is not ready: {json.dumps(status, indent=2)}")
+    data_status = status["components"]["ai-verse-data"]
+    if data_status.get("dependency_tree_sha256") != initial_data_tree:
+        raise RuntimeError("Data live status does not preserve the deterministic dependency-tree receipt")
 
     doctor = run_cli("doctor")
     if not doctor.get("ok"):
@@ -296,6 +348,22 @@ def main() -> int:
     if "distribution-core-data-marker" not in json.dumps(data_reinstalled):
         raise RuntimeError("Data canonical state was not preserved across uninstall/reinstall")
 
+    data_status_reinstalled = run_cli("component", "status", "ai-verse-data")
+    reinstalled_tree = data_status_reinstalled["components"]["ai-verse-data"].get(
+        "dependency_tree_sha256"
+    )
+    if reinstalled_tree != initial_data_tree:
+        raise RuntimeError(
+            f"Data dependency tree changed across deterministic reinstall: "
+            f"{initial_data_tree} -> {reinstalled_tree}"
+        )
+    data_source = Path(install["components"]["ai-verse-data"]["source"])
+    dirty_after = run_process(
+        ["git", "-C", str(data_source), "status", "--porcelain", "--untracked-files=all"]
+    ).stdout.strip()
+    if dirty_after:
+        raise RuntimeError(f"Data source checkout changed after deterministic reinstall: {dirty_after}")
+
     doctor_reinstalled = run_cli("doctor")
     if not doctor_reinstalled.get("ok"):
         raise RuntimeError("doctor failed after owner-safe uninstall/reinstall cycle")
@@ -331,6 +399,12 @@ def main() -> int:
             "memory_recall": True,
             "skills_generation_pin": True,
             "data_create_read": True
+        },
+        "source_verification": True,
+        "data_dependency_lock": {
+            "deterministic_tree": initial_data_tree,
+            "reinstall_same_tree": True,
+            "source_checkout_unchanged": True
         },
         "disable_enable": ["ai-verse-data", "ai-verse-memory"],
         "state_preserved": True,
