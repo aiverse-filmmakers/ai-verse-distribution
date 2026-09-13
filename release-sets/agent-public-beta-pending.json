@@ -9,7 +9,7 @@
     "AI-Verse-Gateway canonical repository/release is not available",
     "AI-Verse-Automations canonical repository/release is not available",
     "AI-Verse-Multiple-Bots has not completed its public-beta lifecycle gate",
-    "AI-Verse-Token has no canonical public-beta release artifact"
+    "aiverse-filmmakers/ai-verse-token exists, but its restoration/bootstrap is incomplete and no public-beta release artifact is admitted"
   ],
   "authority": {
     "grants_permissions": false,
