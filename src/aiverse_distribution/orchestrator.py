@@ -613,6 +613,10 @@ class Orchestrator:
             raise DistributionError("AI-Verse is not installed through Distribution")
         release = self.catalog.get_release(lock["release_set_id"], require_released=True)
         wanted = [component_id] if component_id else self._profile_component_ids(lock, release)
+        if component_id is None and "ai-verse-os" in wanted:
+            # Component owners must establish their own attachment/runtime state
+            # before OS performs its composed setup/readiness reconciliation.
+            wanted = [cid for cid in wanted if cid != "ai-verse-os"] + ["ai-verse-os"]
         selected_workspaces = list(workspaces or [])
         if selected_workspaces and "ai-verse-data" not in wanted:
             raise DistributionError("--workspace is valid only when AI-Verse Data is part of setup")
