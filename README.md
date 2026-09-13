@@ -93,13 +93,18 @@ aiverse onboard
 
 Distribution hands off to owner onboarding. It never invents Brain goals or silently hands strategic ownership to Brain.
 
-To apply explicit Brain onboarding answers:
+On an interactive terminal, `aiverse onboard` asks for the user-confirmed desired state and success definition. It does not transfer strategic ownership to Brain.
+
+For non-interactive setup:
 
 ```bash
-aiverse onboard --brain-answers ./brain-onboarding.json
+aiverse onboard \
+  --desired-state "Ship the selected AI-Verse system" \
+  --success-definition "Doctor and representative use pass" \
+  --boundary "Do not transfer Brain strategic ownership automatically"
 ```
 
-The answers file must contain the user-confirmed intent required by Brain.
+Expert automation may still pass an existing answers file with `--brain-answers`. Direct flags and an answers file are mutually exclusive.
 
 ## Verify
 
