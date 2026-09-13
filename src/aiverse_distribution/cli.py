@@ -249,6 +249,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             _emit(payload, args.json)
             if args.action == "doctor":
                 return 0 if payload.get("ok") else 1
+            if args.action == "status":
+                return 1 if payload.get("state") in {"unhealthy", "migration-required", "absent"} else 0
             return 0
 
         if args.command == "update":
