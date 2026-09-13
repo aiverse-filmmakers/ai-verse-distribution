@@ -35,7 +35,7 @@ aiverse install --profile core
 -> verify Memory/Data canonical state survives
 -> aiverse doctor
 -> same-set aiverse update --apply
--> same-set aiverse rollback --to core-first-member-beta-2026-09-13 --apply
+-> same-set aiverse rollback --to core-public-beta-2026-09-13 --apply
 -> aiverse open
 ```
 
