@@ -1,6 +1,6 @@
 import unittest
 
-from aiverse_distribution.diagnostics import _sanitize
+from aiverse_distribution.redaction import sanitize
 
 
 class DiagnosticsTests(unittest.TestCase):
@@ -9,7 +9,7 @@ class DiagnosticsTests(unittest.TestCase):
             "token": "abc123",
             "nested": {"password": "hunter2"},
         }
-        sanitized = _sanitize(payload)
+        sanitized = sanitize(payload)
         self.assertEqual(sanitized["token"], "<redacted>")
         self.assertEqual(sanitized["nested"]["password"], "<redacted>")
 
@@ -18,7 +18,7 @@ class DiagnosticsTests(unittest.TestCase):
             "stdout": "Authorization: Bearer abc.def.ghi\napi_key=super-secret-value",
             "stderr": "refresh_token: another-value",
         }
-        rendered = str(_sanitize(payload))
+        rendered = str(sanitize(payload))
         self.assertNotIn("abc.def.ghi", rendered)
         self.assertNotIn("super-secret-value", rendered)
         self.assertNotIn("another-value", rendered)
