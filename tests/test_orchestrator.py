@@ -31,9 +31,24 @@ class OrchestratorPlanningTests(unittest.TestCase):
                 },
                 archive_previous=False,
             )
-            plan = Orchestrator(state=store).update_plan()
+            app = Orchestrator(state=store)
+            plan = app.update_plan()
             self.assertEqual(plan["changes"], [])
             self.assertEqual(plan["profile"], "custom")
+            self.assertEqual(plan["from"], "core-first-member-beta-2026-09-13")
+
+            status = app.status()
+            self.assertEqual(
+                set(status["components"]),
+                {"ai-verse-os", "ai-verse-memory"},
+            )
+            self.assertEqual(status["state"], "setup-required")
+
+            doctor = app.doctor()
+            self.assertEqual(
+                set(doctor["components"]),
+                {"ai-verse-os", "ai-verse-memory"},
+            )
 
 
 if __name__ == "__main__":
