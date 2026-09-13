@@ -396,6 +396,20 @@ class Orchestrator:
                 )
         return actual_tree_digest
 
+    def _verify_data_native_runtime(self, runtime: Path) -> None:
+        node = which("node")
+        if not node:
+            raise DistributionError("Node.js is required to verify AI-Verse Data native runtime")
+        smoke = (
+            "const Database=require('better-sqlite3');"
+            "const db=new Database(':memory:');"
+            "db.exec('CREATE TABLE t(v INTEGER); INSERT INTO t(v) VALUES (42)');"
+            "const row=db.prepare('SELECT v FROM t').get();"
+            "db.close();"
+            "if (!row || row.v !== 42) process.exit(17);"
+        )
+        run([node, "-e", smoke], cwd=runtime)
+
     def _prepare_data(
         self,
         source: Path,
@@ -422,7 +436,12 @@ class Orchestrator:
         if self._sha256_file(runtime_lock) != manifest["lockfile_sha256"]:
             raise DistributionError("Data companion lock changed while staging")
 
-        run([npm, "ci", "--no-audit", "--no-fund"], cwd=runtime)
+        # better-sqlite3@13.0.3 ships platform prebuilds and declares gypfile=false.
+        # npm otherwise performs an implicit node-gyp rebuild on some Windows npm
+        # combinations. Install the exact immutable tree without lifecycle scripts,
+        # then prove the shipped native binary executes real SQLite before building Data.
+        run([npm, "ci", "--ignore-scripts", "--no-audit", "--no-fund"], cwd=runtime)
+        self._verify_data_native_runtime(runtime)
         run([npm, "run", "build"], cwd=runtime)
 
         if self._sha256_file(runtime_lock) != manifest["lockfile_sha256"]:
