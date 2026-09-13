@@ -305,6 +305,15 @@ def main() -> int:
     if update.get("changed") is not False:
         raise RuntimeError(f"same-set update should be a no-op: {update}")
 
+    rollback = run_cli(
+        "rollback",
+        "--to",
+        "core-first-member-beta-2026-09-13",
+        "--apply",
+    )
+    if rollback.get("changed") is not False or rollback.get("rollback") is not True:
+        raise RuntimeError(f"same-set rollback should be a safe no-op: {rollback}")
+
     opened = run_cli("open")
     if Path(opened["root"]).resolve() != root.resolve():
         raise RuntimeError("open handoff returned the wrong root")
@@ -333,6 +342,7 @@ def main() -> int:
             "ai-verse-data"
         ],
         "update_noop": True,
+        "rollback_noop": True,
         "open": True,
     }, indent=2))
     return 0
