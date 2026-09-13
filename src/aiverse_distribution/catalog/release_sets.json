@@ -69,6 +69,23 @@
         "initializes_all_workspaces": false,
         "exposes_gateway_remotely": false
       }
+    },
+    {
+      "id": "full-public-beta-pending",
+      "profile": "full",
+      "status": "blocked",
+      "created_at": "2026-09-13",
+      "components": [],
+      "blockers": [
+        "Agent profile does not yet have an admitted immutable public-beta release set",
+        "AI-Verse Connections, Dashboard, and Apps do not yet have one admitted compatible Full release set"
+      ],
+      "authority": {
+        "grants_permissions": false,
+        "transfers_brain_strategy": false,
+        "initializes_all_workspaces": false,
+        "exposes_gateway_remotely": false
+      }
     }
   ]
 }
