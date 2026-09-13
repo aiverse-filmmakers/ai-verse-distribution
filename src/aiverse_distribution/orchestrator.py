@@ -420,6 +420,19 @@ class Orchestrator:
             return self.status(component_id)
         if action == "doctor":
             return self.doctor(component_id)
+        if action == "install":
+            lock = self.state.load()
+            if not lock:
+                raise DistributionError("AI-Verse is not installed through Distribution")
+            release = self.catalog.get_release(lock["release_set_id"], require_released=True)
+            component = next((x for x in release.components if x.id == component_id), None)
+            if component is None:
+                raise DistributionError(f"{component_id} is not in locked release set {release.id}")
+            root = Path(lock["root"]).expanduser().resolve()
+            receipt = self._install_component(component, root, release)
+            lock["components"][component_id] = receipt
+            self.state.write(lock, archive_previous=False)
+            return {"component": component_id, "action": action, "changed": True}
 
         lock, release, component, root, source = self._context(component_id)
         if action in {"enable", "disable"}:
@@ -438,11 +451,6 @@ class Orchestrator:
             )
             if result is None:
                 return {"component": component_id, "action": action, "changed": False, "note": "already pinned"}
-        elif action == "install":
-            receipt = self._install_component(component, root, release)
-            lock["components"][component_id] = receipt
-            self.state.write(lock, archive_previous=False)
-            return {"component": component_id, "action": action, "changed": True}
         else:
             raise DistributionError(f"unknown component action: {action}")
         return {"component": component_id, "action": action, "result": result.as_dict()}
