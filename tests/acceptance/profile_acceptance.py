@@ -114,13 +114,6 @@ def prove_data(root: Path) -> None:
     requests = [
         {
             "protocol": "ai-verse-os-data-host/1.0",
-            "request_id": "distribution-init",
-            "operation": "init",
-            "scope": "workspace:alpha",
-            "reason": "Initialize clean-machine acceptance Data workspace."
-        },
-        {
-            "protocol": "ai-verse-os-data-host/1.0",
             "request_id": "distribution-space",
             "operation": "request",
             "scope": "workspace:alpha",
@@ -211,7 +204,7 @@ def main() -> int:
         raise RuntimeError(f"unexpected install state: {install.get('state')}")
 
     write_acceptance_workspace(root)
-    setup = run_cli("setup")
+    setup = run_cli("setup", "--workspace", "alpha")
 
     answers = base / "brain-onboarding.json"
     answers.write_text(
