@@ -225,7 +225,7 @@ install -> setup -> explicit onboarding -> status -> doctor
 -> canonical Memory/Data preservation -> update no-op -> open/use handoff
 ```
 
-`.github/workflows/clean-machine-agent.yml` is the Agent release gate. Until the Agent prerequisites have immutable public-beta artifacts, it proves that Agent installation fails closed with the exact blockers. Once the admitted Agent release set exists, that workflow becomes the complete Agent clean-machine acceptance path.
+`.github/workflows/clean-machine-agent.yml` is the Agent release gate. Until the Agent prerequisites have immutable public-beta artifacts, it proves that Agent installation fails closed with the exact blockers and deliberately exits non-zero, so the release gate cannot be mistaken for an Agent acceptance pass. Once an admitted Agent release set exists, the workflow must be extended to the complete Agent clean-machine path before it can turn green.
 
 See `docs/ACCEPTANCE.md`.
 
