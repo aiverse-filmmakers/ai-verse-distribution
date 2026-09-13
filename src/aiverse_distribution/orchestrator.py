@@ -302,11 +302,36 @@ class Orchestrator:
     def _state_from_result(self, result: Any, setup_complete: bool) -> str:
         if not setup_complete:
             return "setup-required"
-        text = ((getattr(result, "stdout", "") or "") + "\n" + (getattr(result, "stderr", "") or "")).lower()
+        stdout = getattr(result, "stdout", "") or ""
+        stderr = getattr(result, "stderr", "") or ""
+        text = (stdout + "\n" + stderr).lower()
+
         if "migration-required" in text or "migration required" in text:
             return "migration-required"
-        if "disabled" in text and getattr(result, "returncode", 1) != 0:
+
+        payload: Any = None
+        try:
+            payload = json.loads(stdout) if stdout.strip() else None
+        except json.JSONDecodeError:
+            payload = None
+
+        if isinstance(payload, dict):
+            if payload.get("enabled") is False:
+                return "disabled"
+            registration = payload.get("registration")
+            if (
+                isinstance(registration, dict)
+                and registration.get("registered") is True
+                and registration.get("enabled") is False
+            ):
+                return "disabled"
+            attachment = payload.get("attachment")
+            if isinstance(attachment, dict) and attachment.get("enabled") is False:
+                return "disabled"
+
+        if "attached but disabled" in text or "component is disabled" in text:
             return "disabled"
+
         return "ready" if getattr(result, "returncode", 1) == 0 else "unhealthy"
 
     def status(self, component_id: Optional[str] = None) -> Dict[str, Any]:
