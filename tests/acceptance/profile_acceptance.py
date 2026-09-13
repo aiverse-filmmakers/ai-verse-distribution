@@ -375,7 +375,7 @@ def main() -> int:
     rollback = run_cli(
         "rollback",
         "--to",
-        "core-first-member-beta-2026-09-13",
+        "core-public-beta-2026-09-13",
         "--apply",
     )
     if rollback.get("changed") is not False or rollback.get("rollback") is not True:
