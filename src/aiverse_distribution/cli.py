@@ -73,6 +73,7 @@ def _parser() -> argparse.ArgumentParser:
     q.add_argument("--json", action="store_true")
 
     q = sub.add_parser("setup", help="run owner-controlled setup for the locked profile")
+    q.add_argument("--workspace", action="append", default=[], help="explicit Data workspace to initialize")
     q.add_argument("--json", action="store_true")
 
     q = sub.add_parser("onboard", help="hand off to owner onboarding without inventing Brain intent")
@@ -91,6 +92,7 @@ def _parser() -> argparse.ArgumentParser:
         choices=["install", "setup", "status", "doctor", "enable", "disable", "update", "uninstall"],
     )
     q.add_argument("component")
+    q.add_argument("--workspace", action="append", default=[], help="explicit Data workspace to initialize during setup")
     q.add_argument("--json", action="store_true")
 
     q = sub.add_parser("update", help="preview or apply a compatible release-set update")
@@ -142,7 +144,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             return 0
 
         if args.command == "setup":
-            payload = app.setup()
+            payload = app.setup(workspaces=args.workspace)
             _emit(payload, args.json)
             return 0
 
@@ -162,7 +164,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             return 0 if payload.get("ok") else 1
 
         if args.command == "component":
-            payload = app.component_action(args.component, args.action)
+            payload = app.component_action(args.component, args.action, workspaces=args.workspace)
             _emit(payload, args.json)
             if args.action == "doctor":
                 return 0 if payload.get("ok") else 1
