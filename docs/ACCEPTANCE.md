@@ -24,6 +24,9 @@ aiverse install --profile core
 -> explicit Brain onboarding answers
 -> aiverse status
 -> aiverse doctor
+-> Memory remember/recall
+-> generation-pinned Skills package resolution
+-> structured Data create/read
 -> Data disable / enable
 -> Memory disable / enable
 -> aiverse doctor
@@ -39,7 +42,10 @@ Acceptance asserts:
 - onboarding does not transfer Brain strategic ownership implicitly;
 - live status reports ready;
 - owner and composed doctors pass;
-- disable/enable preserves the installation;
+- representative Memory recall works;
+- Skills resolves a package from one immutable active generation;
+- structured Data create/read works through the OS host;
+- disable/enable preserves the installation and structured Data record;
 - the current same-set update is a no-op;
 - the product can hand the user to the installed root.
 
