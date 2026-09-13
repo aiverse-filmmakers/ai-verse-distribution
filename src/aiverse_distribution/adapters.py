@@ -153,8 +153,10 @@ def owner_enablement(
             action, "--root", str(root), "--json",
         ], cwd=source)
 
-    if component_id == "ai-verse-brain" and action == "disable":
-        return run([str(_brain_executable(state, revision)), "disable", str(root), "--apply"])
+    if component_id == "ai-verse-brain":
+        raise UnsupportedLifecycle(
+            "the frozen Brain release is not exposed for disable through Distribution because it has no matching owner-controlled enable route"
+        )
 
     raise UnsupportedLifecycle(
         f"{component_id}@{revision[:12]} does not expose an owner-controlled {action} command in this release"
