@@ -63,6 +63,40 @@ def _choose_profile(explicit: Optional[str]) -> str:
     return {"1": "core", "2": "agent", "3": "full", "4": "custom"}.get(value, value.lower())
 
 
+def _choose_custom_components(app: Orchestrator, explicit: list[str]) -> list[str]:
+    if explicit:
+        return explicit
+    if not sys.stdin.isatty():
+        return explicit
+
+    channel_id = app.catalog.release_data.get("channels", {}).get("beta")
+    release = app.catalog.get_release(channel_id, require_released=True)
+    components = [component.id for component in release.components]
+    print("Choose Custom components:")
+    for index, component_id in enumerate(components, start=1):
+        print(f"  {index}. {component_id}")
+    raw = input("Components (comma-separated numbers or ids): ").strip()
+    if not raw:
+        raise DistributionError("Custom profile requires at least one component")
+
+    selected: list[str] = []
+    for token in [item.strip() for item in raw.split(",") if item.strip()]:
+        if token.isdigit():
+            index = int(token)
+            if index < 1 or index > len(components):
+                raise DistributionError(f"invalid Custom component selection: {token}")
+            component_id = components[index - 1]
+        else:
+            component_id = token
+            if component_id not in components:
+                raise DistributionError(f"unknown Custom component: {component_id}")
+        if component_id not in selected:
+            selected.append(component_id)
+    if not selected:
+        raise DistributionError("Custom profile requires at least one component")
+    return selected
+
+
 def _temporary_brain_answers(app: Orchestrator, args) -> tuple[Optional[Path], Optional[Path]]:
     direct = any([
         args.desired_state,
@@ -205,11 +239,16 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     try:
         if args.command == "install":
             profile = _choose_profile(args.profile)
+            components = (
+                _choose_custom_components(app, args.component)
+                if profile == "custom"
+                else args.component
+            )
             payload = app.install(
                 profile=profile,
                 root=Path(args.root),
                 release_set_id=args.release_set,
-                components=args.component,
+                components=components,
             )
             _emit(payload, args.json)
             return 0
