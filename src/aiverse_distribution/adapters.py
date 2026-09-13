@@ -16,7 +16,7 @@ class UnsupportedLifecycle(RuntimeError):
 PUBLIC_BETA_OS = "a1e11b8bdc926c3601ac156d6a8265946298b964"
 PUBLIC_BETA_BRAIN = "80019be5e6df29aee70371544bd96cedbf0329b9"
 PUBLIC_BETA_MEMORY = "031e1e77c97ed3c9012235c7ffe0a4ece05e3695"
-PUBLIC_BETA_SKILLS = "bbef286bfcd56588dcacb251132830365918cc3b"
+PUBLIC_BETA_SKILLS = "042fda1ea2ddd8b79b74f1db9d3f65212953b64a"
 
 
 def _brain_executable(state: StateStore, revision: str) -> Path:
