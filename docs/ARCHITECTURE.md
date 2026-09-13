@@ -1,155 +1,220 @@
 # AI-Verse Distribution Architecture
 
-**Status:** Foundational contract  
-**Date:** 2026-09-13
+**Status:** Implemented public-beta Distribution layer  
+**Updated:** 2026-09-13
 
 ## Role
 
-AI-Verse Distribution is the packaging and lifecycle-orchestration layer that makes many independently owned components feel like one installable product.
+AI-Verse Distribution is the canonical packaging and lifecycle-orchestration layer that makes independently owned AI-Verse components feel like one product.
 
-It is not an operating system and is not a canonical domain-data owner.
+It owns:
 
-## Core model
+- the `aiverse` product CLI;
+- profiles;
+- exact compatible release sets;
+- compatibility resolution;
+- immutable source acquisition;
+- Distribution install receipts/locks;
+- owner lifecycle orchestration;
+- update/rollback selection;
+- diagnostics/support bundles;
+- profile acceptance gates.
+
+It owns no sibling domain engine or canonical user state.
+
+## Product flow
 
 ```text
 User
   |
   v
-aiverse Distribution CLI
+aiverse
   |
-  +-- select profile / release channel
-  +-- resolve immutable compatible release set
-  +-- verify package provenance
-  +-- install component packages
-  +-- invoke component-owned setup
-  +-- run component/system doctors
-  +-- persist distribution lock/receipt
+  +-- choose profile
+  +-- resolve admitted immutable release set
+  +-- verify platform/runtime floor
+  +-- acquire exact component revisions
+  +-- prepare package/runtime availability
+  +-- call owner setup
+  +-- owner onboarding handoff
+  +-- live owner status/doctor
+  +-- write Distribution receipt
   |
   v
-AI-Verse ready
+open/use
 ```
+
+## Two layers of truth
+
+### Release truth
+
+Distribution may authoritatively answer:
+
+- which profile was selected;
+- which release set was selected;
+- which exact immutable component revisions belong to that set;
+- what Distribution installed;
+- whether a release set is admitted or blocked.
+
+### Component/domain truth
+
+Distribution is not authoritative for:
+
+- component health;
+- enabled state;
+- migration state;
+- workspace authorization;
+- Brain direction ownership;
+- Memory history;
+- Data records;
+- Skill authorization;
+- Bot coordination;
+- external credentials;
+- run/session truth;
+- automation schedules.
+
+Those are queried from owner lifecycle surfaces.
+
+## Manifest security
+
+Machine-readable release manifests intentionally contain no executable lifecycle command strings.
+
+Trusted Distribution code maps an admitted component ID to a bounded argv-based owner adapter.
+
+Every subprocess call uses:
+
+```text
+shell = false
+```
+
+This prevents release metadata from becoming a shell execution channel.
+
+## Install versus setup
+
+Distribution preserves the system contract even when a frozen component predates the standardized vocabulary.
+
+**Install** makes the package/runtime available.
+
+**Setup** makes that installed component usable through its owner-controlled safe path.
+
+For the frozen Core release:
+
+- OS install is exact detached checkout; setup verifies the host.
+- Brain install uses an isolated Distribution-managed venv; setup calls owner attach + init.
+- Memory install stores its exact source artifact; setup invokes the frozen owner installer because that artifact historically combines native attachment/setup.
+- Skills install creates the immutable provider generation; setup is read-only owner doctor/readiness for that frozen artifact.
+- Data install builds its package without native attachment; setup invokes Data's native owner install.
+
+Distribution does not modify sibling canonical files to simulate lifecycle symmetry.
 
 ## Release set
 
-A release set identifies exact component versions/revisions proven compatible together.
-
-A release-set record should eventually contain:
+An admitted release set records:
 
 - release-set ID;
-- channel;
-- creation date;
-- minimum platform/runtime requirements;
-- component IDs;
-- exact immutable versions/digests;
-- source/package location;
-- compatibility constraints;
+- profile;
+- exact full component Git commit IDs;
+- repository source;
+- platform/runtime compatibility;
 - acceptance evidence;
-- migration requirements;
-- signature/provenance when implemented.
+- state-preservation/rollback rule;
+- explicit authority flags.
 
-A release set is packaging truth, not domain truth.
+Moving branches are development sources, never substitutes for admitted immutable refs.
 
 ## Distribution lock
 
-An installed system should have a local distribution lock/receipt that says what Distribution installed.
+Local path:
 
-It must not become the source of truth for whether a component is healthy, enabled, initialized or authorized.
+`~/.aiverse/distribution/locks/current.json`
 
-Those states remain live/component-owned.
+The lock is a receipt for Distribution actions, not a hidden component database.
 
-## Setup orchestration
+It records:
 
-Distribution follows the canonical shared vocabulary:
+- release-set ID;
+- profile;
+- AI-Verse host root;
+- exact component revisions and source paths;
+- Distribution install/setup timestamps;
+- preflight evidence;
+- explicit negative authority facts.
 
-```text
-install
-setup
-status
-doctor
-enable / disable
-update
-uninstall
-```
-
-`setup` may map to different owner-controlled actions:
-
-- Brain: attach + initialize, no automatic strategic handover;
-- Memory: attach + index/readiness and migration discovery;
-- Skills: immutable provider install + discoverability verification;
-- Data: attach + explicit selected-workspace initialization;
-- Multiple Bots: choose standalone/native mode + coordination initialization;
-- Gateway: configure endpoint/runtime/security;
-- Automations: initialize scheduler/trigger runtime.
-
-Distribution must never fake lifecycle symmetry where a component deliberately uses a different safe model.
+Live component status still comes from owner commands.
 
 ## Profiles
 
-Profiles select components only.
+Profiles are software selections only.
 
-They never imply permission.
+Core is currently admitted and installable.
 
-A Full profile must not automatically:
+Agent is modeled but blocked until all required owner artifacts are public-beta ready.
 
-- hand strategic ownership to Brain;
-- authorize external Connections;
-- enable dangerous Skills;
-- grant Bots additional authority;
-- expose Gateway remotely.
+Full remains blocked by unreleased downstream components.
 
-## Failure model
-
-Distribution must fail closed when:
-
-- release-set compatibility is unresolved;
-- component package integrity fails;
-- component setup reports migration-required/conflict;
-- a requested release would downgrade unsupported canonical state;
-- public install evidence is stale or missing.
-
-Partial installation must be recoverable and report exactly which components succeeded.
+Custom selects an explicit subset from one admitted compatible release set. It cannot mix arbitrary versions across sets.
 
 ## Update
 
-Update means:
+Update is release-set based:
 
-1. resolve target compatible release set;
-2. preview component changes;
-3. surface migration/security/permission-impact changes;
-4. update component software through owner lifecycle;
-5. apply explicit migrations only through owner commands;
-6. verify;
-7. update Distribution lock only after successful reconciliation.
+1. resolve an admitted target set;
+2. show exact component changes;
+3. surface the state preservation rule;
+4. stage exact new component artifacts;
+5. refuse dirty tracked OS system files;
+6. move software only through admitted refs and owner lifecycle;
+7. preserve disabled/state authority semantics where owners provide them;
+8. commit the new Distribution lock only after successful orchestration.
 
-A disabled component must not be silently re-enabled by update.
+A same-set update is a safe no-op.
 
 ## Rollback
 
-Distribution rollback selects a previous known-good software release set.
+Rollback selects a previous admitted software set whose compatibility matrix explicitly permits software-only rollback with owner-preserved canonical state.
 
-It must not pretend that rolling back software automatically rolls back user data.
+It never claims that user state was rolled back.
 
-Each stateful component's compatibility/migration rules remain authoritative.
+## Failure model
 
-## Security
+Distribution fails closed when:
 
-Distribution is a supply-chain boundary.
+- no immutable released set exists;
+- a manifest contains non-exact revisions;
+- compatibility is unresolved;
+- a required runtime is below the release floor;
+- an owner lifecycle action is unsupported by the exact artifact;
+- exact checkout verification fails;
+- an update would operate over dirty tracked OS files.
 
-Public beta should eventually include:
+A partially completed install remains represented by the Distribution lock so the same immutable install can be resumed.
 
-- immutable release references;
-- package/digest verification;
-- exact source provenance;
-- no arbitrary shell interpolation from manifests;
-- bounded subprocess execution;
-- explicit privilege prompts;
-- no credential capture;
-- no secret persistence in install logs;
-- rollback/recovery receipts;
-- clean-machine acceptance.
+## Authority
 
-## Source repository versus user product
+Profiles and setup never:
 
-The AI-Verse source may remain modular across many repositories.
+- transfer Brain strategic ownership;
+- grant tool/workspace permissions;
+- authorize external accounts;
+- expose remote services;
+- initialize all workspace Data;
+- create Bots implicitly.
 
-Distribution is what lets the user experience one product without requiring a monorepo.
+Brain onboarding answers are applied only from an explicit user-supplied answers file.
+
+## Support bundle
+
+The support bundle contains only:
+
+- platform/tool versions;
+- sanitized Distribution receipt;
+- sanitized doctor output;
+- a note explaining the collection boundary.
+
+Environment variables are not collected. Credential-like object keys are redacted.
+
+## Source repositories and product identity
+
+AI-Verse source remains modular across repositories.
+
+Distribution is the one-product edge that resolves those repositories into a reproducible user installation while leaving ownership with the component that actually owns each concern.
