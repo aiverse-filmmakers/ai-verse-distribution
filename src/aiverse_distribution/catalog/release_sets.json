@@ -66,7 +66,7 @@
         {
           "id": "ai-verse-os",
           "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
-          "revision": "a1e11b8bdc926c3601ac156d6a8265946298b964",
+          "revision": "9600929b946746c25c64e48471fcc83031fddda9",
           "install_order": 10
         },
         {
@@ -101,17 +101,17 @@
       ],
       "evidence": {
         "os": {
-          "revision": "a1e11b8bdc926c3601ac156d6a8265946298b964",
+          "revision": "9600929b946746c25c64e48471fcc83031fddda9",
           "hosted_workflows": [
-            34777483552,
-            34777483573,
-            34777483515,
-            34777483529,
-            34777483522,
-            34777483500,
-            34777483526,
-            34777483510
-          ]
+            34782218610,
+            34782218630,
+            34782218577,
+            34782218598,
+            34782218606,
+            34782218615,
+            34782218597
+          ],
+          "portability_fix": "Windows Data host CLI entrypoint uses native fileURLToPath invocation"
         },
         "brain": {
           "revision": "80019be5e6df29aee70371544bd96cedbf0329b9",
@@ -157,7 +157,7 @@
       "created_at": "2026-09-13",
       "components": [],
       "blockers": [
-        "AI-Verse-Multiple-Bots Phase 5 productization is incomplete; Phase 5.6 production health/doctor and later release slices, including full release acceptance, remain outstanding",
+        "AI-Verse-Multiple-Bots is complete through Phase 5.9; remaining Phase 5 release slices and final public-beta release acceptance are still outstanding",
         "No complete immutable Agent release set can be admitted until Multiple Bots supplies its accepted public-beta artifact alongside the accepted Gateway, Automations and Token candidates",
         "The complete Agent clean-machine install/setup/onboard/doctor/use acceptance has not yet passed"
       ],
