@@ -543,7 +543,12 @@ class Orchestrator:
             if component is None:
                 raise DistributionError(f"{component_id} is not in locked release set {release.id}")
             root = Path(lock["root"]).expanduser().resolve()
+            previous = lock.get("components", {}).get(component_id)
             receipt = self._install_component(component, root, release)
+            if previous and not previous.get("uninstalled_at"):
+                receipt["setup_completed_at"] = previous.get("setup_completed_at")
+                if previous.get("last_setup_result"):
+                    receipt["last_setup_result"] = previous["last_setup_result"]
             lock["components"][component_id] = receipt
             self.state.write(lock, archive_previous=False)
             return {"component": component_id, "action": action, "changed": True}
@@ -575,11 +580,7 @@ class Orchestrator:
         target_release_set: Optional[str] = None,
     ) -> ReleaseSet:
         if lock["profile"] == "custom":
-            selected = [
-                cid
-                for cid, receipt in lock.get("components", {}).items()
-                if not receipt.get("uninstalled_at")
-            ]
+            selected = list(lock.get("components", {}))
             return self.catalog.resolve(
                 "custom",
                 target_release_set or lock["release_set_id"],
@@ -631,14 +632,15 @@ class Orchestrator:
                     f"release set {target.id} is not explicitly admitted for update from {lock['release_set_id']}"
                 )
 
-        current_ids = {
+        known_ids = set(lock.get("components", {}))
+        active_ids = {
             cid
             for cid, receipt in lock.get("components", {}).items()
             if not receipt.get("uninstalled_at")
         }
         target_ids = {component.id for component in target.components}
-        added = sorted(target_ids - current_ids)
-        removed = sorted(current_ids - target_ids)
+        added = sorted(target_ids - known_ids)
+        removed = sorted(known_ids - target_ids)
         if added or removed:
             detail = []
             if added:
@@ -654,10 +656,15 @@ class Orchestrator:
         previous_setup = {
             cid: bool(receipt.get("setup_completed_at"))
             for cid, receipt in lock.get("components", {}).items()
-            if cid in current_ids
+            if cid in active_ids
+        }
+        previous_absent = {
+            cid: receipt.get("uninstalled_at")
+            for cid, receipt in lock.get("components", {}).items()
+            if receipt.get("uninstalled_at")
         }
         for component in current_catalog.components:
-            if component.id in current_ids:
+            if component.id in known_ids:
                 receipt = lock["components"][component.id]
                 self._verify_exact_source(component, Path(receipt["source"]).expanduser().resolve())
         os_receipt = lock.get("components", {}).get("ai-verse-os")
@@ -704,6 +711,9 @@ class Orchestrator:
 
                 receipt = prepared[component.id]
                 new_lock["components"][component.id] = receipt
+                if component.id in previous_absent:
+                    new_lock["components"][component.id]["uninstalled_at"] = previous_absent[component.id]
+                    continue
                 if was_setup:
                     owner_update(
                         component.id,
@@ -715,9 +725,14 @@ class Orchestrator:
                     new_lock["components"][component.id]["setup_completed_at"] = now_iso()
                     new_lock["components"][component.id]["last_setup_result"] = "success"
 
-            all_setup = all(
-                bool(new_lock["components"][component.id].get("setup_completed_at"))
+            configured_components = [
+                component.id
                 for component in target.components
+                if not new_lock["components"][component.id].get("uninstalled_at")
+            ]
+            all_setup = bool(configured_components) and all(
+                bool(new_lock["components"][component_id].get("setup_completed_at"))
+                for component_id in configured_components
             )
             new_lock["state"] = "setup" if all_setup else "installed"
             new_lock["profile"] = lock["profile"]
