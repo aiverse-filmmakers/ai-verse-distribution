@@ -80,7 +80,7 @@ Current upstream blockers:
 - [ ] Multiple Bots complete public-beta lifecycle/readiness gate;
 - [ ] Token public-beta artifact if Token is included.
 
-The Agent clean-machine workflow exists as a release gate and currently proves fail-closed behavior. It must not be reported as a complete Agent acceptance pass until an admitted immutable Agent set exists and the full flow runs.
+The Agent clean-machine workflow exists as a release gate, currently proves fail-closed behavior, and deliberately exits non-zero while the profile is blocked. It must not turn green or be reported as an Agent acceptance pass until an admitted immutable Agent set exists and the full flow runs.
 
 ## Phase 6: Full profile
 
