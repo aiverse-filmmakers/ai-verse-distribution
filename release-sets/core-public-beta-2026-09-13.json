@@ -84,7 +84,17 @@
       ],
       "companion_dependency_lock": "distribution-companion-npm-lock-v1"
     },
-    "distribution_acceptance": "pending-pr-1"
+    "distribution_acceptance": {
+      "status": "accepted",
+      "qualification_head": "c98df20742df05826c014387d14d47c68f8afa43",
+      "distribution_ci_run": 34782742088,
+      "core_clean_machine_run": 34782742084,
+      "core_jobs": {
+        "ubuntu": 103792603497,
+        "macos": 103792603164,
+        "windows": 103792603375
+      }
+    }
   },
   "authority": {
     "grants_permissions": false,
