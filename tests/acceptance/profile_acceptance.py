@@ -30,8 +30,10 @@ def main() -> int:
     profile = sys.argv[1]
     base = Path(os.environ.get("RUNNER_TEMP") or tempfile.mkdtemp(prefix="aiverse-acceptance-"))
     os.environ["AIVERSE_DISTRIBUTION_HOME"] = str(base / f"distribution-{profile}")
-    os.environ.setdefault("HOME", str(base / f"home-{profile}"))
-    Path(os.environ["HOME"]).mkdir(parents=True, exist_ok=True)
+    isolated_home = base / f"home-{profile}"
+    isolated_home.mkdir(parents=True, exist_ok=True)
+    os.environ["HOME"] = str(isolated_home)
+    os.environ["USERPROFILE"] = str(isolated_home)
     root = base / f"AI-Verse-{profile}"
 
     if profile == "agent":
