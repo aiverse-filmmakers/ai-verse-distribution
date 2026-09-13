@@ -258,6 +258,54 @@ def main() -> int:
     if "distribution-core-data-marker" not in json.dumps(data_after):
         raise RuntimeError("Data record was not preserved across disable/enable")
 
+    # Prove owner-safe uninstall/reinstall while preserving canonical user state.
+    for component in (
+        "ai-verse-brain",
+        "ai-verse-memory",
+        "ai-verse-skills",
+        "ai-verse-data",
+    ):
+        run_cli("component", "uninstall", component)
+        absent = run_cli("component", "status", component)
+        if absent["components"][component]["state"] != "absent":
+            raise RuntimeError(f"{component} did not become absent after uninstall: {absent}")
+        run_cli("component", "install", component)
+        run_cli("component", "setup", component)
+
+    prove_brain_no_silent_handover(install, root)
+    memory_recalled = run_process([
+        sys.executable,
+        str(root / "scripts" / "ai-verse-memory" / "memory.py"),
+        "--root",
+        str(root),
+        "recall",
+        "distribution-core-memory-marker",
+        "--workspace",
+        "alpha",
+    ])
+    if "distribution-core-memory-marker" not in memory_recalled.stdout:
+        raise RuntimeError("Memory canonical state was not preserved across uninstall/reinstall")
+
+    prove_skills(install)
+
+    data_reinstalled = call_data(root, {
+        "protocol": "ai-verse-os-data-host/1.0",
+        "request_id": "distribution-list-after-reinstall",
+        "operation": "request",
+        "scope": "workspace:alpha",
+        "reason": "Verify Data preservation after uninstall/reinstall.",
+        "data": {
+            "operation": "data.record.list",
+            "payload": {"spaceId": "acceptance", "entity": "items"}
+        }
+    })
+    if "distribution-core-data-marker" not in json.dumps(data_reinstalled):
+        raise RuntimeError("Data canonical state was not preserved across uninstall/reinstall")
+
+    doctor_reinstalled = run_cli("doctor")
+    if not doctor_reinstalled.get("ok"):
+        raise RuntimeError("doctor failed after owner-safe uninstall/reinstall cycle")
+
     update = run_cli("update", "--apply")
     if update.get("changed") is not False:
         raise RuntimeError(f"same-set update should be a no-op: {update}")
@@ -283,6 +331,12 @@ def main() -> int:
         },
         "disable_enable": ["ai-verse-data", "ai-verse-memory"],
         "state_preserved": True,
+        "uninstall_reinstall": [
+            "ai-verse-brain",
+            "ai-verse-memory",
+            "ai-verse-skills",
+            "ai-verse-data"
+        ],
         "update_noop": True,
         "open": True,
     }, indent=2))
