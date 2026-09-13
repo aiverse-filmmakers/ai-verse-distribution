@@ -813,7 +813,9 @@ class Orchestrator:
         plan["rollback"] = True
         if not apply:
             return plan
-        return self.apply_update(target.id)
+        result = self.apply_update(target.id)
+        result["rollback"] = True
+        return result
 
     def open_info(self) -> Dict[str, Any]:
         lock = self.state.load()
