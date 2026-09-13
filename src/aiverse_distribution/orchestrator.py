@@ -231,7 +231,7 @@ class Orchestrator:
         if not lock:
             raise DistributionError("AI-Verse is not installed through Distribution")
         release = self.catalog.get_release(lock["release_set_id"], require_released=True)
-        wanted = [component_id] if component_id else [c.id for c in release.components]
+        wanted = [component_id] if component_id else self._profile_component_ids(lock, release)
         results: Dict[str, Any] = {}
         root = Path(lock["root"]).expanduser().resolve()
 
@@ -314,7 +314,7 @@ class Orchestrator:
         if not lock:
             return {"state": "absent", "components": {}}
         release = self.catalog.get_release(lock["release_set_id"], require_released=True)
-        ids = [component_id] if component_id else [c.id for c in release.components]
+        ids = [component_id] if component_id else self._profile_component_ids(lock, release)
         report: Dict[str, Any] = {}
         for cid in ids:
             receipt = lock.get("components", {}).get(cid)
@@ -373,7 +373,7 @@ class Orchestrator:
         if not lock:
             return {"ok": False, "state": "absent", "depth": ["structural"]}
         release = self.catalog.get_release(lock["release_set_id"], require_released=True)
-        ids = [component_id] if component_id else [c.id for c in release.components]
+        ids = [component_id] if component_id else self._profile_component_ids(lock, release)
         results: Dict[str, Any] = {}
         ok = True
         for cid in ids:
@@ -495,7 +495,7 @@ class Orchestrator:
             if old.get(cid) != new.get(cid):
                 changes.append({"component": cid, "from": old.get(cid), "to": new.get(cid)})
         return {
-            "from": current.id,
+            "from": lock["release_set_id"],
             "to": target.id,
             "profile": lock["profile"],
             "changes": changes,
