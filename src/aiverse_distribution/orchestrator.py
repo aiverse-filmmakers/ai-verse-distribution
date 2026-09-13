@@ -455,13 +455,34 @@ class Orchestrator:
             raise DistributionError(f"unknown component action: {action}")
         return {"component": component_id, "action": action, "result": result.as_dict()}
 
+    def _resolve_target_release(
+        self,
+        lock: Dict[str, Any],
+        target_release_set: Optional[str] = None,
+    ) -> ReleaseSet:
+        if lock["profile"] == "custom":
+            selected = [
+                cid
+                for cid, receipt in lock.get("components", {}).items()
+                if not receipt.get("uninstalled_at")
+            ]
+            return self.catalog.resolve(
+                "custom",
+                target_release_set or lock["release_set_id"],
+                components=selected,
+            )
+        return self.catalog.resolve(lock["profile"], target_release_set)
+
     def update_plan(self, target_release_set: Optional[str] = None) -> Dict[str, Any]:
         lock = self.state.load()
         if not lock:
             raise DistributionError("AI-Verse is not installed through Distribution")
-        target = self.catalog.resolve(lock["profile"], target_release_set)
-        current = self.catalog.get_release(lock["release_set_id"], require_released=True)
-        old = {x.id: x.revision for x in current.components}
+        target = self._resolve_target_release(lock, target_release_set)
+        old = {
+            cid: receipt.get("revision")
+            for cid, receipt in lock.get("components", {}).items()
+            if not receipt.get("uninstalled_at")
+        }
         new = {x.id: x.revision for x in target.components}
         changes = []
         for cid in sorted(set(old) | set(new)):
@@ -484,11 +505,16 @@ class Orchestrator:
 
         lock = self.state.load()
         assert lock is not None
-        current = self.catalog.get_release(lock["release_set_id"], require_released=True)
-        target = self.catalog.get_release(plan["to"], require_released=True)
+        current_catalog = self.catalog.get_release(lock["release_set_id"], require_released=True)
+        target = self._resolve_target_release(lock, plan["to"])
         self.preflight(target)
         root = Path(lock["root"]).resolve()
-        old_os = next((x for x in current.components if x.id == "ai-verse-os"), None)
+        os_receipt = lock.get("components", {}).get("ai-verse-os")
+        old_os = (
+            next((x for x in current_catalog.components if x.id == "ai-verse-os"), None)
+            if os_receipt and not os_receipt.get("uninstalled_at")
+            else None
+        )
         new_os = next((x for x in target.components if x.id == "ai-verse-os"), None)
         os_changed = bool(old_os and new_os and old_os.revision != new_os.revision)
 
