@@ -19,6 +19,7 @@ from .adapters import (
 )
 from .release_catalog import Catalog, ComponentRef, DistributionError, ReleaseSet
 from .process import ProcessError, run, version_line, which
+from .redaction import sanitize_text
 from .state import StateStore, now_iso
 
 
@@ -36,6 +37,15 @@ def _at_least(actual: str, minimum: str) -> bool:
         return False
     width = max(len(a), len(b))
     return a + (0,) * (width - len(a)) >= b + (0,) * (width - len(b))
+
+
+def _safe_result(result: Any) -> Dict[str, Any]:
+    return {
+        "argv": list(getattr(result, "argv", [])),
+        "returncode": int(getattr(result, "returncode", 1)),
+        "stdout": sanitize_text(getattr(result, "stdout", "") or ""),
+        "stderr": sanitize_text(getattr(result, "stderr", "") or ""),
+    }
 
 
 class Orchestrator:
@@ -309,7 +319,7 @@ class Orchestrator:
                 revision=component.revision,
                 state=self.state,
             )
-            results[cid] = [x.as_dict() for x in commands]
+            results[cid] = [_safe_result(x) for x in commands]
             lock["components"][cid]["setup_completed_at"] = now_iso()
             lock["components"][cid]["last_setup_result"] = "success"
             self.state.write(lock, archive_previous=False)
@@ -358,7 +368,7 @@ class Orchestrator:
                     "--write-config",
                     str(target),
                 ])
-                results["system-host"] = [result.as_dict()]
+                results["system-host"] = [_safe_result(result)]
 
             lock = self.state.load() or lock
             lock["state"] = "setup"
@@ -375,7 +385,7 @@ class Orchestrator:
         results: Dict[str, Any] = {}
         os_cli = root / "bin" / "ai-verse-os.mjs"
         if os_cli.is_file():
-            results["os"] = run(["node", str(os_cli), "onboard", "--dir", str(root)], check=False).as_dict()
+            results["os"] = _safe_result(run(["node", str(os_cli), "onboard", "--dir", str(root)], check=False))
         if brain_answers:
             _, _, component, _, _ = self._context("ai-verse-brain")
             from .adapters import _brain_executable  # trusted internal adapter
@@ -387,7 +397,7 @@ class Orchestrator:
                 str(brain_answers.expanduser().resolve()),
                 "--apply",
             ])
-            results["brain"] = result.as_dict()
+            results["brain"] = _safe_result(result)
         else:
             results["brain"] = {
                 "required": "explicit desired_state and success_definition",
@@ -465,8 +475,8 @@ class Orchestrator:
                     "state": self._state_from_result(owner, True),
                     "revision": component.revision,
                     "owner_exit_code": owner.returncode,
-                    "owner_stdout": owner.stdout,
-                    "owner_stderr": owner.stderr,
+                    "owner_stdout": sanitize_text(owner.stdout),
+                    "owner_stderr": sanitize_text(owner.stderr),
                 }
             except Exception as exc:
                 report[cid] = {
@@ -520,7 +530,7 @@ class Orchestrator:
                 owner = owner_doctor(
                     cid, root=root, source=source, revision=component.revision, state=self.state
                 )
-                entry = owner.as_dict()
+                entry = _safe_result(owner)
                 entry["ok"] = owner.returncode == 0
                 results[cid] = entry
                 ok = ok and entry["ok"]
@@ -536,7 +546,7 @@ class Orchestrator:
                 owner = run([
                     "node", str(components_script), "doctor", "--root", str(root), "--json"
                 ], check=False)
-                system = owner.as_dict()
+                system = _safe_result(owner)
                 ok = ok and owner.returncode == 0
 
         return {
@@ -604,7 +614,7 @@ class Orchestrator:
                 return {"component": component_id, "action": action, "changed": False, "note": "already pinned"}
         else:
             raise DistributionError(f"unknown component action: {action}")
-        return {"component": component_id, "action": action, "result": result.as_dict()}
+        return {"component": component_id, "action": action, "result": _safe_result(result)}
 
     def _resolve_target_release(
         self,
