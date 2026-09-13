@@ -34,6 +34,7 @@ class OrchestratorPlanningTests(unittest.TestCase):
                 archive_previous=False,
             )
             app = Orchestrator(state=store)
+            app._verify_exact_source = lambda component, source: None
             plan = app.update_plan()
             self.assertEqual(plan["changes"], [])
             self.assertEqual(plan["profile"], "custom")
