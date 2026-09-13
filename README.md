@@ -77,13 +77,7 @@ No workspace is initialized unless it is explicitly selected.
 
 Setup invokes each component's owner-controlled safe lifecycle.
 
-For the frozen Core set this includes:
-
-- Brain attachment and initialization without strategic handover;
-- Memory native installation/attachment through its frozen owner installer;
-- Skills immutable-provider verification;
-- Data native attachment without initializing every workspace;
-- generic OS host configuration after owner setup succeeds.
+For the current Core public-beta set this uses the standardized owner lifecycles for OS, Brain, Memory and Skills, plus the frozen Data owner lifecycle from its deterministic Distribution staging runtime. Setup does not transfer Brain strategic ownership and Data initializes only explicitly selected workspaces.
 
 Setup is idempotent where the owner lifecycle is idempotent.
 
@@ -95,18 +89,15 @@ aiverse onboard
 
 Distribution hands off to owner onboarding. It never invents Brain goals or silently hands strategic ownership to Brain.
 
-On an interactive terminal, `aiverse onboard` asks for the user-confirmed desired state and success definition. It does not transfer strategic ownership to Brain.
+On an interactive terminal, `aiverse onboard` keeps strategic direction with its current owner. It may capture an optional Brain-owned ongoing practice/standard without transferring strategy.
 
-For non-interactive setup:
+For a non-strategic Brain practice:
 
 ```bash
-aiverse onboard \
-  --desired-state "Ship the selected AI-Verse system" \
-  --success-definition "Doctor and representative use pass" \
-  --boundary "Do not transfer Brain strategic ownership automatically"
+aiverse onboard --practice "Keep verification evidence explicit"
 ```
 
-Expert automation may still pass an existing answers file with `--brain-answers`. Direct flags and an answers file are mutually exclusive.
+Strategic Brain flags such as `--desired-state`, `--success-definition` and `--boundary` are accepted only for systems where Brain already owns strategic direction through a separate explicit handover. Distribution never performs that handover implicitly. Expert automation may still pass an existing answers file with `--brain-answers`; direct flags and an answers file are mutually exclusive.
 
 ## Verify
 
@@ -213,7 +204,8 @@ Machine-readable definitions:
 
 - `profiles/profiles.json`
 - `compatibility/matrix.json`
-- `release-sets/core-first-member-beta.json`
+- `release-sets/core-public-beta-2026-09-13.json`
+- `release-sets/core-first-member-beta.json` (historical first-member set)
 - `release-sets/agent-public-beta-pending.json`
 - `release-sets/full-public-beta-pending.json`
 
@@ -240,7 +232,8 @@ Cross-platform unit CI runs on Linux, macOS, and Windows.
 ```text
 install -> setup -> explicit onboarding -> status -> doctor
 -> disable/enable preservation checks -> owner-safe uninstall/reinstall
--> canonical Memory/Data preservation -> update no-op -> rollback no-op -> open/use handoff
+-> Brain/Memory/Skills/Data preservation -> deterministic Data reinstall
+-> update no-op -> rollback no-op -> open/use handoff
 ```
 
 `.github/workflows/clean-machine-agent.yml` is the Agent release gate. Until the Agent prerequisites have immutable public-beta artifacts, it proves that Agent installation fails closed with the exact blockers and deliberately exits non-zero, so the release gate cannot be mistaken for an Agent acceptance pass. Once an admitted Agent release set exists, the workflow must be extended to the complete Agent clean-machine path before it can turn green.
