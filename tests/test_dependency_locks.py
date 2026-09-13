@@ -54,15 +54,16 @@ class CompanionDependencyLockTests(unittest.TestCase):
 
     def test_missing_required_lock_fails_closed(self):
         component = replace(self.component, dependency_lock=None)
-        app = Orchestrator(catalog=self.catalog)
-        with self.assertRaises(DistributionError):
-            app._load_companion_lock(component)
+        with tempfile.TemporaryDirectory() as td:
+            app = Orchestrator(state=StateStore(Path(td)), catalog=self.catalog)
+            with self.assertRaises(DistributionError):
+                app._load_companion_lock(component)
 
     def test_dependency_tree_verification_is_repeatable(self):
-        app = Orchestrator(catalog=self.catalog)
-        manifest, _ = app._load_companion_lock(self.component)
         with tempfile.TemporaryDirectory() as td:
-            runtime = Path(td)
+            app = Orchestrator(state=StateStore(Path(td) / "state"), catalog=self.catalog)
+            manifest, _ = app._load_companion_lock(self.component)
+            runtime = Path(td) / "runtime"
             for item in manifest["resolved_packages"]:
                 path = runtime / "node_modules" / Path(*item["name"].split("/"))
                 path.mkdir(parents=True, exist_ok=True)
