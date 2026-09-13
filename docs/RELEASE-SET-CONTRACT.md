@@ -88,7 +88,7 @@ Live owner surfaces decide those facts.
 
 Software update and canonical-state migration are different operations.
 
-Distribution may move to a target software set only when the target compatibility contract and owner lifecycle permit it.
+Distribution may move to a target software set only when the target compatibility contract explicitly lists the current set as an allowed update source and owner lifecycle permits it. Rollback is allowed only when the current set explicitly lists the target as a rollback destination.
 
 Rollback is software rollback. Canonical user state remains owner-controlled and is never silently rewound.
 
@@ -117,7 +117,7 @@ Full is complete only when the exact set contains:
 - Dashboard
 - Apps
 
-Custom is a subset of one admitted compatible release set. Custom may not combine arbitrary versions from unrelated sets.
+Custom is a subset of one admitted compatible release set. Distribution closes required component dependencies automatically. Custom may not combine arbitrary versions from unrelated sets.
 
 ## Promotion rule
 
