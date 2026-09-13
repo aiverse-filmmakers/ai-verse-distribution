@@ -260,7 +260,7 @@ def main() -> int:
         "ai-verse-data",
     ):
         run_cli("component", "uninstall", component)
-        absent = run_cli("component", "status", component)
+        absent = run_cli("component", "status", component, expect=1)
         if absent["components"][component]["state"] != "absent":
             raise RuntimeError(f"{component} did not become absent after uninstall: {absent}")
         run_cli("component", "install", component)
