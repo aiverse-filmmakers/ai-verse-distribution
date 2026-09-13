@@ -204,7 +204,10 @@ class Orchestrator:
             same_release = current.get("release_set_id") == release.id
             same_root = Path(current.get("root", "")).resolve() == root
             same_profile = current.get("profile") == profile
-            current_selection = set(current.get("components", {}))
+            current_selection = set(
+                (current.get("selection") or {}).get("resolved")
+                or current.get("components", {})
+            )
             resolved_selection = {component.id for component in release.components}
             same_selection = current_selection == resolved_selection
             if not (same_release and same_root and same_profile and same_selection):
