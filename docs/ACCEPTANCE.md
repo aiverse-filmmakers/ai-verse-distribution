@@ -57,6 +57,10 @@ Acceptance asserts:
 - OS is not uninstalled because the host root may contain user-owned canonical state;
 - the current same-set update is a no-op;
 - the current known-compatible same-set rollback is a no-op;
+- every component checkout matches its exact release SHA;
+- Data's frozen source checkout remains byte-clean while dependency installation occurs only in Distribution staging;
+- Data's source package digest and companion lock digest match the release-scoped manifest;
+- deterministic `npm ci` resolves the exact same admitted dependency tree again after Data uninstall/reinstall;
 - the product can hand the user to the installed root.
 
 A future second Core release set must add a real cross-version update and rollback acceptance before that new set can be promoted.
