@@ -132,7 +132,7 @@ The final Core release-set candidate tested by Distribution pins:
 - Data: `189b13264ab86115d2f21fee3ba8cd5a8dac6581`
 - Data companion package-lock SHA-256: `8c8ca3d9e2977ac53ccfb4ed82bcf24a634a497aaaf02f5ac13eb3d0ec1a073b`
 
-OS and Skills are admitted from their merged owner artifacts with green post-merge hosted evidence. Distribution Core acceptance still requires the Distribution CI matrix and all three clean-machine Core jobs to pass on the exact Distribution head before PR #1 is merged.
+OS and Skills are admitted from their merged owner artifacts with green post-merge hosted evidence. Distribution qualification passed on head `c98df20742df05826c014387d14d47c68f8afa43`: Distribution CI run `34782742088` passed all six jobs, and Core clean-machine run `34782742084` passed Ubuntu job `103792603497`, macOS job `103792603164`, and Windows job `103792603375`. Any later evidence-only branch change must still rerun the complete exact-head matrices before PR #1 is merged.
 
 ## Supplemental implementation evidence
 
