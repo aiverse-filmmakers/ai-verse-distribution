@@ -59,23 +59,46 @@ class CompanionDependencyLockTests(unittest.TestCase):
             with self.assertRaises(DistributionError):
                 app._load_companion_lock(component)
 
+    def _materialize_installed_tree(self, runtime, manifest, lock_bytes):
+        lock_payload = json.loads(lock_bytes.decode("utf-8"))
+        node_modules = runtime / "node_modules"
+        node_modules.mkdir(parents=True, exist_ok=True)
+        (node_modules / ".package-lock.json").write_text(
+            json.dumps(lock_payload, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        for item in manifest["resolved_packages"]:
+            path = node_modules / Path(*item["name"].split("/"))
+            path.mkdir(parents=True, exist_ok=True)
+            (path / "package.json").write_text(
+                json.dumps({"name": item["name"], "version": item["version"]}) + "\n",
+                encoding="utf-8",
+            )
+
     def test_dependency_tree_verification_is_repeatable(self):
         with tempfile.TemporaryDirectory() as td:
             app = Orchestrator(state=StateStore(Path(td) / "state"), catalog=self.catalog)
-            manifest, _ = app._load_companion_lock(self.component)
+            manifest, lock_bytes = app._load_companion_lock(self.component)
             runtime = Path(td) / "runtime"
-            for item in manifest["resolved_packages"]:
-                path = runtime / "node_modules" / Path(*item["name"].split("/"))
-                path.mkdir(parents=True, exist_ok=True)
-                (path / "package.json").write_text(
-                    json.dumps({"name": item["name"], "version": item["version"]}) + "\n",
-                    encoding="utf-8",
-                )
-            app._verify_installed_dependency_tree(runtime, manifest)
-            first = manifest["dependency_tree_sha256"]
-            app._verify_installed_dependency_tree(runtime, manifest)
-            second = manifest["dependency_tree_sha256"]
+            self._materialize_installed_tree(runtime, manifest, lock_bytes)
+            first = app._verify_installed_dependency_tree(runtime, manifest)
+            second = app._verify_installed_dependency_tree(runtime, manifest)
+            self.assertEqual(first, manifest["dependency_tree_sha256"])
             self.assertEqual(first, second)
+
+    def test_extra_or_version_drift_in_installed_tree_is_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            app = Orchestrator(state=StateStore(Path(td) / "state"), catalog=self.catalog)
+            manifest, lock_bytes = app._load_companion_lock(self.component)
+            runtime = Path(td) / "runtime"
+            self._materialize_installed_tree(runtime, manifest, lock_bytes)
+            hidden = runtime / "node_modules" / ".package-lock.json"
+            installed_lock = json.loads(hidden.read_text(encoding="utf-8"))
+            installed_lock["packages"]["node_modules/typescript"]["version"] = "0.0.0"
+            installed_lock["packages"]["node_modules/unexpected"] = {"version": "1.0.0"}
+            hidden.write_text(json.dumps(installed_lock, indent=2) + "\n", encoding="utf-8")
+            with self.assertRaises(DistributionError):
+                app._verify_installed_dependency_tree(runtime, manifest)
 
     def test_public_and_packaged_lock_artifacts_match(self):
         root = Path(__file__).resolve().parents[1]
