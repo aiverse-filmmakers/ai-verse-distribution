@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "agent-public-beta-pending",
+  "profile": "agent",
+  "status": "blocked",
+  "components": [],
+  "blockers": [
+    "canonical immutable AI-Verse-Gateway release unavailable",
+    "canonical immutable AI-Verse-Automations release unavailable",
+    "AI-Verse-Multiple-Bots public-beta lifecycle gate not complete",
+    "AI-Verse-Token has no canonical public-beta release artifact"
+  ],
+  "rule": "No moving branch, guessed version, or partial profile may be substituted for an immutable compatible Agent release set."
+}
