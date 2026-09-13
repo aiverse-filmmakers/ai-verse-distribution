@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "channels": {
+    "beta": "core-first-member-beta-2026-09-13"
+  },
+  "release_sets": [
+    {
+      "id": "core-first-member-beta-2026-09-13",
+      "profile": "core",
+      "status": "released",
+      "created_at": "2026-09-13",
+      "components": [
+        {
+          "id": "ai-verse-os",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+          "revision": "89fb9043ec58c05931d477ef3e154df428a06c22",
+          "install_order": 10
+        },
+        {
+          "id": "ai-verse-brain",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+          "revision": "bef8261ad35d126d29aeff5d496f46904125b7b6",
+          "install_order": 20
+        },
+        {
+          "id": "ai-verse-memory",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+          "revision": "f5b417f9e7ce1b3f05bc80d10a483d10f6ad10ee",
+          "install_order": 30
+        },
+        {
+          "id": "ai-verse-skills",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+          "revision": "3ab838e6e64561bbb7cea8f85d0ebc75b9e84337",
+          "install_order": 40
+        },
+        {
+          "id": "ai-verse-data",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+          "revision": "189b13264ab86115d2f21fee3ba8cd5a8dac6581",
+          "install_order": 50
+        }
+      ],
+      "evidence": {
+        "canonical_source": "aiverse-filmmakers/AI-Verse-OS/docs/FIVE-COMPONENT-RELEASE-STATUS.md",
+        "install_guide": "aiverse-filmmakers/AI-Verse-OS/docs/FIVE-COMPONENT-BETA-INSTALL.md"
+      },
+      "authority": {
+        "grants_permissions": false,
+        "transfers_brain_strategy": false,
+        "initializes_all_workspaces": false
+      }
+    },
+    {
+      "id": "agent-public-beta-pending",
+      "profile": "agent",
+      "status": "blocked",
+      "created_at": "2026-09-13",
+      "components": [],
+      "blockers": [
+        "AI-Verse-Gateway canonical repository/release is not available",
+        "AI-Verse-Automations canonical repository/release is not available",
+        "AI-Verse-Multiple-Bots has not completed its public-beta lifecycle gate",
+        "AI-Verse-Token has no canonical public-beta release artifact"
+      ],
+      "authority": {
+        "grants_permissions": false,
+        "transfers_brain_strategy": false,
+        "initializes_all_workspaces": false,
+        "exposes_gateway_remotely": false
+      }
+    }
+  ]
+}
