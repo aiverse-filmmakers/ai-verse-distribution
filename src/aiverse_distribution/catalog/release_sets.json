@@ -58,10 +58,10 @@
       "created_at": "2026-09-13",
       "components": [],
       "blockers": [
-        "AI-Verse-Gateway canonical repository/release is not available",
-        "AI-Verse-Automations canonical repository/release is not available",
+        "Gateway 0.1.0-beta.1 has local implementation and acceptance evidence, but the canonical aiverse-filmmakers/AI-Verse-Gateway remote/tag/hosted-CI release evidence is not available",
+        "canonical aiverse-filmmakers/AI-Verse-Automations repository/release evidence is not available",
         "AI-Verse-Multiple-Bots has not completed its public-beta lifecycle gate",
-        "aiverse-filmmakers/ai-verse-token exists, but its restoration/bootstrap is incomplete and no public-beta release artifact is admitted"
+        "Token 0.1.0-beta.1 has local 255/255 normal plus 3/3 release acceptance evidence, but the canonical aiverse-filmmakers/AI-Verse-Token remote release and hosted cross-platform CI evidence are not available"
       ],
       "authority": {
         "grants_permissions": false,
