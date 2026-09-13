@@ -60,7 +60,7 @@ Acceptance asserts:
 - every component checkout matches its exact release SHA;
 - Data's frozen source checkout remains byte-clean while dependency installation occurs only in Distribution staging;
 - Data's source package digest and companion lock digest match the release-scoped manifest;
-- deterministic `npm ci` resolves the exact same admitted dependency tree again after Data uninstall/reinstall;
+- deterministic `npm ci` produces an installed hidden npm lock whose canonical package-path/version digest exactly matches the admitted tree, with the same digest again after Data uninstall/reinstall;
 - the product can hand the user to the installed root.
 
 The historical first-member set and current public-beta set intentionally declare no cross-version transition between them. The first-member set remains frozen reproducibility evidence. Any future Core set that declares an update-from or rollback-to edge to another set must execute and pass that exact transition before the edge is admitted.
