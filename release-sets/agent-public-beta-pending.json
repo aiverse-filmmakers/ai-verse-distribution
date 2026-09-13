@@ -8,7 +8,7 @@
   "blockers": [
     "Gateway 0.1.0-beta.1 has local implementation and acceptance evidence, but the canonical aiverse-filmmakers/AI-Verse-Gateway remote/tag/hosted-CI release evidence is not available",
     "canonical aiverse-filmmakers/AI-Verse-Automations repository/release evidence is not available",
-    "AI-Verse-Multiple-Bots has not completed its public-beta lifecycle gate",
+    "AI-Verse-Multiple-Bots Phase 5 productization is still in progress; production doctor, standardized update lifecycle, and full release acceptance are not complete",
     "Token 0.1.0-beta.1 has local 255/255 normal plus 3/3 release acceptance evidence, but the canonical aiverse-filmmakers/AI-Verse-Token remote release and hosted cross-platform CI evidence are not available"
   ],
   "authority": {
