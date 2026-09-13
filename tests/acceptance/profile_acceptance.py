@@ -129,7 +129,7 @@ def prove_memory(root: Path) -> None:
         raise RuntimeError("Memory representative recall did not return the acceptance marker")
 
 
-def prove_skills(install: dict) -> None:
+def prove_skills(install: dict) -> str:
     source = Path(install["components"]["ai-verse-skills"]["source"])
     result = run_process([
         sys.executable,
@@ -142,8 +142,20 @@ def prove_skills(install: dict) -> None:
     payload = json.loads(result.stdout)
     if payload.get("package_id") != "weekly-review-planning":
         raise RuntimeError(f"Skills pin did not resolve the requested immutable package: {payload}")
-    if not payload.get("generation_id"):
+    generation_id = payload.get("generation_id")
+    if not generation_id:
         raise RuntimeError("Skills pin did not return an immutable generation id")
+    return str(generation_id)
+
+
+def brain_onboarding_payload(onboard_result: dict) -> dict:
+    brain = onboard_result.get("brain")
+    if not isinstance(brain, dict):
+        raise RuntimeError(f"Brain onboarding result is missing: {onboard_result}")
+    stdout = str(brain.get("stdout") or "").strip()
+    if not stdout:
+        raise RuntimeError(f"Brain onboarding emitted no structured result: {brain}")
+    return json.loads(stdout)
 
 
 def call_data(root: Path, request: dict) -> dict:
@@ -255,15 +267,18 @@ def main() -> int:
     write_acceptance_workspace(root)
     setup = run_cli("setup", "--workspace", "alpha")
 
+    brain_practice = "distribution-core-brain-practice-marker"
     onboard = run_cli(
         "onboard",
-        "--desired-state",
-        "A reproducible clean-machine AI-Verse Core acceptance environment.",
-        "--success-definition",
-        "All Core owner doctors and composed representative-use checks pass.",
-        "--boundary",
-        "Do not transfer Brain strategic ownership automatically.",
+        "--practice",
+        brain_practice,
     )
+    onboard_payload = brain_onboarding_payload(onboard)
+    created_brain_refs = set(onboard_payload.get("created_refs", []))
+    if not created_brain_refs:
+        raise RuntimeError(
+            f"Brain practice onboarding did not create durable Brain-owned state: {onboard_payload}"
+        )
     prove_brain_no_silent_handover(install, root)
 
     status = run_cli("status")
@@ -278,7 +293,7 @@ def main() -> int:
         raise RuntimeError(f"Core doctor failed: {json.dumps(doctor, indent=2)}")
 
     prove_memory(root)
-    prove_skills(install)
+    initial_skills_generation = prove_skills(install)
     prove_data(root)
 
     run_cli("component", "disable", "ai-verse-data")
@@ -319,6 +334,23 @@ def main() -> int:
         run_cli("component", "setup", component)
 
     prove_brain_no_silent_handover(install, root)
+    onboard_after_reinstall = run_cli(
+        "onboard",
+        "--practice",
+        brain_practice,
+    )
+    onboard_after_payload = brain_onboarding_payload(onboard_after_reinstall)
+    existing_brain_refs = set(onboard_after_payload.get("existing_refs", []))
+    if not created_brain_refs.issubset(existing_brain_refs):
+        raise RuntimeError(
+            "Brain-owned practice state was not preserved across uninstall/reinstall: "
+            f"created={sorted(created_brain_refs)} existing={sorted(existing_brain_refs)}"
+        )
+    if onboard_after_payload.get("created_refs"):
+        raise RuntimeError(
+            f"Brain practice was recreated instead of preserved: {onboard_after_payload}"
+        )
+
     memory_recalled = run_process([
         sys.executable,
         str(root / "scripts" / "ai-verse-memory" / "memory.py"),
@@ -332,7 +364,23 @@ def main() -> int:
     if "distribution-core-memory-marker" not in memory_recalled.stdout:
         raise RuntimeError("Memory canonical state was not preserved across uninstall/reinstall")
 
-    prove_skills(install)
+    reinstalled_skills_generation = prove_skills(install)
+    skills_source = Path(install["components"]["ai-verse-skills"]["source"])
+    skills_status_result = run_process([
+        sys.executable,
+        str(skills_source / "installer" / "aiverse_skills.py"),
+        "status",
+        "--json",
+    ])
+    skills_status = json.loads(skills_status_result.stdout)
+    recoverable = set(str(x) for x in skills_status.get("recoverable_generations", []))
+    active_generation = str(skills_status.get("generation_id") or "")
+    if initial_skills_generation != active_generation and initial_skills_generation not in recoverable:
+        raise RuntimeError(
+            "Skills immutable state was not preserved across uninstall/reinstall: "
+            f"initial={initial_skills_generation} active={active_generation} "
+            f"recoverable={sorted(recoverable)}"
+        )
 
     data_reinstalled = call_data(root, {
         "protocol": "ai-verse-os-data-host/1.0",
@@ -408,6 +456,12 @@ def main() -> int:
         },
         "disable_enable": ["ai-verse-data", "ai-verse-memory"],
         "state_preserved": True,
+        "state_preservation_evidence": {
+            "brain_practice": True,
+            "memory_recall": True,
+            "skills_prior_generation_active_or_recoverable": True,
+            "data_record": True
+        },
         "uninstall_reinstall": [
             "ai-verse-brain",
             "ai-verse-memory",
