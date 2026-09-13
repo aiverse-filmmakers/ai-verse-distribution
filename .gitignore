@@ -1,36 +1,8 @@
-# Credentials and secrets
-.env
-.env.*
-!.env.EXAMPLE
-auth.json
-credentials/
-private_keys/
-
-# Runtime state
-state.db*
-hermes_state.db*
-response_store.db*
-gateway_state.json
-processes.json
-auth.lock
-active_profile
-
-# User data
-memories/
-sessions/
-logs/
-workspace/
-home/
-plans/
-local/
-
-# Caches and temporary material
-cache/
-image_cache/
-audio_cache/
-document_cache/
-browser_screenshots/
-checkpoints/
-sandboxes/
-backups/
-.tmp/
+# Local Distribution state
+.aiverse-distribution/
+dist/
+build/
+node_modules/
+.venv/
+__pycache__/
+.DS_Store

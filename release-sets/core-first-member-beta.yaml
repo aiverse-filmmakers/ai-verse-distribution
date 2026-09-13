@@ -1,0 +1,27 @@
+schema_version: "0.1"
+release_set_id: core-first-member-beta-2026-09-13
+status: frozen
+purpose: controlled-first-member-beta
+components:
+  - id: ai-verse-os
+    repository: aiverse-filmmakers/AI-Verse-OS
+    revision: 89fb9043ec58c05931d477ef3e154df428a06c22
+  - id: ai-verse-brain
+    repository: aiverse-filmmakers/AI-Verse-Brain
+    revision: bef8261ad35d126d29aeff5d496f46904125b7b6
+  - id: ai-verse-memory
+    repository: aiverse-filmmakers/AI-Verse-Memory
+    revision: f5b417f9e7ce1b3f05bc80d10a483d10f6ad10ee
+  - id: ai-verse-skills
+    repository: aiverse-filmmakers/AI-Verse-Skills
+    revision: 3ab838e6e64561bbb7cea8f85d0ebc75b9e84337
+  - id: ai-verse-data
+    repository: aiverse-filmmakers/AI-Verse-Data
+    revision: 189b13264ab86115d2f21fee3ba8cd5a8dac6581
+evidence:
+  canonical_source: aiverse-filmmakers/AI-Verse-OS/docs/FIVE-COMPONENT-RELEASE-STATUS.md
+  install_guide: aiverse-filmmakers/AI-Verse-OS/docs/FIVE-COMPONENT-BETA-INSTALL.md
+notes:
+  - This release set is an evidence record for the future Distribution installer.
+  - It does not grant licenses or permissions.
+  - Moving main branches are not substituted for these immutable revisions.
