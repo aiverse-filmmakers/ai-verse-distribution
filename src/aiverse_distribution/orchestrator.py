@@ -165,6 +165,7 @@ class Orchestrator:
         release = self.catalog.resolve(profile, release_set_id, components)
         preflight = self.preflight(release)
         root = root.expanduser().resolve()
+        root.mkdir(parents=True, exist_ok=True)
         current = self.state.load()
         if current:
             same = current.get("release_set_id") == release.id and Path(current.get("root", "")).resolve() == root
@@ -374,7 +375,9 @@ class Orchestrator:
                 }
 
         states = [x["state"] for x in report.values()]
-        if any(x in {"unhealthy", "migration-required"} for x in states):
+        if any(x == "migration-required" for x in states):
+            overall = "migration-required"
+        elif any(x in {"unhealthy", "absent"} for x in states):
             overall = "unhealthy"
         elif any(x == "setup-required" for x in states):
             overall = "setup-required"
