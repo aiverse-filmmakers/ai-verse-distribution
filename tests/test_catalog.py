@@ -9,7 +9,7 @@ class CatalogTests(unittest.TestCase):
 
     def test_core_is_exact_and_released(self):
         release = self.catalog.resolve("core")
-        self.assertEqual(release.id, "core-first-member-beta-2026-09-13")
+        self.assertEqual(release.id, "core-public-beta-2026-09-13")
         self.assertEqual(
             [x.id for x in release.components],
             ["ai-verse-os", "ai-verse-brain", "ai-verse-memory", "ai-verse-skills", "ai-verse-data"],
