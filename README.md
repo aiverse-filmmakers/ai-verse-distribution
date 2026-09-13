@@ -55,6 +55,8 @@ The current released Core set is:
 
 The Agent profile is deliberately blocked until all required owner repositories have immutable public-beta artifacts. Distribution fails closed instead of constructing a partial or guessed Agent release.
 
+The Full profile is also explicitly blocked until Agent has an admitted immutable release set and Connections, Dashboard, and Apps have one compatible Full release set.
+
 ## Setup
 
 After package installation:
@@ -167,7 +169,7 @@ Apply:
 aiverse rollback --to <known-compatible-release-set> --apply
 ```
 
-Rollback changes software versions. It does not pretend to roll back canonical user state. Owner migration and compatibility rules remain authoritative.
+Rollback changes software versions. It does not pretend to roll back canonical user state. Cross-version update and rollback are accepted only when the compatibility matrix explicitly admits that exact transition. Owner migration and compatibility rules remain authoritative.
 
 Component uninstall preserves canonical user-owned state where the component contract promises preservation. Distribution will not delete the AI-Verse OS host root because that root may contain user-owned canonical state.
 
@@ -178,7 +180,7 @@ aiverse support-bundle
 aiverse support-bundle --output ./aiverse-support.zip
 ```
 
-The bundle contains structured Distribution lock, platform, and doctor evidence. It does not collect environment variables or credentials and redacts credential-like fields.
+The bundle contains structured Distribution lock, platform, and doctor evidence. It does not collect environment variables. Sensitive field names and credential-shaped text in diagnostic output are redacted.
 
 ## Profiles
 
@@ -196,7 +198,7 @@ Agent + Connections + Dashboard + Apps when released.
 
 **Custom**
 
-Explicit components selected from one compatible admitted release set.
+Explicit components selected from one compatible admitted release set. Required dependencies are resolved automatically. For example, selecting Data also selects OS because Data's public-beta lifecycle requires the OS host.
 
 Profiles select software. They do not grant permissions, authorize tools, expose network services, initialize every workspace, or transfer Brain strategic authority.
 
@@ -206,6 +208,7 @@ Machine-readable definitions:
 - `compatibility/matrix.json`
 - `release-sets/core-first-member-beta.json`
 - `release-sets/agent-public-beta-pending.json`
+- `release-sets/full-public-beta-pending.json`
 
 The CLI ships a validated copy of the release catalog under `src/aiverse_distribution/catalog/`.
 
@@ -230,7 +233,7 @@ Cross-platform unit CI runs on Linux, macOS, and Windows.
 ```text
 install -> setup -> explicit onboarding -> status -> doctor
 -> disable/enable preservation checks -> owner-safe uninstall/reinstall
--> canonical Memory/Data preservation -> update no-op -> open/use handoff
+-> canonical Memory/Data preservation -> update no-op -> rollback no-op -> open/use handoff
 ```
 
 `.github/workflows/clean-machine-agent.yml` is the Agent release gate. Until the Agent prerequisites have immutable public-beta artifacts, it proves that Agent installation fails closed with the exact blockers and deliberately exits non-zero, so the release gate cannot be mistaken for an Agent acceptance pass. Once an admitted Agent release set exists, the workflow must be extended to the complete Agent clean-machine path before it can turn green.
