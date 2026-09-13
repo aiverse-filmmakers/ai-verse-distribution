@@ -66,6 +66,17 @@ class Catalog:
             raise CatalogValidationError("unsupported compatibility schema")
         if self.release_data.get("schema_version") != 1:
             raise CatalogValidationError("unsupported release-set schema")
+        dependencies = self.profiles.get("dependencies", {})
+        if not isinstance(dependencies, dict):
+            raise CatalogValidationError("profile dependencies must be an object")
+        for component_id, required in dependencies.items():
+            if not isinstance(component_id, str) or not component_id:
+                raise CatalogValidationError("dependency component ids must be non-empty strings")
+            if (
+                not isinstance(required, list)
+                or any(not isinstance(item, str) or not item for item in required)
+            ):
+                raise CatalogValidationError(f"{component_id}: dependencies must be string lists")
         ids: set[str] = set()
         for raw in self.release_data.get("release_sets", []):
             rid = raw.get("id")
@@ -160,7 +171,7 @@ class Catalog:
                 )
 
         if profile == "custom":
-            requested = list(components or [])
+            requested = list(dict.fromkeys(components or []))
             if not requested:
                 raise DistributionError("custom profile requires at least one --component")
             available = {c.id for c in release.components}
@@ -170,14 +181,34 @@ class Catalog:
                     "custom components are not present in the selected compatible release set: "
                     + ", ".join(missing)
                 )
-            selected = tuple(c for c in release.components if c.id in set(requested))
+
+            resolved = set(requested)
+            dependencies = self.profiles.get("dependencies", {})
+            changed = True
+            while changed:
+                changed = False
+                for component_id in tuple(resolved):
+                    for dependency in dependencies.get(component_id, []):
+                        if dependency not in available:
+                            raise CatalogValidationError(
+                                f"{component_id}: required dependency {dependency} is absent from release set {release.id}"
+                            )
+                        if dependency not in resolved:
+                            resolved.add(dependency)
+                            changed = True
+
+            selected = tuple(c for c in release.components if c.id in resolved)
             return ReleaseSet(
                 id=release.id,
                 profile="custom",
                 status=release.status,
                 components=selected,
                 blockers=release.blockers,
-                raw=release.raw,
+                raw={
+                    **release.raw,
+                    "custom_requested": requested,
+                    "custom_resolved": [c.id for c in selected],
+                },
             )
 
         required = set(definitions[profile].get("required", []))
