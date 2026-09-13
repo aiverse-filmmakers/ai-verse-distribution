@@ -19,9 +19,10 @@ class StateStore:
         self.home.mkdir(parents=True, exist_ok=True)
         self.sources = self.home / "sources"
         self.venvs = self.home / "venvs"
+        self.runtimes = self.home / "runtimes"
         self.locks = self.home / "locks"
         self.history = self.home / "history"
-        for path in (self.sources, self.venvs, self.locks, self.history):
+        for path in (self.sources, self.venvs, self.runtimes, self.locks, self.history):
             path.mkdir(parents=True, exist_ok=True)
 
     @property
@@ -56,6 +57,9 @@ class StateStore:
 
     def venv_dir(self, revision: str) -> Path:
         return self.venvs / "ai-verse-brain" / revision
+
+    def runtime_dir(self, release_set_id: str, component_id: str) -> Path:
+        return self.runtimes / release_set_id / component_id
 
     def _atomic_json(self, path: Path, payload: Dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
