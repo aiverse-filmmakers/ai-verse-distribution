@@ -79,7 +79,7 @@ Today the workflow proves a required safety property and deliberately remains fa
 aiverse install --profile agent
 -> RELEASE_BLOCKED
 -> accepted Gateway / Automations / Token candidates remain uninstalled
--> Multiple Bots + complete Agent composition acceptance remain outstanding
+-> Multiple Bots is complete through Phase 5.9, but remaining Phase 5 release slices + complete Agent composition acceptance remain outstanding
 -> no partial Agent installation
 ```
 
@@ -121,20 +121,22 @@ Unit coverage includes:
 - Distribution lock behavior;
 - shell-free argv execution.
 
-## Isolated implementation evidence
+## Current immutable Core set
 
-While hosted GitHub runner allocation is unavailable, the exact PR branch has also been reconstructed from authenticated GitHub file contents in an isolated Linux container and executed there.
+The final Core release-set candidate tested by Distribution pins:
 
-Current isolated evidence for the branch implementation:
+- OS: `9600929b946746c25c64e48471fcc83031fddda9`
+- Brain: `80019be5e6df29aee70371544bd96cedbf0329b9`
+- Memory: `031e1e77c97ed3c9012235c7ffe0a4ece05e3695`
+- Skills: `042fda1ea2ddd8b79b74f1db9d3f65212953b64a`
+- Data: `189b13264ab86115d2f21fee3ba8cd5a8dac6581`
+- Data companion package-lock SHA-256: `8c8ca3d9e2977ac53ccfb4ed82bcf24a634a497aaaf02f5ac13eb3d0ec1a073b`
 
-- all 43 Distribution Python unit tests pass;
-- package installation succeeds from the reconstructed PR tree;
-- a built wheel contains both Data companion-lock artifacts and all runtime catalog JSON files, and an isolated wheel install successfully loads and verifies the companion lock;
-- `aiverse --version` reports `0.1.0b1`;
-- the CLI catalog resolves `core-public-beta-2026-09-13` as released and Agent as blocked;
-- the committed Data companion manifest and package lock SHA-256 values independently recompute to the exact digests declared by the release set.
+OS and Skills are admitted from their merged owner artifacts with green post-merge hosted evidence. Distribution Core acceptance still requires the Distribution CI matrix and all three clean-machine Core jobs to pass on the exact Distribution head before PR #1 is merged.
 
-This evidence catches implementation defects and validates the companion-lock binding, but it is **not** a substitute for the required hosted Ubuntu/macOS/Windows clean-machine acceptance.
+## Supplemental implementation evidence
+
+Earlier isolated Linux reconstruction and package checks validated the companion-lock binding and implementation mechanics. Those checks are supplemental only; hosted Ubuntu/macOS/Windows clean-machine acceptance is the release authority.
 
 ## Evidence rule
 
