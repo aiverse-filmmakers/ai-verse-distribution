@@ -202,7 +202,9 @@ def main() -> int:
         if blocked.get("error") != "RELEASE_BLOCKED":
             raise RuntimeError(f"Agent did not fail closed: {blocked}")
         print(json.dumps({"profile": "agent", "released": False, "gate": blocked}, indent=2))
-        return 0
+        # A blocked profile is not an acceptance pass. Keep this release gate red
+        # until an immutable Agent release set exists and the full flow is implemented.
+        return 3
 
     install = run_cli("install", "--profile", "core", "--root", str(root))
     if install.get("state") != "installed":
