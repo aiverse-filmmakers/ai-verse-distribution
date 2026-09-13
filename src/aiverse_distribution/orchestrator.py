@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 import shutil
 import sys
+from importlib import resources
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -78,6 +80,17 @@ class Orchestrator:
         npm_line = version_line("npm")
         if "ai-verse-data" in component_ids and not npm_line:
             raise DistributionError("npm is required when AI-Verse Data is selected")
+
+        for component in release.components:
+            if component.id == "ai-verse-data":
+                manifest, _ = self._load_companion_lock(component)
+                npm_major = _version_tuple(npm_line or "")
+                required_major = int(manifest["package_manager_major"])
+                if not npm_major or npm_major[0] != required_major:
+                    raise DistributionError(
+                        f"{component.id} companion lock requires npm {required_major}.x; "
+                        f"found {npm_line or 'missing'}"
+                    )
 
         return {
             "platform": platform,
@@ -155,24 +168,218 @@ class Orchestrator:
         # immutable provider generation but does not grant host permission.
         run([sys.executable, str(source / "installer" / "aiverse_skills.py"), "install"], cwd=source)
 
-    def _prepare_data(self, source: Path) -> None:
+    @staticmethod
+    def _sha256_bytes(data: bytes) -> str:
+        return hashlib.sha256(data).hexdigest()
+
+    @classmethod
+    def _sha256_file(cls, path: Path) -> str:
+        return cls._sha256_bytes(path.read_bytes())
+
+    def _load_companion_lock(
+        self,
+        component: ComponentRef,
+        source: Optional[Path] = None,
+    ) -> tuple[Dict[str, Any], bytes]:
+        reference = component.dependency_lock
+        if component.id == "ai-verse-data" and not reference:
+            raise DistributionError(
+                f"{component.id}@{component.revision} requires a Distribution companion dependency lock"
+            )
+        if not reference:
+            raise DistributionError(f"{component.id} has no companion dependency lock")
+
+        manifest_rel = str(reference["manifest"])
+        parts = manifest_rel.split("/")
+        resource_root = resources.files("aiverse_distribution").joinpath("dependency_locks")
+        manifest_resource = resource_root.joinpath(*parts)
+        try:
+            manifest_bytes = manifest_resource.read_bytes()
+        except (FileNotFoundError, OSError) as exc:
+            raise DistributionError(
+                f"required companion lock manifest is missing: {manifest_rel}"
+            ) from exc
+
+        actual_manifest_sha = self._sha256_bytes(manifest_bytes)
+        if actual_manifest_sha != reference["manifest_sha256"]:
+            raise DistributionError(
+                f"{component.id} companion lock manifest digest mismatch: "
+                f"expected {reference['manifest_sha256']}, got {actual_manifest_sha}"
+            )
+        try:
+            manifest = json.loads(manifest_bytes.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise DistributionError(f"{component.id} companion lock manifest is invalid") from exc
+
+        required = {
+            "schema_version": 1,
+            "scheme": "distribution-companion-npm-lock-v1",
+            "component_id": component.id,
+            "source_revision": component.revision,
+            "package_manager": "npm",
+        }
+        for key, expected in required.items():
+            if manifest.get(key) != expected:
+                raise DistributionError(
+                    f"{component.id} companion lock {key} mismatch: "
+                    f"expected {expected!r}, got {manifest.get(key)!r}"
+                )
+
+        lockfile = manifest.get("lockfile")
+        if not isinstance(lockfile, str) or not lockfile or "/" in lockfile or "\\" in lockfile:
+            raise DistributionError(f"{component.id} companion lockfile name is invalid")
+        lock_resource = resource_root.joinpath(*(parts[:-1] + [lockfile]))
+        try:
+            lock_bytes = lock_resource.read_bytes()
+        except (FileNotFoundError, OSError) as exc:
+            raise DistributionError(
+                f"required companion lockfile is missing for {component.id}"
+            ) from exc
+        actual_lock_sha = self._sha256_bytes(lock_bytes)
+        if actual_lock_sha != manifest.get("lockfile_sha256"):
+            raise DistributionError(
+                f"{component.id} companion lock digest mismatch: "
+                f"expected {manifest.get('lockfile_sha256')}, got {actual_lock_sha}"
+            )
+        try:
+            lock_payload = json.loads(lock_bytes.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise DistributionError(f"{component.id} companion package lock is invalid") from exc
+        if lock_payload.get("lockfileVersion") != manifest.get("lockfile_version"):
+            raise DistributionError(f"{component.id} companion lockfile version mismatch")
+
+        if source is not None:
+            source_manifest = source / str(manifest.get("source_manifest", "package.json"))
+            if not source_manifest.is_file():
+                raise DistributionError(f"{component.id} source package manifest is missing")
+            actual_source_sha = self._sha256_file(source_manifest)
+            if actual_source_sha != manifest.get("source_manifest_sha256"):
+                raise DistributionError(
+                    f"{component.id} source package manifest drifted from companion lock: "
+                    f"expected {manifest.get('source_manifest_sha256')}, got {actual_source_sha}"
+                )
+            source_payload = json.loads(source_manifest.read_text(encoding="utf-8"))
+            root_lock = lock_payload.get("packages", {}).get("", {})
+            for key in ("name", "version", "dependencies", "devDependencies", "engines"):
+                if root_lock.get(key) != source_payload.get(key):
+                    raise DistributionError(
+                        f"{component.id} companion lock root {key} does not match source package.json"
+                    )
+        return manifest, lock_bytes
+
+    def _copy_tracked_source(self, source: Path, target: Path) -> None:
+        if target.exists():
+            shutil.rmtree(target)
+        target.mkdir(parents=True, exist_ok=True)
+        listed = run(["git", "-C", str(source), "ls-files", "-z"])
+        for raw in listed.stdout.split("\0"):
+            if not raw:
+                continue
+            relative = Path(raw)
+            if relative.is_absolute() or ".." in relative.parts:
+                raise DistributionError(f"unsafe tracked source path: {raw}")
+            src = source / relative
+            dst = target / relative
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst, follow_symlinks=False)
+
+    def _verify_installed_dependency_tree(self, runtime: Path, manifest: Dict[str, Any]) -> None:
+        expected = manifest.get("resolved_packages")
+        if not isinstance(expected, list) or not expected:
+            raise DistributionError("companion dependency lock has no resolved package tree")
+        for item in expected:
+            if not isinstance(item, dict):
+                raise DistributionError("companion dependency tree entry is invalid")
+            name = item.get("name")
+            version = item.get("version")
+            if not isinstance(name, str) or not isinstance(version, str):
+                raise DistributionError("companion dependency tree identity is invalid")
+            package_json = runtime / "node_modules" / Path(*name.split("/")) / "package.json"
+            if not package_json.is_file():
+                raise DistributionError(f"deterministic Data dependency is missing: {name}@{version}")
+            installed = json.loads(package_json.read_text(encoding="utf-8"))
+            if installed.get("version") != version:
+                raise DistributionError(
+                    f"deterministic Data dependency drifted: {name} "
+                    f"expected {version}, got {installed.get('version')}"
+                )
+
+    def _prepare_data(
+        self,
+        source: Path,
+        component: ComponentRef,
+        release: ReleaseSet,
+    ) -> Dict[str, Any]:
+        self._verify_exact_source(component, source)
+        manifest, lock_bytes = self._load_companion_lock(component, source)
         npm = which("npm")
         if not npm:
             raise DistributionError("npm is required to install AI-Verse Data")
-        lock = source / "package-lock.json"
-        command = [npm, "ci", "--ignore-scripts"] if lock.is_file() else [npm, "install", "--ignore-scripts"]
-        run(command, cwd=source)
-        run([npm, "run", "build"], cwd=source)
+        npm_version = version_line("npm")
+        npm_tuple = _version_tuple(npm_version or "")
+        if not npm_tuple or npm_tuple[0] != int(manifest["package_manager_major"]):
+            raise DistributionError(
+                f"AI-Verse Data companion lock requires npm {manifest['package_manager_major']}.x; "
+                f"found {npm_version or 'missing'}"
+            )
+
+        runtime = self.state.runtime_dir(release.id, component.id)
+        self._copy_tracked_source(source, runtime)
+        runtime_lock = runtime / str(manifest["lockfile"])
+        runtime_lock.write_bytes(lock_bytes)
+        if self._sha256_file(runtime_lock) != manifest["lockfile_sha256"]:
+            raise DistributionError("Data companion lock changed while staging")
+
+        run([npm, "ci", "--no-audit", "--no-fund"], cwd=runtime)
+        run([npm, "run", "build"], cwd=runtime)
+
+        if self._sha256_file(runtime_lock) != manifest["lockfile_sha256"]:
+            raise DistributionError("npm modified the immutable Data companion lock")
+        self._verify_installed_dependency_tree(runtime, manifest)
+        if not (runtime / "dist" / "src" / "cli.js").is_file():
+            raise DistributionError("deterministic Data build did not produce dist/src/cli.js")
+        self._verify_exact_source(component, source)
+
+        return {
+            "runtime_source": str(runtime),
+            "dependency_lock_manifest_sha256": component.dependency_lock["manifest_sha256"],
+            "dependency_lock_sha256": manifest["lockfile_sha256"],
+            "source_package_sha256": manifest["source_manifest_sha256"],
+            "dependency_tree_sha256": manifest["dependency_tree_sha256"],
+            "package_manager": f"npm {manifest['package_manager_major']}.x",
+        }
+
+    def _verify_data_runtime(
+        self,
+        component: ComponentRef,
+        source: Path,
+        runtime: Path,
+        receipt: Dict[str, Any],
+    ) -> None:
+        manifest, lock_bytes = self._load_companion_lock(component, source)
+        if not runtime.is_dir():
+            raise DistributionError("AI-Verse Data deterministic runtime staging is missing")
+        if self._sha256_file(runtime / "package.json") != manifest["source_manifest_sha256"]:
+            raise DistributionError("AI-Verse Data staged package.json drifted")
+        runtime_lock = runtime / manifest["lockfile"]
+        if not runtime_lock.is_file() or self._sha256_file(runtime_lock) != manifest["lockfile_sha256"]:
+            raise DistributionError("AI-Verse Data staged companion lock drifted")
+        if receipt.get("dependency_tree_sha256") != manifest["dependency_tree_sha256"]:
+            raise DistributionError("AI-Verse Data dependency-tree receipt drifted")
+        self._verify_installed_dependency_tree(runtime, manifest)
+        if not (runtime / "dist" / "src" / "cli.js").is_file():
+            raise DistributionError("AI-Verse Data deterministic runtime build is missing")
 
     def _stage_component(self, component: ComponentRef, root: Path, release: ReleaseSet) -> Dict[str, Any]:
         """Prepare exact software bytes without changing live component attachment/authority."""
         source = root if component.id == "ai-verse-os" else self.state.source_dir(release.id, component.id)
         source = self._clone_exact(component, source)
 
+        extra: Dict[str, Any] = {}
         if component.id == "ai-verse-brain":
             self._prepare_brain(source, component.revision)
         elif component.id == "ai-verse-data":
-            self._prepare_data(source)
+            extra = self._prepare_data(source, component, release)
         elif component.id in {"ai-verse-os", "ai-verse-memory", "ai-verse-skills"}:
             pass
         else:
@@ -187,6 +394,7 @@ class Orchestrator:
             "installed_at": now_iso(),
             "setup_completed_at": None,
             "uninstalled_at": None,
+            **extra,
         }
 
     def _install_component(self, component: ComponentRef, root: Path, release: ReleaseSet) -> Dict[str, Any]:
@@ -279,7 +487,10 @@ class Orchestrator:
         root = Path(lock["root"]).expanduser().resolve()
         source = Path(receipt["source"]).expanduser().resolve()
         self._verify_exact_source(component, source)
-        return lock, release, component, root, source
+        owner_source = Path(receipt.get("runtime_source", source)).expanduser().resolve()
+        if component.id == "ai-verse-data":
+            self._verify_data_runtime(component, source, owner_source, receipt)
+        return lock, release, component, root, owner_source
 
     def _profile_component_ids(self, lock: Dict[str, Any], release: ReleaseSet) -> List[str]:
         if lock.get("profile") == "custom":
@@ -478,6 +689,10 @@ class Orchestrator:
                     "owner_stdout": sanitize_text(owner.stdout),
                     "owner_stderr": sanitize_text(owner.stderr),
                 }
+                if cid == "ai-verse-data":
+                    report[cid]["dependency_lock_sha256"] = receipt.get("dependency_lock_sha256")
+                    report[cid]["dependency_tree_sha256"] = receipt.get("dependency_tree_sha256")
+                    report[cid]["source_package_sha256"] = receipt.get("source_package_sha256")
             except Exception as exc:
                 report[cid] = {
                     "state": "unhealthy",
