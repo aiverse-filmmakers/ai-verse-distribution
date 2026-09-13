@@ -90,11 +90,11 @@ def prove_skills(install: dict) -> None:
         str(source / "installer" / "aiverse_skills.py"),
         "pin",
         "--package",
-        "verification-harness",
+        "weekly-review-planning",
         "--json",
     ])
     payload = json.loads(result.stdout)
-    if payload.get("package_id") != "verification-harness":
+    if payload.get("package_id") != "weekly-review-planning":
         raise RuntimeError(f"Skills pin did not resolve the requested immutable package: {payload}")
     if not payload.get("generation_id"):
         raise RuntimeError("Skills pin did not return an immutable generation id")
