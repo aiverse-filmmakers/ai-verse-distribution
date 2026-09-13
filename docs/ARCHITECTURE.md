@@ -153,20 +153,23 @@ Agent is modeled but blocked until all required owner artifacts are public-beta 
 
 Full remains blocked by unreleased downstream components.
 
-Custom selects an explicit subset from one admitted compatible release set. It cannot mix arbitrary versions across sets.
+Custom selects an explicit subset from one admitted compatible release set. Required component dependencies are closed automatically, and Custom cannot mix arbitrary versions across sets.
 
 ## Update
 
-Update is release-set based:
+Update is release-set based and exact transitions are fail-closed:
 
 1. resolve an admitted target set;
-2. show exact component changes;
-3. surface the state preservation rule;
-4. stage exact new component artifacts;
-5. refuse dirty tracked OS system files;
-6. move software only through admitted refs and owner lifecycle;
-7. preserve disabled/state authority semantics where owners provide them;
-8. commit the new Distribution lock only after successful orchestration.
+2. require the target compatibility record to explicitly admit the current release set;
+3. reject component-set-changing transitions unless a dedicated transition adapter exists;
+4. show exact component changes;
+5. surface the state preservation rule;
+6. stage exact new component artifacts without activating live Skills;
+7. refuse dirty tracked owner source and OS system files;
+8. preserve setup-required versus configured state;
+9. move software only through admitted refs and owner lifecycle;
+10. preserve disabled/state authority semantics where owners provide them;
+11. commit the new Distribution lock only after successful orchestration.
 
 A same-set update is a safe no-op.
 
