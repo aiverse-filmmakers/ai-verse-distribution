@@ -77,13 +77,41 @@ class Catalog:
                 or any(not isinstance(item, str) or not item for item in required)
             ):
                 raise CatalogValidationError(f"{component_id}: dependencies must be string lists")
+        definitions = self.profiles.get("profiles", {})
+        if not isinstance(definitions, dict) or not definitions:
+            raise CatalogValidationError("profile definitions must be a non-empty object")
+        compatibility_sets = self.compatibility.get("release_sets", {})
+        if not isinstance(compatibility_sets, dict):
+            raise CatalogValidationError("compatibility release_sets must be an object")
+
         ids: set[str] = set()
+        release_status: Dict[str, str] = {}
         for raw in self.release_data.get("release_sets", []):
             rid = raw.get("id")
             if not isinstance(rid, str) or not rid or rid in ids:
                 raise CatalogValidationError("release-set ids must be unique non-empty strings")
             ids.add(rid)
+            status = raw.get("status")
+            profile = raw.get("profile")
+            if status not in {"released", "blocked", "retired"}:
+                raise CatalogValidationError(f"{rid}: unsupported release status {status!r}")
+            if profile not in definitions:
+                raise CatalogValidationError(f"{rid}: unknown profile {profile!r}")
+            if status == "blocked" and not raw.get("blockers"):
+                raise CatalogValidationError(f"{rid}: blocked release must state blockers")
+            release_status[rid] = status
+
+            compatibility = compatibility_sets.get(rid)
+            if not isinstance(compatibility, dict):
+                raise CatalogValidationError(f"{rid}: compatibility record is missing")
+            if compatibility.get("profile") != profile:
+                raise CatalogValidationError(f"{rid}: compatibility profile does not match release profile")
+            if compatibility.get("status") != status:
+                raise CatalogValidationError(f"{rid}: compatibility status does not match release status")
+
             components = raw.get("components", [])
+            if status == "released" and not components:
+                raise CatalogValidationError(f"{rid}: released set must contain components")
             seen: set[str] = set()
             for item in components:
                 cid = item.get("id")
@@ -104,6 +132,15 @@ class Catalog:
                 raise CatalogValidationError(f"{rid}: release sets may not grant permissions")
             if authority.get("transfers_brain_strategy") is not False:
                 raise CatalogValidationError(f"{rid}: release sets may not transfer Brain strategy")
+
+        channels = self.release_data.get("channels", {})
+        if not isinstance(channels, dict):
+            raise CatalogValidationError("release channels must be an object")
+        for channel, release_id in channels.items():
+            if release_id not in ids:
+                raise CatalogValidationError(f"channel {channel}: unknown release set {release_id}")
+            if release_status.get(release_id) != "released":
+                raise CatalogValidationError(f"channel {channel}: target release set is not released")
 
     def release_sets(self) -> List[ReleaseSet]:
         return [self._release(raw) for raw in self.release_data["release_sets"]]
