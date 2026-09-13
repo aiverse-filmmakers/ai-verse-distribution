@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from aiverse_distribution.orchestrator import Orchestrator
+from aiverse_distribution.process import CommandResult
 from aiverse_distribution.state import StateStore
 
 
@@ -49,6 +50,36 @@ class OrchestratorPlanningTests(unittest.TestCase):
                 set(doctor["components"]),
                 {"ai-verse-os", "ai-verse-memory"},
             )
+
+    def test_status_mapper_preserves_disabled_and_migration_states(self):
+        with tempfile.TemporaryDirectory() as td:
+            app = Orchestrator(state=StateStore(Path(td)))
+            memory_disabled = CommandResult(
+                ["memory", "doctor"],
+                0,
+                "Memory is attached but disabled\nDoctor: PASS",
+                "",
+            )
+            self.assertEqual(app._state_from_result(memory_disabled, True), "disabled")
+
+            data_disabled = CommandResult(
+                ["data", "status"],
+                1,
+                '{"registration":{"registered":true,"enabled":false},"healthy":false}',
+                "",
+            )
+            self.assertEqual(app._state_from_result(data_disabled, True), "disabled")
+
+            migration = CommandResult(
+                ["component", "status"],
+                1,
+                "migration-required",
+                "",
+            )
+            self.assertEqual(app._state_from_result(migration, True), "migration-required")
+
+            healthy = CommandResult(["component", "status"], 0, "healthy", "")
+            self.assertEqual(app._state_from_result(healthy, True), "ready")
 
 
 if __name__ == "__main__":
