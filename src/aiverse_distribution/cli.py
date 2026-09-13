@@ -98,14 +98,17 @@ def _choose_custom_components(app: Orchestrator, explicit: list[str]) -> list[st
 
 
 def _temporary_brain_answers(app: Orchestrator, args) -> tuple[Optional[Path], Optional[Path]]:
-    direct = any([
+    practices = list(args.practice or [])
+    strategic = any([
         args.desired_state,
         args.success_definition,
         bool(args.boundary),
     ])
+    direct = strategic or bool(practices)
+
     if args.brain_answers and direct:
         raise DistributionError(
-            "--brain-answers cannot be combined with --desired-state, --success-definition, or --boundary"
+            "--brain-answers cannot be combined with direct onboarding flags"
         )
     if args.brain_answers:
         return args.brain_answers, None
@@ -115,26 +118,31 @@ def _temporary_brain_answers(app: Orchestrator, args) -> tuple[Optional[Path], O
     boundaries = list(args.boundary or [])
 
     if not direct and sys.stdin.isatty():
-        print("AI-Verse Brain onboarding")
-        print("Strategic ownership is not transferred by this step.")
-        desired = input("Desired state: ").strip()
-        success = input("Success definition: ").strip()
-        boundary_text = input("Boundaries (optional, separate with ';'): ").strip()
-        if boundary_text:
-            boundaries = [item.strip() for item in boundary_text.split(";") if item.strip()]
+        print("AI-Verse onboarding")
+        print("Strategic direction remains with its current owner; Distribution does not transfer it.")
+        practice_text = input(
+            "Optional Brain practice/standard to preserve (leave blank to skip): "
+        ).strip()
+        if practice_text:
+            practices = [practice_text]
 
-    if not desired and not success and not boundaries:
+    if not strategic and not practices:
         return None, None
-    if not desired or not success:
+
+    if strategic and (not desired or not success):
         raise DistributionError(
-            "Brain onboarding requires both desired state and success definition"
+            "Strategic Brain onboarding requires both desired state and success definition, "
+            "and will only succeed if Brain already owns strategic direction through a separate explicit handover"
         )
 
     payload = {
-        "desired_state": desired,
-        "success_definition": success,
         "boundaries": boundaries,
+        "practices": practices,
     }
+    if strategic:
+        payload["desired_state"] = desired
+        payload["success_definition"] = success
+
     fd, name = tempfile.mkstemp(
         prefix=".brain-onboarding-",
         suffix=".json",
@@ -183,6 +191,12 @@ def _parser() -> argparse.ArgumentParser:
     q.add_argument("--desired-state")
     q.add_argument("--success-definition")
     q.add_argument("--boundary", action="append", default=[])
+    q.add_argument(
+        "--practice",
+        action="append",
+        default=[],
+        help="Brain-owned ongoing practice/standard; does not transfer strategic direction",
+    )
     q.add_argument("--json", action="store_true")
 
     q = sub.add_parser("status", help="show live owner-backed state")
