@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Iterable, Optional
 
 from .adapters import UnsupportedLifecycle
-from .catalog import DistributionError, ReleaseBlockedError
+from .release_catalog import DistributionError, ReleaseBlockedError
 from .diagnostics import create_support_bundle
 from .orchestrator import Orchestrator
 from .process import ProcessError
