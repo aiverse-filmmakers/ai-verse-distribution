@@ -220,6 +220,12 @@ class Orchestrator:
         source = Path(receipt["source"]).expanduser().resolve()
         return lock, release, component, root, source
 
+    def _profile_component_ids(self, lock: Dict[str, Any], release: ReleaseSet) -> List[str]:
+        if lock.get("profile") == "custom":
+            selected = set(lock.get("components", {}))
+            return [component.id for component in release.components if component.id in selected]
+        return [component.id for component in release.components]
+
     def setup(self, component_id: Optional[str] = None) -> Dict[str, Any]:
         lock = self.state.load()
         if not lock:
