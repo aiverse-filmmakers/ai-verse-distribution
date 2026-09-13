@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from aiverse_distribution.orchestrator import Orchestrator
+from aiverse_distribution.release_catalog import DistributionError
 from aiverse_distribution.process import CommandResult
 from aiverse_distribution.state import StateStore
 
@@ -50,6 +51,31 @@ class OrchestratorPlanningTests(unittest.TestCase):
                 set(doctor["components"]),
                 {"ai-verse-os", "ai-verse-memory"},
             )
+
+    def test_workspace_selection_is_rejected_before_non_data_setup(self):
+        with tempfile.TemporaryDirectory() as td:
+            store = StateStore(Path(td))
+            store.write(
+                {
+                    "schema_version": 1,
+                    "release_set_id": "core-first-member-beta-2026-09-13",
+                    "profile": "custom",
+                    "root": str(Path(td) / "AI-Verse"),
+                    "components": {
+                        "ai-verse-memory": {
+                            "revision": "f5b417f9e7ce1b3f05bc80d10a483d10f6ad10ee",
+                            "source": str(Path(td) / "Memory"),
+                            "uninstalled_at": None,
+                        }
+                    },
+                },
+                archive_previous=False,
+            )
+            app = Orchestrator(state=store)
+            with self.assertRaises(DistributionError):
+                app.setup(workspaces=["alpha"])
+            with self.assertRaises(DistributionError):
+                app.setup("ai-verse-memory", workspaces=["INVALID WORKSPACE"])
 
     def test_status_mapper_preserves_disabled_and_migration_states(self):
         with tempfile.TemporaryDirectory() as td:
