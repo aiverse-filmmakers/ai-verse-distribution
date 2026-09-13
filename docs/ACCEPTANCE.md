@@ -20,7 +20,7 @@ The acceptance sequence is:
 
 ```text
 aiverse install --profile core
--> aiverse setup
+-> aiverse setup --workspace alpha
 -> explicit Brain onboarding answers
 -> aiverse status
 -> aiverse doctor
@@ -43,6 +43,7 @@ Acceptance asserts:
 - the exact released set is selected;
 - installation completes without manual repository edits;
 - setup goes through owner-controlled lifecycle;
+- only the explicitly selected Data workspace is initialized;
 - onboarding does not transfer Brain strategic ownership implicitly;
 - live status reports ready;
 - owner and composed doctors pass;
