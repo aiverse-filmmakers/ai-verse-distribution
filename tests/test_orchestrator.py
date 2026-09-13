@@ -77,6 +77,32 @@ class OrchestratorPlanningTests(unittest.TestCase):
             with self.assertRaises(DistributionError):
                 app.setup("ai-verse-memory", workspaces=["INVALID WORKSPACE"])
 
+    def test_same_set_rollback_is_a_safe_noop(self):
+        with tempfile.TemporaryDirectory() as td:
+            store = StateStore(Path(td))
+            store.write(
+                {
+                    "schema_version": 1,
+                    "release_set_id": "core-first-member-beta-2026-09-13",
+                    "profile": "custom",
+                    "root": str(Path(td) / "AI-Verse"),
+                    "components": {
+                        "ai-verse-memory": {
+                            "revision": "f5b417f9e7ce1b3f05bc80d10a483d10f6ad10ee",
+                            "source": str(Path(td) / "Memory"),
+                            "setup_completed_at": None,
+                            "uninstalled_at": None,
+                        }
+                    },
+                },
+                archive_previous=False,
+            )
+            app = Orchestrator(state=store)
+            result = app.rollback("core-first-member-beta-2026-09-13", apply=True)
+            self.assertTrue(result["applied"])
+            self.assertFalse(result["changed"])
+            self.assertTrue(result["rollback"])
+
     def test_status_mapper_preserves_disabled_and_migration_states(self):
         with tempfile.TemporaryDirectory() as td:
             app = Orchestrator(state=StateStore(Path(td)))
