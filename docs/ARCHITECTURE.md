@@ -204,7 +204,7 @@ Profiles and setup never:
 - initialize all workspace Data;
 - create Bots implicitly.
 
-Brain onboarding answers are applied only from an explicit user-supplied answers file.
+Brain onboarding answers are applied only from explicit user input: interactive prompts, direct CLI flags, or an expert-supplied answers file. Distribution uses any generated answers file only as a temporary owner-input transport and deletes it after the Brain owner command returns.
 
 ## Support bundle
 
