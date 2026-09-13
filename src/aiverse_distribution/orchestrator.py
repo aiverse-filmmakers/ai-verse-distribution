@@ -14,6 +14,7 @@ from .adapters import (
     UnsupportedLifecycle,
     owner_doctor,
     owner_enablement,
+    owner_install,
     owner_setup,
     owner_status,
     owner_uninstall,
@@ -399,10 +400,20 @@ class Orchestrator:
 
     def _install_component(self, component: ComponentRef, root: Path, release: ReleaseSet) -> Dict[str, Any]:
         receipt = self._stage_component(component, root, release)
+        source = Path(receipt["source"])
         if component.id == "ai-verse-skills":
             # Initial install creates the immutable active provider generation.
             # Release-set update uses _stage_component instead so staging never flips live Skills.
-            self._prepare_skills(Path(receipt["source"]))
+            self._prepare_skills(source)
+        owner = owner_install(
+            component.id,
+            root=root,
+            source=source,
+            revision=component.revision,
+            state=self.state,
+        )
+        if owner is not None:
+            receipt["owner_install_result"] = _safe_result(owner)
         return receipt
 
     def install(
