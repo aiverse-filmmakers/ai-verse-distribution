@@ -66,7 +66,7 @@ The clean-machine Agent workflow is:
 
 The Agent profile is not yet released.
 
-Today the workflow proves a required safety property:
+Today the workflow proves a required safety property and deliberately remains failing:
 
 ```text
 aiverse install --profile agent
@@ -75,7 +75,7 @@ aiverse install --profile agent
 -> no partial Agent installation
 ```
 
-This is not a complete Agent acceptance pass.
+This is not a complete Agent acceptance pass. The script exits non-zero after confirming fail-closed behavior so a blocked Agent can never appear green.
 
 When Gateway, Automations, Multiple Bots, and Token inclusion prerequisites are released, the Agent release-set record must be populated with exact immutable versions. The same harness must then be extended to prove:
 
