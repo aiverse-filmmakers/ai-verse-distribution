@@ -221,7 +221,8 @@ Cross-platform unit CI runs on Linux, macOS, and Windows.
 
 ```text
 install -> setup -> explicit onboarding -> status -> doctor
--> disable/enable preservation checks -> update no-op -> open/use handoff
+-> disable/enable preservation checks -> owner-safe uninstall/reinstall
+-> canonical Memory/Data preservation -> update no-op -> open/use handoff
 ```
 
 `.github/workflows/clean-machine-agent.yml` is the Agent release gate. Until the Agent prerequisites have immutable public-beta artifacts, it proves that Agent installation fails closed with the exact blockers. Once the admitted Agent release set exists, that workflow becomes the complete Agent clean-machine acceptance path.
