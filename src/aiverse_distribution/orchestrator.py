@@ -138,7 +138,19 @@ class Orchestrator:
         if target.exists() and any(target.iterdir()):
             raise DistributionError(f"refusing to overwrite non-empty path: {target}")
         target.parent.mkdir(parents=True, exist_ok=True)
-        run(["git", "clone", "--no-checkout", component.repository, str(target)])
+        run([
+            "git",
+            "-c",
+            "core.autocrlf=false",
+            "clone",
+            "--no-checkout",
+            component.repository,
+            str(target),
+        ])
+        # Release/source digests are over exact Git blob bytes. Disable platform
+        # newline conversion before materializing any tracked component source.
+        run(["git", "-C", str(target), "config", "core.autocrlf", "false"])
+        run(["git", "-C", str(target), "config", "core.eol", "lf"])
         run(["git", "-C", str(target), "checkout", "--detach", component.revision])
         head = self._git_head(target)
         if head != component.revision:
