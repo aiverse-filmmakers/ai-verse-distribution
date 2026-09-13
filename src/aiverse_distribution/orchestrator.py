@@ -268,7 +268,10 @@ class Orchestrator:
 
     def _profile_component_ids(self, lock: Dict[str, Any], release: ReleaseSet) -> List[str]:
         if lock.get("profile") == "custom":
-            selected = set(lock.get("components", {}))
+            selection = lock.get("selection", {})
+            selected = set(selection.get("resolved", []))
+            if not selected:
+                selected = set(lock.get("components", {}))
             return [component.id for component in release.components if component.id in selected]
         return [component.id for component in release.components]
 
@@ -560,6 +563,12 @@ class Orchestrator:
             component = next((x for x in release.components if x.id == component_id), None)
             if component is None:
                 raise DistributionError(f"{component_id} is not in locked release set {release.id}")
+            if lock.get("profile") == "custom":
+                allowed = set(self._profile_component_ids(lock, release))
+                if component_id not in allowed:
+                    raise DistributionError(
+                        f"{component_id} is not part of the locked Custom selection"
+                    )
             root = Path(lock["root"]).expanduser().resolve()
             previous = lock.get("components", {}).get(component_id)
             receipt = self._install_component(component, root, release)
@@ -598,7 +607,10 @@ class Orchestrator:
         target_release_set: Optional[str] = None,
     ) -> ReleaseSet:
         if lock["profile"] == "custom":
-            selected = list(lock.get("components", {}))
+            current_release = self.catalog.get_release(
+                lock["release_set_id"], require_released=True
+            )
+            selected = self._profile_component_ids(lock, current_release)
             return self.catalog.resolve(
                 "custom",
                 target_release_set or lock["release_set_id"],
