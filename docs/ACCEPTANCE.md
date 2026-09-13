@@ -2,7 +2,7 @@
 
 **Updated:** 2026-09-13
 
-## Core release gate
+## Core Distribution acceptance gate
 
 The clean-machine Core workflow is:
 
@@ -14,7 +14,7 @@ It runs on:
 - macOS
 - Windows
 
-The workflow installs only the Distribution package from the PR checkout, then lets Distribution acquire and operate the exact immutable Core artifacts.
+The workflow installs only the Distribution package from the PR checkout, then lets Distribution acquire and operate the exact immutable Core artifacts. The component set may be recorded as an admitted immutable software set while the separate `distribution_acceptance` evidence remains pending. Distribution itself is not accepted until this workflow actually executes successfully.
 
 The acceptance sequence is:
 
@@ -63,7 +63,7 @@ Acceptance asserts:
 - deterministic `npm ci` resolves the exact same admitted dependency tree again after Data uninstall/reinstall;
 - the product can hand the user to the installed root.
 
-A future second Core release set must add a real cross-version update and rollback acceptance before that new set can be promoted.
+The historical first-member set and current public-beta set intentionally declare no cross-version transition between them. The first-member set remains frozen reproducibility evidence. Any future Core set that declares an update-from or rollback-to edge to another set must execute and pass that exact transition before the edge is admitted.
 
 ## Agent release gate
 
