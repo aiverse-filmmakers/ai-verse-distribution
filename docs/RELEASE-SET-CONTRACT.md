@@ -26,6 +26,18 @@ The public-beta Git source form requires a 40-character commit SHA.
 
 Moving branch names, abbreviated SHAs, floating tags without immutable verification, and "latest" are not admitted component identities.
 
+## Three separate truths
+
+Distribution keeps three kinds of truth separate:
+
+1. **Component source revision** is the exact immutable source artifact, such as the 40-character Data Git commit. Distribution verifies that checkout before owner code is executed.
+2. **Distribution-owned companion dependency lock** is packaging truth for a specific immutable source revision when that historical source does not itself contain a sufficient package-manager lock. It is release-scoped, digest-bound to the exact source package manifest, immutable, verified before install, and may only control dependency resolution in Distribution-owned staging.
+3. **Canonical user/domain state** remains owned by the component/System contracts. A companion dependency lock never becomes Memory, Data, Brain, workspace, credential, or other user-state authority.
+
+For frozen Data revision `189b13264ab86115d2f21fee3ba8cd5a8dac6581`, the source commit is preserved unchanged. Distribution supplies a release-scoped npm lock because that historical commit contains `package.json` but no npm/pnpm/Yarn lockfile. The companion lock is bound to the SHA-256 of that exact `package.json`, has its own SHA-256, records npm/lockfile compatibility and provenance, and is used only in an isolated Distribution staging directory with deterministic `npm ci`.
+
+Distribution must fail closed if the source package manifest, companion manifest, companion lock digest, lockfile version, package-manager compatibility, or resolved installed package tree differs from the admitted release record. Distribution never regenerates or updates a released companion lock during user installation.
+
 ## Status
 
 Supported release-set states:
@@ -47,6 +59,7 @@ A blocked set may exist to make missing prerequisites visible. It must not conta
 - claimed operating systems;
 - Python floor;
 - Node floor;
+- package-manager compatibility where a release-scoped companion dependency lock requires it;
 - state-preservation rule;
 - rollback rule;
 - profile-specific blockers where applicable.
@@ -126,7 +139,8 @@ A new set becomes `released` only after:
 1. exact artifacts exist;
 2. compatibility is declared;
 3. required owner lifecycle adapters exist;
-4. clean-machine acceptance passes on claimed platforms;
-5. update/rollback impact is explicit;
-6. authority and preservation rules are explicit;
-7. System documentation is updated.
+4. clean-machine acceptance passes on claimed platforms, including deterministic dependency installation where companion locks are declared;
+5. release-scoped source/lock digests and installed dependency-tree verification pass;
+6. update/rollback impact is explicit;
+7. authority and preservation rules are explicit;
+8. System documentation is updated.
