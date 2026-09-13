@@ -77,6 +77,22 @@ class OnboardingArgumentTests(unittest.TestCase):
             self.assertNotIn("success_definition", payload)
             path.unlink()
 
+    def test_no_direct_onboarding_input_creates_no_brain_answers(self):
+        with tempfile.TemporaryDirectory() as td:
+            app = _FakeApp(Path(td))
+            args = SimpleNamespace(
+                brain_answers=None,
+                desired_state=None,
+                success_definition=None,
+                boundary=[],
+                practice=[],
+            )
+            fake_stdin = SimpleNamespace(isatty=lambda: False)
+            with patch("aiverse_distribution.cli.sys.stdin", fake_stdin):
+                path, cleanup = _temporary_brain_answers(app, args)
+            self.assertIsNone(path)
+            self.assertIsNone(cleanup)
+
     def test_partial_direct_onboarding_is_rejected(self):
         with tempfile.TemporaryDirectory() as td:
             app = _FakeApp(Path(td))
