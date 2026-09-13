@@ -127,8 +127,9 @@ While hosted GitHub runner allocation is unavailable, the exact PR branch has al
 
 Current isolated evidence for the branch implementation:
 
-- all 42 Distribution Python unit tests pass;
+- all 43 Distribution Python unit tests pass;
 - package installation succeeds from the reconstructed PR tree;
+- a built wheel contains both Data companion-lock artifacts and all runtime catalog JSON files, and an isolated wheel install successfully loads and verifies the companion lock;
 - `aiverse --version` reports `0.1.0b1`;
 - the CLI catalog resolves `core-public-beta-2026-09-13` as released and Agent as blocked;
 - the committed Data companion manifest and package lock SHA-256 values independently recompute to the exact digests declared by the release set.
