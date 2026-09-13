@@ -1,0 +1,204 @@
+from __future__ import annotations
+
+import json
+import re
+import sys
+from dataclasses import dataclass
+from importlib import resources
+from typing import Any, Dict, Iterable, List, Optional
+
+
+_SHA40 = re.compile(r"^[0-9a-f]{40}$")
+
+
+class DistributionError(RuntimeError):
+    code = "DISTRIBUTION_ERROR"
+
+
+class ReleaseBlockedError(DistributionError):
+    code = "RELEASE_BLOCKED"
+
+    def __init__(self, release_set_id: str, blockers: Iterable[str]):
+        self.release_set_id = release_set_id
+        self.blockers = list(blockers)
+        detail = "; ".join(self.blockers) or "release set is not released"
+        super().__init__(f"{release_set_id} is blocked: {detail}")
+
+
+class CatalogValidationError(DistributionError):
+    code = "CATALOG_INVALID"
+
+
+@dataclass(frozen=True)
+class ComponentRef:
+    id: str
+    repository: str
+    revision: str
+    install_order: int
+
+
+@dataclass(frozen=True)
+class ReleaseSet:
+    id: str
+    profile: str
+    status: str
+    components: tuple[ComponentRef, ...]
+    blockers: tuple[str, ...]
+    raw: Dict[str, Any]
+
+
+def _load(name: str) -> Dict[str, Any]:
+    data = resources.files("aiverse_distribution.catalog").joinpath(name).read_text(encoding="utf-8")
+    return json.loads(data)
+
+
+class Catalog:
+    def __init__(self) -> None:
+        self.profiles = _load("profiles.json")
+        self.compatibility = _load("compatibility.json")
+        self.release_data = _load("release_sets.json")
+        self._validate()
+
+    def _validate(self) -> None:
+        if self.profiles.get("schema_version") != 1:
+            raise CatalogValidationError("unsupported profiles schema")
+        if self.compatibility.get("schema_version") != 1:
+            raise CatalogValidationError("unsupported compatibility schema")
+        if self.release_data.get("schema_version") != 1:
+            raise CatalogValidationError("unsupported release-set schema")
+        ids: set[str] = set()
+        for raw in self.release_data.get("release_sets", []):
+            rid = raw.get("id")
+            if not isinstance(rid, str) or not rid or rid in ids:
+                raise CatalogValidationError("release-set ids must be unique non-empty strings")
+            ids.add(rid)
+            components = raw.get("components", [])
+            seen: set[str] = set()
+            for item in components:
+                cid = item.get("id")
+                revision = item.get("revision")
+                repository = item.get("repository")
+                if not isinstance(cid, str) or not cid or cid in seen:
+                    raise CatalogValidationError(f"{rid}: invalid or duplicate component id")
+                seen.add(cid)
+                if not isinstance(repository, str) or not repository.startswith("https://github.com/"):
+                    raise CatalogValidationError(f"{rid}/{cid}: repository must be an explicit GitHub HTTPS URL")
+                if not isinstance(revision, str) or not _SHA40.fullmatch(revision):
+                    raise CatalogValidationError(f"{rid}/{cid}: revision must be an exact 40-character commit SHA")
+                order = item.get("install_order")
+                if not isinstance(order, int):
+                    raise CatalogValidationError(f"{rid}/{cid}: install_order must be an integer")
+            authority = raw.get("authority", {})
+            if authority.get("grants_permissions") is not False:
+                raise CatalogValidationError(f"{rid}: release sets may not grant permissions")
+            if authority.get("transfers_brain_strategy") is not False:
+                raise CatalogValidationError(f"{rid}: release sets may not transfer Brain strategy")
+
+    def release_sets(self) -> List[ReleaseSet]:
+        return [self._release(raw) for raw in self.release_data["release_sets"]]
+
+    def _release(self, raw: Dict[str, Any]) -> ReleaseSet:
+        items = tuple(
+            ComponentRef(
+                id=x["id"],
+                repository=x["repository"],
+                revision=x["revision"],
+                install_order=x["install_order"],
+            )
+            for x in sorted(raw.get("components", []), key=lambda x: x["install_order"])
+        )
+        return ReleaseSet(
+            id=raw["id"],
+            profile=raw["profile"],
+            status=raw["status"],
+            components=items,
+            blockers=tuple(raw.get("blockers", [])),
+            raw=raw,
+        )
+
+    def get_release(self, release_set_id: str, require_released: bool = True) -> ReleaseSet:
+        for raw in self.release_data["release_sets"]:
+            if raw["id"] == release_set_id:
+                release = self._release(raw)
+                if require_released and release.status != "released":
+                    raise ReleaseBlockedError(release.id, release.blockers)
+                return release
+        raise DistributionError(f"unknown release set: {release_set_id}")
+
+    def resolve(
+        self,
+        profile: str,
+        release_set_id: Optional[str] = None,
+        components: Optional[Iterable[str]] = None,
+    ) -> ReleaseSet:
+        profile = profile.lower()
+        definitions = self.profiles.get("profiles", {})
+        if profile not in definitions:
+            raise DistributionError(f"unknown profile: {profile}")
+
+        if release_set_id:
+            release = self.get_release(release_set_id, require_released=True)
+            if profile != "custom" and release.profile != profile:
+                raise DistributionError(
+                    f"release set {release.id} belongs to profile {release.profile}, not {profile}"
+                )
+        else:
+            candidates = [r for r in self.release_sets() if r.profile == profile]
+            if profile == "core":
+                channel_id = self.release_data.get("channels", {}).get("beta")
+                release = self.get_release(channel_id, require_released=True)
+            elif candidates:
+                release = candidates[-1]
+                if release.status != "released":
+                    raise ReleaseBlockedError(release.id, release.blockers)
+            elif profile == "custom":
+                release = self.get_release(self.release_data["channels"]["beta"], require_released=True)
+            else:
+                raise ReleaseBlockedError(
+                    f"{profile}-public-beta",
+                    [f"no released immutable {profile} version set exists"],
+                )
+
+        if profile == "custom":
+            requested = list(components or [])
+            if not requested:
+                raise DistributionError("custom profile requires at least one --component")
+            available = {c.id for c in release.components}
+            missing = sorted(set(requested) - available)
+            if missing:
+                raise DistributionError(
+                    "custom components are not present in the selected compatible release set: "
+                    + ", ".join(missing)
+                )
+            selected = tuple(c for c in release.components if c.id in set(requested))
+            return ReleaseSet(
+                id=release.id,
+                profile="custom",
+                status=release.status,
+                components=selected,
+                blockers=release.blockers,
+                raw=release.raw,
+            )
+
+        required = set(definitions[profile].get("required", []))
+        present = {c.id for c in release.components}
+        missing = sorted(required - present)
+        if missing:
+            raise CatalogValidationError(
+                f"released set {release.id} is incomplete for {profile}: {', '.join(missing)}"
+            )
+        return release
+
+    def compatibility_for(self, release_set_id: str) -> Dict[str, Any]:
+        matrix = self.compatibility.get("release_sets", {})
+        if release_set_id not in matrix:
+            raise CatalogValidationError(f"compatibility matrix missing {release_set_id}")
+        return matrix[release_set_id]
+
+    @staticmethod
+    def platform_key() -> str:
+        if sys.platform.startswith("win"):
+            return "win32"
+        if sys.platform == "darwin":
+            return "darwin"
+        return "linux"
