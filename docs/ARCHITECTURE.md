@@ -104,6 +104,7 @@ For the frozen Core release:
 - Memory install stores its exact source artifact; setup invokes the frozen owner installer because that artifact historically combines native attachment/setup.
 - Skills install creates the immutable provider generation; setup is read-only owner doctor/readiness for that frozen artifact.
 - Data install builds its package without native attachment; setup invokes Data's native owner install.
+- `aiverse setup --workspace <id>` initializes only explicitly selected Data scopes through the OS Data host. No implicit all-workspace initialization exists.
 
 Distribution does not modify sibling canonical files to simulate lifecycle symmetry.
 
