@@ -13,6 +13,7 @@ from .release_catalog import DistributionError, ReleaseBlockedError
 from .diagnostics import create_support_bundle
 from .orchestrator import Orchestrator
 from .process import ProcessError
+from .redaction import sanitize_text
 
 
 def _emit(payload: Any, as_json: bool = False) -> None:
@@ -302,8 +303,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         if isinstance(exc, ProcessError):
             payload["command"] = exc.argv
             payload["returncode"] = exc.returncode
-            payload["stdout"] = exc.stdout
-            payload["stderr"] = exc.stderr
+            payload["stdout"] = sanitize_text(exc.stdout)
+            payload["stderr"] = sanitize_text(exc.stderr)
         _emit(payload, getattr(args, "json", False))
         return 2
 
