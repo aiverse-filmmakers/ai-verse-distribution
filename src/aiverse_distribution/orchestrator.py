@@ -18,7 +18,7 @@ from .adapters import (
     owner_update,
 )
 from .release_catalog import Catalog, ComponentRef, DistributionError, ReleaseSet
-from .process import ProcessError, run, version_line, which
+from .process import run, version_line, which
 from .redaction import sanitize_text
 from .state import StateStore, now_iso
 
@@ -459,15 +459,15 @@ class Orchestrator:
                 report[cid] = {"state": "absent"}
                 continue
             setup_complete = bool(receipt.get("setup_completed_at"))
-            if not setup_complete:
-                report[cid] = {
-                    "state": "setup-required",
-                    "revision": receipt.get("revision"),
-                    "source": receipt.get("source"),
-                }
-                continue
             try:
                 _, _, component, root, source = self._context(cid)
+                if not setup_complete:
+                    report[cid] = {
+                        "state": "setup-required",
+                        "revision": component.revision,
+                        "source": str(source),
+                    }
+                    continue
                 owner = owner_status(
                     cid, root=root, source=source, revision=component.revision, state=self.state
                 )
@@ -521,12 +521,17 @@ class Orchestrator:
                 results[cid] = {"ok": False, "state": "absent"}
                 ok = False
                 continue
-            if not receipt.get("setup_completed_at"):
-                results[cid] = {"ok": False, "state": "setup-required"}
-                ok = False
-                continue
             try:
                 _, _, component, root, source = self._context(cid)
+                if not receipt.get("setup_completed_at"):
+                    results[cid] = {
+                        "ok": False,
+                        "state": "setup-required",
+                        "source_verified": True,
+                        "revision": component.revision,
+                    }
+                    ok = False
+                    continue
                 owner = owner_doctor(
                     cid, root=root, source=source, revision=component.revision, state=self.state
                 )
