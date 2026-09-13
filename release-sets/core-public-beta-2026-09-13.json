@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "id": "core-public-beta-2026-09-13",
+  "profile": "core",
+  "status": "released",
+  "created_at": "2026-09-13",
+  "components": [
+    {
+      "id": "ai-verse-os",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+      "revision": "a1e11b8bdc926c3601ac156d6a8265946298b964",
+      "install_order": 10
+    },
+    {
+      "id": "ai-verse-brain",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+      "revision": "80019be5e6df29aee70371544bd96cedbf0329b9",
+      "install_order": 20
+    },
+    {
+      "id": "ai-verse-memory",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+      "revision": "031e1e77c97ed3c9012235c7ffe0a4ece05e3695",
+      "install_order": 30
+    },
+    {
+      "id": "ai-verse-skills",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+      "revision": "bbef286bfcd56588dcacb251132830365918cc3b",
+      "install_order": 40
+    },
+    {
+      "id": "ai-verse-data",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+      "revision": "189b13264ab86115d2f21fee3ba8cd5a8dac6581",
+      "install_order": 50,
+      "dependency_lock": {
+        "scheme": "distribution-companion-npm-lock-v1",
+        "manifest": "ai-verse-data/189b13264ab86115d2f21fee3ba8cd5a8dac6581/lock.json",
+        "manifest_sha256": "32194745235d8bca63bbdc9f89dcd73a48ff251be67c87196a4c9d93a35dafd6"
+      }
+    }
+  ],
+  "evidence": {
+    "os": {
+      "revision": "a1e11b8bdc926c3601ac156d6a8265946298b964",
+      "hosted_workflows": [
+        34777483552,
+        34777483573,
+        34777483515,
+        34777483529,
+        34777483522,
+        34777483500,
+        34777483526,
+        34777483510
+      ]
+    },
+    "brain": {
+      "revision": "80019be5e6df29aee70371544bd96cedbf0329b9",
+      "hosted_workflows": [
+        34778357624,
+        34778357586,
+        34778357592
+      ]
+    },
+    "memory": {
+      "revision": "031e1e77c97ed3c9012235c7ffe0a4ece05e3695",
+      "hosted_workflows": [
+        34769753452
+      ]
+    },
+    "skills": {
+      "revision": "bbef286bfcd56588dcacb251132830365918cc3b",
+      "hosted_workflows": [
+        34770040717,
+        34770040711,
+        34770040726
+      ]
+    },
+    "data": {
+      "revision": "189b13264ab86115d2f21fee3ba8cd5a8dac6581",
+      "hosted_workflows": [
+        34721902478
+      ],
+      "companion_dependency_lock": "distribution-companion-npm-lock-v1"
+    },
+    "distribution_acceptance": "pending-pr-1"
+  },
+  "authority": {
+    "grants_permissions": false,
+    "transfers_brain_strategy": false,
+    "initializes_all_workspaces": false
+  }
+}
