@@ -622,9 +622,13 @@ class Orchestrator:
             results["brain"] = _safe_result(result)
         else:
             results["brain"] = {
-                "required": "explicit desired_state and success_definition",
+                "required": "none",
                 "applied": False,
-                "note": "Distribution never invents Brain intent or transfers strategic ownership.",
+                "note": (
+                    "Distribution does not invent Brain intent or transfer strategic ownership. "
+                    "Use --practice for optional Brain-owned standards, or provide strategic "
+                    "answers only after a separate explicit strategic handover."
+                ),
             }
         return results
 
@@ -645,6 +649,17 @@ class Orchestrator:
             payload = None
 
         if isinstance(payload, dict):
+            owner_state = payload.get("state")
+            if owner_state in {
+                "absent",
+                "installed",
+                "setup-required",
+                "disabled",
+                "unhealthy",
+                "migration-required",
+                "ready",
+            }:
+                return owner_state
             if payload.get("enabled") is False:
                 return "disabled"
             registration = payload.get("registration")
