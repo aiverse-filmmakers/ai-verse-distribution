@@ -48,6 +48,7 @@ class OnboardingArgumentTests(unittest.TestCase):
                 desired_state="Ship AI-Verse",
                 success_definition="Public beta acceptance passes",
                 boundary=["No silent strategic handover"],
+                practice=[],
             )
             path, cleanup = _temporary_brain_answers(app, args)
             self.assertEqual(path, cleanup)
@@ -58,6 +59,24 @@ class OnboardingArgumentTests(unittest.TestCase):
             self.assertEqual(payload["boundaries"], ["No silent strategic handover"])
             path.unlink()
 
+    def test_practice_only_onboarding_does_not_require_strategic_answers(self):
+        with tempfile.TemporaryDirectory() as td:
+            app = _FakeApp(Path(td))
+            args = SimpleNamespace(
+                brain_answers=None,
+                desired_state=None,
+                success_definition=None,
+                boundary=[],
+                practice=["Keep verification evidence explicit"],
+            )
+            path, cleanup = _temporary_brain_answers(app, args)
+            self.assertEqual(path, cleanup)
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["practices"], ["Keep verification evidence explicit"])
+            self.assertNotIn("desired_state", payload)
+            self.assertNotIn("success_definition", payload)
+            path.unlink()
+
     def test_partial_direct_onboarding_is_rejected(self):
         with tempfile.TemporaryDirectory() as td:
             app = _FakeApp(Path(td))
@@ -66,6 +85,7 @@ class OnboardingArgumentTests(unittest.TestCase):
                 desired_state="Ship AI-Verse",
                 success_definition=None,
                 boundary=[],
+                practice=[],
             )
             with self.assertRaises(DistributionError):
                 _temporary_brain_answers(app, args)
@@ -78,6 +98,7 @@ class OnboardingArgumentTests(unittest.TestCase):
                 desired_state="Ship AI-Verse",
                 success_definition="Pass",
                 boundary=[],
+                practice=[],
             )
             with self.assertRaises(DistributionError):
                 _temporary_brain_answers(app, args)
