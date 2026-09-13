@@ -242,6 +242,8 @@ class Orchestrator:
         for component in release.components:
             existing = lock["components"].get(component.id)
             if existing and existing.get("revision") == component.revision and existing.get("uninstalled_at") is None:
+                source = Path(existing.get("source", "")).expanduser().resolve()
+                self._verify_exact_source(component, source)
                 continue
             receipt = self._install_component(component, root, release)
             lock["components"][component.id] = receipt
