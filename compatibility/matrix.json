@@ -44,7 +44,7 @@
         "canonical immutable AI-Verse-Gateway release unavailable",
         "canonical immutable AI-Verse-Automations release unavailable",
         "AI-Verse-Multiple-Bots public-beta lifecycle gate not complete",
-        "AI-Verse-Token has no canonical public-beta release artifact"
+        "aiverse-filmmakers/ai-verse-token exists, but its restoration/bootstrap is incomplete and no public-beta release artifact is admitted"
       ]
     },
     "full-public-beta-pending": {
