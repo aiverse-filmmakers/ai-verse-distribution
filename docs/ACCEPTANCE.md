@@ -21,7 +21,7 @@ The acceptance sequence is:
 ```text
 aiverse install --profile core
 -> aiverse setup --workspace alpha
--> explicit Brain onboarding answers
+-> explicit Brain onboarding through public flags
 -> aiverse status
 -> aiverse doctor
 -> Memory remember/recall
