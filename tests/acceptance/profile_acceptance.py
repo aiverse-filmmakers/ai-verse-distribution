@@ -206,16 +206,15 @@ def main() -> int:
     write_acceptance_workspace(root)
     setup = run_cli("setup", "--workspace", "alpha")
 
-    answers = base / "brain-onboarding.json"
-    answers.write_text(
-        json.dumps({
-            "desired_state": "A reproducible clean-machine AI-Verse Core acceptance environment.",
-            "success_definition": "All Core owner doctors and composed representative-use checks pass.",
-            "boundaries": ["Do not transfer Brain strategic ownership automatically."],
-        }),
-        encoding="utf-8",
+    onboard = run_cli(
+        "onboard",
+        "--desired-state",
+        "A reproducible clean-machine AI-Verse Core acceptance environment.",
+        "--success-definition",
+        "All Core owner doctors and composed representative-use checks pass.",
+        "--boundary",
+        "Do not transfer Brain strategic ownership automatically.",
     )
-    onboard = run_cli("onboard", "--brain-answers", str(answers))
     prove_brain_no_silent_handover(install, root)
 
     status = run_cli("status")
