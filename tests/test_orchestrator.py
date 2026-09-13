@@ -77,6 +77,52 @@ class OrchestratorPlanningTests(unittest.TestCase):
             with self.assertRaises(DistributionError):
                 app.setup("ai-verse-memory", workspaces=["INVALID WORKSPACE"])
 
+    def test_partial_install_can_resume_same_locked_selection(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            store = StateStore(Path(td) / "distribution")
+            resolved = [
+                "ai-verse-os",
+                "ai-verse-brain",
+                "ai-verse-memory",
+                "ai-verse-skills",
+                "ai-verse-data",
+            ]
+            store.write(
+                {
+                    "schema_version": 1,
+                    "release_set_id": "core-first-member-beta-2026-09-13",
+                    "profile": "core",
+                    "root": str(root),
+                    "selection": {"requested": resolved, "resolved": resolved},
+                    "state": "installing",
+                    "components": {
+                        "ai-verse-os": {
+                            "revision": "89fb9043ec58c05931d477ef3e154df428a06c22",
+                            "source": str(root),
+                            "setup_completed_at": None,
+                            "uninstalled_at": None,
+                        }
+                    },
+                },
+                archive_previous=False,
+            )
+            app = Orchestrator(state=store)
+            app.preflight = lambda release: {}
+            app._verify_exact_source = lambda component, source: None
+            app._install_component = lambda component, root, release: {
+                "repository": component.repository,
+                "revision": component.revision,
+                "source": str(Path(td) / component.id),
+                "installed_at": "2026-09-13T01:00:00+00:00",
+                "setup_completed_at": None,
+                "uninstalled_at": None,
+            }
+
+            result = app.install(profile="core", root=root)
+            self.assertEqual(result["state"], "installed")
+            self.assertEqual(set(result["components"]), set(resolved))
+
     def test_component_install_cannot_expand_locked_custom_selection(self):
         with tempfile.TemporaryDirectory() as td:
             store = StateStore(Path(td))
