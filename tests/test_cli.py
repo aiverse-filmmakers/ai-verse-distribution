@@ -29,7 +29,8 @@ class CustomSelectionTests(unittest.TestCase):
 
     def test_interactive_custom_selection_accepts_numbers_and_ids(self):
         app = SimpleNamespace(catalog=Catalog())
-        with patch("aiverse_distribution.cli.sys.stdin.isatty", return_value=True), patch(
+        fake_stdin = SimpleNamespace(isatty=lambda: True)
+        with patch("aiverse_distribution.cli.sys.stdin", fake_stdin), patch(
             "builtins.input",
             return_value="1, ai-verse-data",
         ):
