@@ -61,6 +61,25 @@
         "Agent profile does not yet have an admitted immutable public-beta release set",
         "AI-Verse Connections, Dashboard, and Apps do not yet have one admitted compatible Full release set"
       ]
+    },
+    "core-public-beta-2026-09-13": {
+      "profile": "core",
+      "status": "released",
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "python_min": "3.9",
+      "node_min": "22.0",
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "update_from": [
+        "core-public-beta-2026-09-13"
+      ],
+      "rollback_to": [
+        "core-public-beta-2026-09-13"
+      ]
     }
   }
 }
