@@ -1,6 +1,6 @@
 import unittest
 
-from aiverse_distribution.release_catalog import Catalog, ReleaseBlockedError
+from aiverse_distribution.release_catalog import Catalog, CatalogValidationError, ReleaseBlockedError
 
 
 class CatalogTests(unittest.TestCase):
@@ -48,6 +48,14 @@ class CatalogTests(unittest.TestCase):
             self.catalog.resolve("full")
         self.assertEqual(caught.exception.release_set_id, "full-public-beta-pending")
         self.assertTrue(caught.exception.blockers)
+
+    def test_transition_references_must_name_known_release_sets(self):
+        catalog = Catalog()
+        catalog.compatibility["release_sets"]["core-first-member-beta-2026-09-13"]["update_from"] = [
+            "missing-release"
+        ]
+        with self.assertRaises(CatalogValidationError):
+            catalog._validate()
 
     def test_profiles_never_grant_authority(self):
         law = self.catalog.profiles["law"]
