@@ -35,6 +35,7 @@ aiverse install --profile core
 -> verify Memory/Data canonical state survives
 -> aiverse doctor
 -> same-set aiverse update --apply
+-> same-set aiverse rollback --to core-first-member-beta-2026-09-13 --apply
 -> aiverse open
 ```
 
@@ -55,6 +56,7 @@ Acceptance asserts:
 - Memory and Data canonical user state survive uninstall/reinstall;
 - OS is not uninstalled because the host root may contain user-owned canonical state;
 - the current same-set update is a no-op;
+- the current known-compatible same-set rollback is a no-op;
 - the product can hand the user to the installed root.
 
 A future second Core release set must add a real cross-version update and rollback acceptance before that new set can be promoted.
