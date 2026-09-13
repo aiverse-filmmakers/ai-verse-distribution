@@ -32,6 +32,7 @@ class ManifestDriftTests(unittest.TestCase):
         mapping = {
             "core-first-member-beta-2026-09-13": ROOT / "release-sets" / "core-first-member-beta.json",
             "agent-public-beta-pending": ROOT / "release-sets" / "agent-public-beta-pending.json",
+            "full-public-beta-pending": ROOT / "release-sets" / "full-public-beta-pending.json",
         }
         for release_id, path in mapping.items():
             public = json.loads(path.read_text(encoding="utf-8"))
