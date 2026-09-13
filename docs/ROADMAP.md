@@ -1,6 +1,6 @@
 # AI-Verse Distribution Roadmap
 
-**Status:** Core implementation complete, Agent release blocked on upstream public-beta artifacts  
+**Status:** Core implementation built; Distribution hosted acceptance pending runner execution; Agent release blocked on Multiple Bots + composed Agent acceptance  
 **Updated:** 2026-09-13
 
 ## Phase 0: Reset and contract
@@ -57,7 +57,7 @@ aiverse support-bundle
 - [x] owner-preserved state rule;
 - [x] explicit no-Brain-handover/no-permission-grant facts.
 
-A future second admitted Core release set will exercise a real cross-version update/rollback transition in CI. The current catalog contains one admitted Core set, so the current update acceptance is necessarily same-set/no-op.
+The catalog preserves the historical first-member Core set and the current public-beta Core set, but no cross-version transition is currently admitted between them. The first-member set is frozen reproducibility evidence, not an asserted upgrade source for the current public-beta product. The next Core set that declares a cross-version update or rollback edge must exercise that exact transition in CI before the edge is admitted.
 
 ## Phase 4: Core clean-machine acceptance
 
@@ -76,12 +76,13 @@ Remote workflow results are release evidence only after GitHub Actions completes
 
 Profile contract is implemented.
 
-Current upstream blockers:
+Current Agent state:
 
-- [ ] canonical immutable AI-Verse Gateway release;
-- [ ] canonical immutable AI-Verse Automations release;
-- [ ] Multiple Bots complete public-beta lifecycle/readiness gate;
-- [ ] Token public-beta artifact if Token is included.
+- [x] Gateway exact accepted candidate: `b20d56eddec6514ec4bc65b510318289b9cffa41`;
+- [x] Automations exact accepted candidate: `494469a496d479cfec618bcd9511033c0cd3e815`;
+- [x] Token `0.1.0-beta.3` exact accepted candidate: `23b7b8ecbc9d9ef267f5e10449f785eb11107dd4`;
+- [ ] Multiple Bots complete public-beta lifecycle/readiness/release gate;
+- [ ] complete immutable Agent composition acceptance across the claimed platforms.
 
 The Agent clean-machine workflow exists as a release gate, currently proves fail-closed behavior, and deliberately exits non-zero while the profile is blocked. It must not turn green or be reported as an Agent acceptance pass until an admitted immutable Agent set exists and the full flow runs.
 
