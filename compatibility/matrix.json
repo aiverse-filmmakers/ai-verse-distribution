@@ -46,6 +46,21 @@
         "AI-Verse-Multiple-Bots public-beta lifecycle gate not complete",
         "AI-Verse-Token has no canonical public-beta release artifact"
       ]
+    },
+    "full-public-beta-pending": {
+      "profile": "full",
+      "status": "blocked",
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "python_min": "3.9",
+      "node_min": "22.5",
+      "blockers": [
+        "Agent profile does not yet have an admitted immutable public-beta release set",
+        "AI-Verse Connections, Dashboard, and Apps do not yet have one admitted compatible Full release set"
+      ]
     }
   }
 }
