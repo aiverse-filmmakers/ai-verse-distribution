@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
@@ -60,6 +62,71 @@ def _choose_profile(explicit: Optional[str]) -> str:
     return {"1": "core", "2": "agent", "3": "full", "4": "custom"}.get(value, value.lower())
 
 
+def _temporary_brain_answers(app: Orchestrator, args) -> tuple[Optional[Path], Optional[Path]]:
+    direct = any([
+        args.desired_state,
+        args.success_definition,
+        bool(args.boundary),
+    ])
+    if args.brain_answers and direct:
+        raise DistributionError(
+            "--brain-answers cannot be combined with --desired-state, --success-definition, or --boundary"
+        )
+    if args.brain_answers:
+        return args.brain_answers, None
+
+    desired = args.desired_state
+    success = args.success_definition
+    boundaries = list(args.boundary or [])
+
+    if not direct and sys.stdin.isatty():
+        print("AI-Verse Brain onboarding")
+        print("Strategic ownership is not transferred by this step.")
+        desired = input("Desired state: ").strip()
+        success = input("Success definition: ").strip()
+        boundary_text = input("Boundaries (optional, separate with ';'): ").strip()
+        if boundary_text:
+            boundaries = [item.strip() for item in boundary_text.split(";") if item.strip()]
+
+    if not desired and not success and not boundaries:
+        return None, None
+    if not desired or not success:
+        raise DistributionError(
+            "Brain onboarding requires both desired state and success definition"
+        )
+
+    payload = {
+        "desired_state": desired,
+        "success_definition": success,
+        "boundaries": boundaries,
+    }
+    fd, name = tempfile.mkstemp(
+        prefix=".brain-onboarding-",
+        suffix=".json",
+        dir=str(app.state.home),
+    )
+    try:
+        try:
+            os.chmod(name, 0o600)
+        except OSError:
+            pass
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle)
+            handle.write("\n")
+    except Exception:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        try:
+            os.unlink(name)
+        except FileNotFoundError:
+            pass
+        raise
+    path = Path(name)
+    return path, path
+
+
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="aiverse", description="AI-Verse one-product Distribution CLI")
     p.add_argument("--version", action="store_true", help="show Distribution version")
@@ -77,7 +144,10 @@ def _parser() -> argparse.ArgumentParser:
     q.add_argument("--json", action="store_true")
 
     q = sub.add_parser("onboard", help="hand off to owner onboarding without inventing Brain intent")
-    q.add_argument("--brain-answers", type=Path)
+    q.add_argument("--brain-answers", type=Path, help="expert JSON answers file")
+    q.add_argument("--desired-state")
+    q.add_argument("--success-definition")
+    q.add_argument("--boundary", action="append", default=[])
     q.add_argument("--json", action="store_true")
 
     q = sub.add_parser("status", help="show live owner-backed state")
@@ -149,7 +219,17 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             return 0
 
         if args.command == "onboard":
-            payload = app.onboard(args.brain_answers)
+            answers_path = None
+            cleanup_path = None
+            try:
+                answers_path, cleanup_path = _temporary_brain_answers(app, args)
+                payload = app.onboard(answers_path)
+            finally:
+                if cleanup_path is not None:
+                    try:
+                        cleanup_path.unlink()
+                    except FileNotFoundError:
+                        pass
             _emit(payload, args.json)
             return 0
 
