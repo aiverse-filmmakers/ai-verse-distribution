@@ -49,6 +49,8 @@ aiverse install --profile custom --component ai-verse-os --component ai-verse-me
 
 The installer resolves only exact immutable component commit IDs from an admitted release set. Moving `main` branches are never substituted.
 
+When a frozen historical component lacks its own package-manager lock, Distribution may ship a release-scoped companion dependency lock bound to that exact source manifest. The current Core Data artifact uses this mechanism: the Data Git revision stays unchanged, while dependency installation occurs from tracked source bytes in isolated Distribution staging through verified `npm ci`. Companion locks control packaging only and never own Data records or other canonical user state.
+
 The current released Core set is:
 
 `core-first-member-beta-2026-09-13`
