@@ -50,6 +50,8 @@ retired
 
 Only `released` can be selected by install/update/rollback.
 
+Here, `released` means the exact component software set is admitted for execution by this Distribution implementation. It does **not** by itself claim that the Distribution PR's cross-platform acceptance has passed. That separate evidence is recorded explicitly in the release manifest, and the Distribution product must not be called accepted/merged until the required hosted gate executes successfully.
+
 A blocked set may exist to make missing prerequisites visible. It must not contain guessed substitutes.
 
 ## Compatibility
