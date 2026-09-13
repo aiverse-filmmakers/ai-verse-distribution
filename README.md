@@ -63,6 +63,14 @@ After package installation:
 aiverse setup
 ```
 
+To explicitly initialize selected Data workspaces during setup:
+
+```bash
+aiverse setup --workspace project-a --workspace project-b
+```
+
+No workspace is initialized unless it is explicitly selected.
+
 Setup invokes each component's owner-controlled safe lifecycle.
 
 For the frozen Core set this includes:
