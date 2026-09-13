@@ -77,6 +77,23 @@ class Orchestrator:
         result = run(["git", "-C", str(path), "rev-parse", "HEAD"], check=False)
         return result.stdout.strip() if result.returncode == 0 else None
 
+    def _verify_exact_source(self, component: ComponentRef, source: Path) -> None:
+        head = self._git_head(source)
+        if head != component.revision:
+            raise DistributionError(
+                f"{component.id} source revision drifted: expected {component.revision}, got {head or 'not-a-git-checkout'}"
+            )
+        dirty = run(
+            ["git", "-C", str(source), "status", "--porcelain", "--untracked-files=no"],
+            check=False,
+        )
+        if dirty.returncode != 0:
+            raise DistributionError(f"cannot verify tracked source integrity for {component.id}")
+        if dirty.stdout.strip():
+            raise DistributionError(
+                f"{component.id} has tracked source modifications; Distribution will not execute modified owner code"
+            )
+
     def _clone_exact(self, component: ComponentRef, target: Path) -> Path:
         target = target.expanduser().resolve()
         head = self._git_head(target) if target.exists() else None
@@ -85,6 +102,7 @@ class Orchestrator:
                 raise DistributionError(
                     f"{component.id} source already exists at a different revision: {head}"
                 )
+            self._verify_exact_source(component, target)
             return target
         if target.exists() and any(target.iterdir()):
             raise DistributionError(f"refusing to overwrite non-empty path: {target}")
@@ -96,6 +114,7 @@ class Orchestrator:
             raise DistributionError(
                 f"{component.id} immutable checkout verification failed: expected {component.revision}, got {head}"
             )
+        self._verify_exact_source(component, target)
         return target
 
     def _venv_python(self, revision: str) -> Path:
@@ -219,6 +238,7 @@ class Orchestrator:
             raise DistributionError(f"{component_id} is not installed")
         root = Path(lock["root"]).expanduser().resolve()
         source = Path(receipt["source"]).expanduser().resolve()
+        self._verify_exact_source(component, source)
         return lock, release, component, root, source
 
     def _profile_component_ids(self, lock: Dict[str, Any], release: ReleaseSet) -> List[str]:
@@ -373,7 +393,12 @@ class Orchestrator:
             if isinstance(attachment, dict) and attachment.get("enabled") is False:
                 return "disabled"
 
-        if "attached but disabled" in text or "component is disabled" in text:
+        if (
+            "attached but disabled" in text
+            or "component is disabled" in text
+            or "enabled=false" in text
+            or "enabled = false" in text
+        ):
             return "disabled"
 
         return "ready" if getattr(result, "returncode", 1) == 0 else "unhealthy"
