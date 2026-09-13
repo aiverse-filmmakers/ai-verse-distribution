@@ -19,6 +19,19 @@ class CompanionDependencyLockTests(unittest.TestCase):
             if item.id == "ai-verse-data"
         )
 
+    def test_native_data_smoke_executes_real_sqlite_load(self):
+        with tempfile.TemporaryDirectory() as td:
+            app = Orchestrator(state=StateStore(Path(td) / "state"), catalog=self.catalog)
+            with patch("aiverse_distribution.orchestrator.which", return_value="node"), patch(
+                "aiverse_distribution.orchestrator.run"
+            ) as mocked:
+                app._verify_data_native_runtime(Path(td) / "runtime")
+            argv = mocked.call_args.args[0]
+            self.assertEqual(argv[:2], ["node", "-e"])
+            self.assertIn("better-sqlite3", argv[2])
+            self.assertIn("CREATE TABLE", argv[2])
+            self.assertIn("SELECT v FROM t", argv[2])
+
     def test_source_package_drift_rejects_companion_lock(self):
         with tempfile.TemporaryDirectory() as td:
             source = Path(td)
