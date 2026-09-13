@@ -53,9 +53,9 @@ When a frozen historical component lacks its own package-manager lock, Distribut
 
 The current released Core set is:
 
-`core-first-member-beta-2026-09-13`
+`core-public-beta-2026-09-13`
 
-The Agent profile is deliberately blocked until all required owner repositories have immutable public-beta artifacts. Distribution fails closed instead of constructing a partial or guessed Agent release.
+The Agent profile remains deliberately blocked until the complete immutable Agent set exists and its composed clean-machine acceptance passes. Gateway, Automations, and Token now have exact accepted candidate artifacts recorded in the pending Agent manifest; Multiple Bots productization and final Agent composition acceptance remain outstanding. Distribution fails closed instead of constructing a partial Agent release.
 
 The Full profile is also explicitly blocked until Agent has an admitted immutable release set and Connections, Dashboard, and Apps have one compatible Full release set.
 
