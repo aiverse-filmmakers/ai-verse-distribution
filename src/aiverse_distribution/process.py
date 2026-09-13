@@ -39,6 +39,7 @@ def run(
     *,
     cwd: Optional[Path] = None,
     env: Optional[Mapping[str, str]] = None,
+    input_text: Optional[str] = None,
     check: bool = True,
 ) -> CommandResult:
     if not argv or any(not isinstance(x, str) or "\x00" in x for x in argv):
@@ -50,6 +51,7 @@ def run(
         list(argv),
         cwd=str(cwd) if cwd else None,
         env=merged,
+        input=input_text,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
