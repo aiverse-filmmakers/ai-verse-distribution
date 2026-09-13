@@ -237,6 +237,13 @@ class Orchestrator:
             raise DistributionError("AI-Verse is not installed through Distribution")
         release = self.catalog.get_release(lock["release_set_id"], require_released=True)
         wanted = [component_id] if component_id else self._profile_component_ids(lock, release)
+        selected_workspaces = list(workspaces or [])
+        if selected_workspaces and "ai-verse-data" not in wanted:
+            raise DistributionError("--workspace is valid only when AI-Verse Data is part of setup")
+        for workspace_id in selected_workspaces:
+            if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,127}", workspace_id):
+                raise DistributionError(f"invalid workspace id: {workspace_id}")
+
         results: Dict[str, Any] = {}
         root = Path(lock["root"]).expanduser().resolve()
 
@@ -254,8 +261,7 @@ class Orchestrator:
             lock["components"][cid]["last_setup_result"] = "success"
             self.state.write(lock, archive_previous=False)
 
-        selected_workspaces = list(workspaces or [])
-        if selected_workspaces and "ai-verse-data" in wanted:
+        if selected_workspaces:
             data_host = root / "scripts" / "data-host.mjs"
             if not data_host.is_file():
                 raise DistributionError(
@@ -263,8 +269,6 @@ class Orchestrator:
                 )
             workspace_results = []
             for workspace_id in selected_workspaces:
-                if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,127}", workspace_id):
-                    raise DistributionError(f"invalid workspace id: {workspace_id}")
                 request = {
                     "protocol": "ai-verse-os-data-host/1.0",
                     "request_id": f"distribution-setup-{workspace_id}",
