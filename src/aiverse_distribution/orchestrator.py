@@ -147,17 +147,16 @@ class Orchestrator:
         run(command, cwd=source)
         run([npm, "run", "build"], cwd=source)
 
-    def _install_component(self, component: ComponentRef, root: Path, release: ReleaseSet) -> Dict[str, Any]:
+    def _stage_component(self, component: ComponentRef, root: Path, release: ReleaseSet) -> Dict[str, Any]:
+        """Prepare exact software bytes without changing live component attachment/authority."""
         source = root if component.id == "ai-verse-os" else self.state.source_dir(release.id, component.id)
         source = self._clone_exact(component, source)
 
         if component.id == "ai-verse-brain":
             self._prepare_brain(source, component.revision)
-        elif component.id == "ai-verse-skills":
-            self._prepare_skills(source)
         elif component.id == "ai-verse-data":
             self._prepare_data(source)
-        elif component.id in {"ai-verse-os", "ai-verse-memory"}:
+        elif component.id in {"ai-verse-os", "ai-verse-memory", "ai-verse-skills"}:
             pass
         else:
             raise DistributionError(
@@ -172,6 +171,14 @@ class Orchestrator:
             "setup_completed_at": None,
             "uninstalled_at": None,
         }
+
+    def _install_component(self, component: ComponentRef, root: Path, release: ReleaseSet) -> Dict[str, Any]:
+        receipt = self._stage_component(component, root, release)
+        if component.id == "ai-verse-skills":
+            # Initial install creates the immutable active provider generation.
+            # Release-set update uses _stage_component instead so staging never flips live Skills.
+            self._prepare_skills(Path(receipt["source"]))
+        return receipt
 
     def install(
         self,
@@ -615,7 +622,44 @@ class Orchestrator:
         current_catalog = self.catalog.get_release(lock["release_set_id"], require_released=True)
         target = self._resolve_target_release(lock, plan["to"])
         self.preflight(target)
+
+        if target.id != lock["release_set_id"]:
+            transition = self.catalog.compatibility_for(target.id)
+            allowed_from = set(transition.get("update_from", []))
+            if lock["release_set_id"] not in allowed_from:
+                raise DistributionError(
+                    f"release set {target.id} is not explicitly admitted for update from {lock['release_set_id']}"
+                )
+
+        current_ids = {
+            cid
+            for cid, receipt in lock.get("components", {}).items()
+            if not receipt.get("uninstalled_at")
+        }
+        target_ids = {component.id for component in target.components}
+        added = sorted(target_ids - current_ids)
+        removed = sorted(current_ids - target_ids)
+        if added or removed:
+            detail = []
+            if added:
+                detail.append("add " + ", ".join(added))
+            if removed:
+                detail.append("remove " + ", ".join(removed))
+            raise DistributionError(
+                "component-set-changing release transitions require an explicit Distribution transition adapter: "
+                + "; ".join(detail)
+            )
+
         root = Path(lock["root"]).resolve()
+        previous_setup = {
+            cid: bool(receipt.get("setup_completed_at"))
+            for cid, receipt in lock.get("components", {}).items()
+            if cid in current_ids
+        }
+        for component in current_catalog.components:
+            if component.id in current_ids:
+                receipt = lock["components"][component.id]
+                self._verify_exact_source(component, Path(receipt["source"]).expanduser().resolve())
         os_receipt = lock.get("components", {}).get("ai-verse-os")
         old_os = (
             next((x for x in current_catalog.components if x.id == "ai-verse-os"), None)
@@ -631,7 +675,7 @@ class Orchestrator:
             for component in target.components:
                 if component.id == "ai-verse-os":
                     continue
-                prepared[component.id] = self._install_component(component, root, target)
+                prepared[component.id] = self._stage_component(component, root, target)
 
             if os_changed and new_os:
                 dirty = run([
@@ -642,33 +686,45 @@ class Orchestrator:
                 run(["git", "-C", str(root), "fetch", "origin", new_os.revision])
                 run(["git", "-C", str(root), "checkout", "--detach", new_os.revision])
 
-            new_lock = dict(lock)
+            new_lock = json.loads(json.dumps(lock))
             new_lock["release_set_id"] = target.id
             new_lock["state"] = "updating"
             for component in target.components:
+                was_setup = previous_setup.get(component.id, False)
                 if component.id == "ai-verse-os":
                     new_lock["components"][component.id] = {
                         "repository": component.repository,
                         "revision": component.revision,
                         "source": str(root),
                         "installed_at": now_iso(),
-                        "setup_completed_at": now_iso(),
+                        "setup_completed_at": now_iso() if was_setup else None,
                         "uninstalled_at": None,
                     }
                     continue
+
                 receipt = prepared[component.id]
                 new_lock["components"][component.id] = receipt
-                owner_update(
-                    component.id,
-                    root=root,
-                    source=Path(receipt["source"]),
-                    revision=component.revision,
-                    state=self.state,
-                )
-                new_lock["components"][component.id]["setup_completed_at"] = now_iso()
+                if was_setup:
+                    owner_update(
+                        component.id,
+                        root=root,
+                        source=Path(receipt["source"]),
+                        revision=component.revision,
+                        state=self.state,
+                    )
+                    new_lock["components"][component.id]["setup_completed_at"] = now_iso()
+                    new_lock["components"][component.id]["last_setup_result"] = "success"
 
-            new_lock["state"] = "setup"
-            new_lock["profile"] = target.profile
+            all_setup = all(
+                bool(new_lock["components"][component.id].get("setup_completed_at"))
+                for component in target.components
+            )
+            new_lock["state"] = "setup" if all_setup else "installed"
+            new_lock["profile"] = lock["profile"]
+            if all_setup:
+                new_lock["setup_completed_at"] = now_iso()
+            else:
+                new_lock.pop("setup_completed_at", None)
             self.state.write(new_lock, archive_previous=True)
             return {**plan, "applied": True, "changed": True}
         except Exception:
@@ -677,10 +733,20 @@ class Orchestrator:
             raise
 
     def rollback(self, release_set_id: str, apply: bool = False) -> Dict[str, Any]:
+        lock = self.state.load()
+        if not lock:
+            raise DistributionError("AI-Verse is not installed through Distribution")
         target = self.catalog.get_release(release_set_id, require_released=True)
         compatibility = self.catalog.compatibility_for(target.id)
         if compatibility.get("rollback_rule") != "software-only-owner-state-preserved":
             raise DistributionError(f"{target.id} is not admitted for safe Distribution rollback")
+        if target.id != lock["release_set_id"]:
+            current_compatibility = self.catalog.compatibility_for(lock["release_set_id"])
+            rollback_to = set(current_compatibility.get("rollback_to", []))
+            if target.id not in rollback_to:
+                raise DistributionError(
+                    f"release set {lock['release_set_id']} does not explicitly admit rollback to {target.id}"
+                )
         plan = self.update_plan(target.id)
         plan["rollback"] = True
         if not apply:
