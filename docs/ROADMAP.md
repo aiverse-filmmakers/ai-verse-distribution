@@ -48,6 +48,9 @@ aiverse support-bundle
 
 - [x] immutable release-set update planning;
 - [x] exact target compatibility validation;
+- [x] explicit update-from / rollback-to transition gates;
+- [x] non-live Skills staging during release-set updates;
+- [x] setup-required state preservation during software update;
 - [x] same-set safe no-op;
 - [x] dirty tracked OS protection;
 - [x] known-compatible software rollback path;
