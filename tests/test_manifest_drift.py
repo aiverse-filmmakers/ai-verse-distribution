@@ -43,7 +43,7 @@ class ManifestDriftTests(unittest.TestCase):
 
     def test_catalog_still_validates_after_public_mirroring(self):
         catalog = Catalog()
-        self.assertEqual(catalog.resolve("core").id, "core-first-member-beta-2026-09-13")
+        self.assertEqual(catalog.resolve("core").id, "core-public-beta-2026-09-13")
 
 
 if __name__ == "__main__":
