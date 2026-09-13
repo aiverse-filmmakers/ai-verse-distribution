@@ -33,7 +33,12 @@
       "id": "ai-verse-data",
       "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
       "revision": "189b13264ab86115d2f21fee3ba8cd5a8dac6581",
-      "install_order": 50
+      "install_order": 50,
+      "dependency_lock": {
+        "scheme": "distribution-companion-npm-lock-v1",
+        "manifest": "ai-verse-data/189b13264ab86115d2f21fee3ba8cd5a8dac6581/lock.json",
+        "manifest_sha256": "32194745235d8bca63bbdc9f89dcd73a48ff251be67c87196a4c9d93a35dafd6"
+      }
     }
   ],
   "evidence": {
