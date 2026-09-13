@@ -36,7 +36,7 @@ Distribution keeps three kinds of truth separate:
 
 For frozen Data revision `189b13264ab86115d2f21fee3ba8cd5a8dac6581`, the source commit is preserved unchanged. Distribution supplies a release-scoped npm lock because that historical commit contains `package.json` but no npm/pnpm/Yarn lockfile. The companion lock is bound to the SHA-256 of that exact `package.json`, has its own SHA-256, records npm/lockfile compatibility and provenance, and is used only in an isolated Distribution staging directory with deterministic `npm ci`.
 
-Distribution must fail closed if the source package manifest, companion manifest, companion lock digest, lockfile version, package-manager compatibility, or resolved installed package tree differs from the admitted release record. Distribution never regenerates or updates a released companion lock during user installation.
+Distribution must fail closed if the source package manifest, companion manifest, companion lock digest, lockfile version, package-manager compatibility, or resolved installed package tree differs from the admitted release record. For the npm companion-lock scheme, the dependency-tree receipt is SHA-256 over the canonical sorted `node_modules/<package-path>` + version identities. After `npm ci`, Distribution recomputes that digest from npm's generated `node_modules/.package-lock.json`, so extra packages, missing packages, nesting changes, and version drift are rejected. Distribution never regenerates or updates a released companion lock during user installation.
 
 ## Status
 
