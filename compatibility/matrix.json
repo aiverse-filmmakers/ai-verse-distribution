@@ -1,6 +1,10 @@
 {
   "schema_version": 1,
-  "platforms": ["darwin", "linux", "win32"],
+  "platforms": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
   "runtime_floor": {
     "python": "3.9",
     "node": "22.0",
@@ -10,16 +14,30 @@
     "core-first-member-beta-2026-09-13": {
       "profile": "core",
       "status": "released",
-      "platforms": ["darwin", "linux", "win32"],
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
       "python_min": "3.9",
       "node_min": "22.0",
       "state_rule": "owner-preserved",
-      "rollback_rule": "software-only-owner-state-preserved"
+      "rollback_rule": "software-only-owner-state-preserved",
+      "update_from": [
+        "core-first-member-beta-2026-09-13"
+      ],
+      "rollback_to": [
+        "core-first-member-beta-2026-09-13"
+      ]
     },
     "agent-public-beta-pending": {
       "profile": "agent",
       "status": "blocked",
-      "platforms": ["darwin", "linux", "win32"],
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
       "python_min": "3.9",
       "node_min": "22.5",
       "blockers": [
