@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "core-first-member-beta-2026-09-13",
+  "profile": "core",
+  "status": "released",
+  "components": [
+    {
+      "id": "ai-verse-os",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+      "revision": "89fb9043ec58c05931d477ef3e154df428a06c22"
+    },
+    {
+      "id": "ai-verse-brain",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+      "revision": "bef8261ad35d126d29aeff5d496f46904125b7b6"
+    },
+    {
+      "id": "ai-verse-memory",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+      "revision": "f5b417f9e7ce1b3f05bc80d10a483d10f6ad10ee"
+    },
+    {
+      "id": "ai-verse-skills",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+      "revision": "3ab838e6e64561bbb7cea8f85d0ebc75b9e84337"
+    },
+    {
+      "id": "ai-verse-data",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+      "revision": "189b13264ab86115d2f21fee3ba8cd5a8dac6581"
+    }
+  ],
+  "authority": {
+    "grants_permissions": false,
+    "transfers_brain_strategy": false,
+    "initializes_all_workspaces": false
+  }
+}
