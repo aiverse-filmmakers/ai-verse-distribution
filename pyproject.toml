@@ -8,7 +8,6 @@ version = "0.1.0b1"
 description = "Canonical one-product installer and compatible release-set orchestrator for AI-Verse"
 requires-python = ">=3.9"
 readme = "README.md"
-license = {text = "MIT"}
 dependencies = []
 
 [project.scripts]
