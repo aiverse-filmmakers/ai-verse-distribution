@@ -41,7 +41,7 @@
       "python_min": "3.9",
       "node_min": "22.5",
       "blockers": [
-        "AI-Verse-Multiple-Bots Phase 5 productization is incomplete; Phase 5.6 production health/doctor and later release slices, including full release acceptance, remain outstanding",
+        "AI-Verse-Multiple-Bots is complete through Phase 5.9; remaining Phase 5 release slices and final public-beta release acceptance are still outstanding",
         "No complete immutable Agent release set can be admitted until Multiple Bots supplies its accepted public-beta artifact alongside the accepted Gateway, Automations and Token candidates",
         "The complete Agent clean-machine install/setup/onboard/doctor/use acceptance has not yet passed"
       ]
