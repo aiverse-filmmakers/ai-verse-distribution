@@ -29,9 +29,12 @@ def _skills(source: Path, *args: str) -> List[str]:
 
 
 def _memory_installed(root: Path, *args: str) -> List[str]:
+    native = root / "scripts" / "ai-verse-memory" / "memory.py"
+    standalone = root / ".ai-verse-memory" / "memory.py"
+    engine = native if native.is_file() else standalone
     return [
         sys.executable,
-        str(root / "scripts" / "ai-verse-memory" / "memory.py"),
+        str(engine),
         "--root",
         str(root),
         *args,
@@ -48,7 +51,8 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
 
     if component_id == "ai-verse-brain":
         cli = _brain_executable(state, revision)
-        results.append(run([str(cli), "attach", str(root), "--apply"]))
+        if (root / "AI-VERSE.yaml").is_file():
+            results.append(run([str(cli), "attach", str(root), "--apply"]))
         results.append(run([str(cli), "init", str(root), "--apply"]))
         return results
 
@@ -128,6 +132,10 @@ def owner_enablement(
         raise ValueError(action)
 
     if component_id == "ai-verse-memory":
+        if not (root / "AI-VERSE.yaml").is_file():
+            raise UnsupportedLifecycle(
+                "the frozen Memory release exposes enable/disable only for native AI-Verse OS attachment"
+            )
         return run([
             sys.executable,
             str(source / "scripts" / "install.py"),
@@ -155,8 +163,16 @@ def owner_enablement(
 
 def owner_uninstall(component_id: str, *, root: Path, source: Path, revision: str, state: StateStore) -> CommandResult:
     if component_id == "ai-verse-brain":
+        if not (root / "AI-VERSE.yaml").is_file():
+            raise UnsupportedLifecycle(
+                "the frozen Brain release does not expose a standalone uninstall; canonical Brain state is preserved"
+            )
         return run([str(_brain_executable(state, revision)), "detach", str(root), "--apply"])
     if component_id == "ai-verse-memory":
+        if not (root / "AI-VERSE.yaml").is_file():
+            raise UnsupportedLifecycle(
+                "the frozen Memory release does not expose a standalone uninstall; canonical Memory state is preserved"
+            )
         return run([
             sys.executable, str(source / "scripts" / "install.py"),
             "--target", str(root), "--source-dir", str(source), "--action", "detach",
