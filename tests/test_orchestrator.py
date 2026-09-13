@@ -120,7 +120,11 @@ class OrchestratorPlanningTests(unittest.TestCase):
                 "uninstalled_at": None,
             }
 
-            result = app.install(profile="core", root=root)
+            result = app.install(
+                profile="core",
+                root=root,
+                release_set_id="core-first-member-beta-2026-09-13",
+            )
             self.assertEqual(result["state"], "installed")
             self.assertEqual(set(result["components"]), set(resolved))
 
