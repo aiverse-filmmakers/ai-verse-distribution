@@ -21,7 +21,7 @@ The acceptance sequence is:
 ```text
 aiverse install --profile core
 -> aiverse setup --workspace alpha
--> explicit Brain onboarding through public flags
+-> ownership-safe Brain practice onboarding through public flags
 -> aiverse status
 -> aiverse doctor
 -> Memory remember/recall
@@ -32,7 +32,7 @@ aiverse install --profile core
 -> aiverse doctor
 -> Brain / Memory / Skills / Data uninstall-reinstall
 -> verify Brain ownership remains explicit
--> verify Memory/Data canonical state survives
+-> verify Brain/Memory/Skills/Data owner state survives
 -> aiverse doctor
 -> same-set aiverse update --apply
 -> same-set aiverse rollback --to core-public-beta-2026-09-13 --apply
@@ -53,7 +53,7 @@ Acceptance asserts:
 - structured Data create/read works through the OS host;
 - disable/enable preserves the installation and structured Data record;
 - owner-safe uninstall/reinstall works for Brain, Memory, Skills, and Data;
-- Memory and Data canonical user state survive uninstall/reinstall;
+- Brain-owned practice, Memory canonical history, prior Skills immutable generation, and Data canonical records survive uninstall/reinstall;
 - OS is not uninstalled because the host root may contain user-owned canonical state;
 - the current same-set update is a no-op;
 - the current known-compatible same-set rollback is a no-op;
@@ -78,13 +78,14 @@ Today the workflow proves a required safety property and deliberately remains fa
 ```text
 aiverse install --profile agent
 -> RELEASE_BLOCKED
--> concrete missing immutable owner artifacts
+-> accepted Gateway / Automations / Token candidates remain uninstalled
+-> Multiple Bots + complete Agent composition acceptance remain outstanding
 -> no partial Agent installation
 ```
 
 This is not a complete Agent acceptance pass. The script exits non-zero after confirming fail-closed behavior so a blocked Agent can never appear green.
 
-When Gateway, Automations, Multiple Bots, and Token inclusion prerequisites are released, the Agent release-set record must be populated with exact immutable versions. The same harness must then be extended to prove:
+Gateway, Automations, and Token now have exact accepted candidate refs recorded in the pending manifest. Once Multiple Bots completes its public-beta product/release gate, the Agent release-set record must be promoted with the complete exact immutable component set. The same harness must then be extended to prove:
 
 ```text
 install
@@ -124,4 +125,4 @@ Unit coverage includes:
 
 Configuration of a workflow is not equivalent to a passed release.
 
-A release claim requires the corresponding GitHub Actions run to complete successfully for the exact implementation commit.
+A release claim requires the corresponding GitHub Actions run to complete successfully for the exact implementation commit. A job that receives no runner and executes zero steps is recorded as infrastructure-unexecuted evidence, not as an application/test failure.
