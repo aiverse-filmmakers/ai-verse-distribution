@@ -596,7 +596,6 @@ class Orchestrator:
         old = {
             cid: receipt.get("revision")
             for cid, receipt in lock.get("components", {}).items()
-            if not receipt.get("uninstalled_at")
         }
         new = {x.id: x.revision for x in target.components}
         changes = []
