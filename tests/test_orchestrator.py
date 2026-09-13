@@ -309,6 +309,23 @@ class OrchestratorPlanningTests(unittest.TestCase):
             healthy = CommandResult(["component", "status"], 0, "healthy", "")
             self.assertEqual(app._state_from_result(healthy, True), "ready")
 
+            for owner_state in (
+                "absent",
+                "installed",
+                "setup-required",
+                "disabled",
+                "unhealthy",
+                "migration-required",
+                "ready",
+            ):
+                structured = CommandResult(
+                    ["component", "status"],
+                    0,
+                    '{"state":"' + owner_state + '"}',
+                    "",
+                )
+                self.assertEqual(app._state_from_result(structured, True), owner_state)
+
 
 if __name__ == "__main__":
     unittest.main()
