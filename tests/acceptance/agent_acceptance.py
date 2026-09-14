@@ -154,9 +154,10 @@ def create_goal(install: dict[str, Any], root: Path) -> dict[str, Any]:
         "--objective", "Complete one bounded deterministic Agent release verification run.",
         "--json",
     ])
-    goal = json.loads(result.stdout)
-    if not goal.get("goal_id"):
-        raise RuntimeError(f"Brain Goal create returned no goal_id: {goal}")
+    response = json.loads(result.stdout)
+    goal = response.get("goal", response)
+    if not isinstance(goal, dict) or not goal.get("goal_id"):
+        raise RuntimeError(f"Brain Goal create returned no goal_id: {response}")
     return goal
 
 
