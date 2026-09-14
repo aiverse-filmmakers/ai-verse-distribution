@@ -1,0 +1,211 @@
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+from types import SimpleNamespace
+
+from aiverse_distribution.orchestrator import Orchestrator
+from aiverse_distribution.release_catalog import DistributionError
+
+
+class FakeState:
+    def __init__(self, value=None):
+        self.value = value
+        self.writes = []
+
+    def load(self):
+        return self.value
+
+    def write(self, value, archive_previous=False):
+        self.value = value
+        self.writes.append((value, archive_previous))
+
+
+class FakeCatalog:
+    def get_release(self, release_set_id, require_released=True):
+        return SimpleNamespace(id=release_set_id, profile="agent")
+
+
+class FakeBootstrap:
+    def __init__(self, *, current=None, before="setup-required", doctor_ok=True):
+        self.state = FakeState(current)
+        self.catalog = FakeCatalog()
+        self.before = before
+        self.doctor_ok = doctor_ok
+        self.install_calls = []
+        self.setup_calls = 0
+        self.doctor_calls = 0
+        self.open_calls = 0
+
+    def install(self, *, profile, root, release_set_id=None, components=None):
+        self.install_calls.append({
+            "profile": profile,
+            "root": Path(root),
+            "release_set_id": release_set_id,
+        })
+        release_id = release_set_id or "agent-public-beta-2026-09-14"
+        self.state.value = {
+            "schema_version": 1,
+            "profile": profile,
+            "release_set_id": release_id,
+            "root": str(Path(root).resolve()),
+            "state": "installed",
+            "authority": {
+                "permissions_granted": False,
+                "brain_strategy_transferred": False,
+            },
+            "components": {},
+        }
+        self.before = "setup-required"
+        return self.state.value
+
+    def status(self):
+        return {
+            "state": self.before,
+            "profile": "agent",
+            "release_set_id": (self.state.value or {}).get("release_set_id"),
+            "root": (self.state.value or {}).get("root"),
+        }
+
+    def setup(self):
+        self.setup_calls += 1
+        self.before = "ready"
+        if self.state.value:
+            self.state.value["state"] = "setup"
+        return {"results": {"owners": "setup"}}
+
+    def doctor(self):
+        self.doctor_calls += 1
+        return {
+            "ok": self.doctor_ok,
+            "depth": ["structural", "runtime", "system-composed"],
+        }
+
+    def open_info(self):
+        self.open_calls += 1
+        return {
+            "root": self.state.value["root"],
+            "profile": "agent",
+            "release_set_id": self.state.value["release_set_id"],
+            "next": ["Open this AI-Verse OS root in a supported runtime."],
+        }
+
+
+class ProductBootstrapTests(unittest.TestCase):
+    def test_fresh_start_installs_exact_agent_then_setup_and_doctor(self):
+        with tempfile.TemporaryDirectory() as td:
+            app = FakeBootstrap()
+            root = Path(td) / "AI-Verse"
+            result = Orchestrator.start(app, root=root)
+
+            self.assertTrue(result["ready"])
+            self.assertEqual(result["state"], "ready")
+            self.assertEqual(result["profile"], "agent")
+            self.assertEqual(result["release_set_id"], "agent-public-beta-2026-09-14")
+            self.assertEqual(result["message"], "AI-Verse is ready. What would you like help with?")
+            self.assertEqual(result["onboarding"]["mode"], "progressive")
+            self.assertFalse(result["onboarding"]["deep_questionnaire_required"])
+            self.assertEqual(app.install_calls[0]["profile"], "agent")
+            self.assertEqual(app.setup_calls, 1)
+            self.assertEqual(app.doctor_calls, 1)
+            self.assertEqual(app.open_calls, 1)
+
+            first_run = app.state.value["first_run"]
+            self.assertTrue(first_run["doctor_verified"])
+            self.assertEqual(first_run["onboarding"], "progressive")
+            self.assertFalse(first_run["permissions_granted"])
+            self.assertFalse(first_run["brain_strategy_transferred"])
+
+    def test_ready_start_is_idempotent_and_does_not_rerun_setup(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            current = {
+                "schema_version": 1,
+                "profile": "agent",
+                "release_set_id": "agent-public-beta-2026-09-14",
+                "root": str(root.resolve()),
+                "state": "setup",
+                "authority": {
+                    "permissions_granted": False,
+                    "brain_strategy_transferred": False,
+                },
+                "components": {},
+            }
+            app = FakeBootstrap(current=current, before="ready")
+            result = Orchestrator.start(app)
+
+            self.assertTrue(result["ready"])
+            self.assertEqual(app.install_calls, [])
+            self.assertEqual(app.setup_calls, 0)
+            self.assertEqual(app.doctor_calls, 1)
+
+    def test_disabled_state_fails_closed_without_auto_repair(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            current = {
+                "schema_version": 1,
+                "profile": "agent",
+                "release_set_id": "agent-public-beta-2026-09-14",
+                "root": str(root.resolve()),
+                "state": "setup",
+                "components": {},
+            }
+            app = FakeBootstrap(current=current, before="disabled")
+            result = Orchestrator.start(app)
+
+            self.assertFalse(result["ready"])
+            self.assertEqual(result["state"], "needs-attention")
+            self.assertIn("No repair, migration, or permission change was attempted", result["message"])
+            self.assertEqual(app.install_calls, [])
+            self.assertEqual(app.setup_calls, 0)
+            self.assertEqual(app.doctor_calls, 0)
+            self.assertEqual(app.open_calls, 0)
+
+    def test_failed_doctor_stops_before_conversational_handoff(self):
+        with tempfile.TemporaryDirectory() as td:
+            app = FakeBootstrap(doctor_ok=False)
+            result = Orchestrator.start(app, root=Path(td) / "AI-Verse")
+
+            self.assertFalse(result["ready"])
+            self.assertEqual(result["state"], "needs-attention")
+            self.assertEqual(app.setup_calls, 1)
+            self.assertEqual(app.doctor_calls, 1)
+            self.assertEqual(app.open_calls, 0)
+            self.assertIn("No destructive repair or authority change was attempted", result["message"])
+
+    def test_existing_agent_cannot_be_silently_moved_or_released_switched(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            current = {
+                "schema_version": 1,
+                "profile": "agent",
+                "release_set_id": "agent-public-beta-2026-09-14",
+                "root": str(root.resolve()),
+                "state": "setup",
+                "components": {},
+            }
+            app = FakeBootstrap(current=current, before="ready")
+            with self.assertRaises(DistributionError):
+                Orchestrator.start(app, root=Path(td) / "Elsewhere")
+            with self.assertRaises(DistributionError):
+                Orchestrator.start(app, release_set_id="future-agent-release")
+
+    def test_non_agent_lock_is_not_reprofiled(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            current = {
+                "schema_version": 1,
+                "profile": "core",
+                "release_set_id": "core-public-beta-2026-09-13",
+                "root": str(root.resolve()),
+                "state": "setup",
+                "components": {},
+            }
+            app = FakeBootstrap(current=current, before="ready")
+            with self.assertRaises(DistributionError):
+                Orchestrator.start(app)
+
+
+if __name__ == "__main__":
+    unittest.main()

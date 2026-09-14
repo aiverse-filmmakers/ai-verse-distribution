@@ -792,6 +792,189 @@ class Orchestrator:
 
         return {"release_set_id": release.id, "root": str(root), "results": results}
 
+    def start(
+        self,
+        *,
+        root: Optional[Path] = None,
+        release_set_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Run the ordinary one-action first-use path without inventing new owners.
+
+        Fresh installs use the exact released Agent set. Existing installations
+        are never silently switched to another profile/release/root; that remains
+        update/rollback territory. Automatic setup is limited to installed or
+        setup-required states. Disabled, unhealthy, migration-required, or other
+        ambiguous states fail closed and are handed to explicit diagnostics.
+        """
+        current = self.state.load()
+        setup_performed = False
+
+        if current:
+            if current.get("profile") != "agent":
+                raise DistributionError(
+                    "aiverse start requires an Agent installation; the existing Distribution "
+                    f"lock is profile {current.get('profile')!r}. Use the locked profile or a "
+                    "separate AIVERSE_DISTRIBUTION_HOME."
+                )
+            locked_root = Path(current.get("root", "")).expanduser().resolve()
+            if root is not None and root.expanduser().resolve() != locked_root:
+                raise DistributionError(
+                    "aiverse start cannot silently move an existing installation to another root"
+                )
+            if release_set_id and release_set_id != current.get("release_set_id"):
+                raise DistributionError(
+                    "aiverse start cannot silently change release sets; use aiverse update/rollback"
+                )
+            root = locked_root
+            release_set_id = current.get("release_set_id")
+            release = self.catalog.get_release(release_set_id, require_released=True)
+            if release.profile != "agent":
+                raise DistributionError(
+                    f"locked release set {release.id} is not an Agent release"
+                )
+            if current.get("state") == "installing":
+                self.install(
+                    profile="agent",
+                    root=root,
+                    release_set_id=release_set_id,
+                )
+        else:
+            root = (root or (Path.home() / "AI-Verse")).expanduser().resolve()
+            installed = self.install(
+                profile="agent",
+                root=root,
+                release_set_id=release_set_id,
+            )
+            release_set_id = installed["release_set_id"]
+
+        before = self.status()
+        before_state = before.get("state")
+        if before_state in {"installed", "setup-required"}:
+            self.setup()
+            setup_performed = True
+        elif before_state == "ready":
+            pass
+        elif before_state in {"disabled", "unhealthy", "migration-required", "absent"}:
+            return {
+                "state": "needs-attention",
+                "ready": False,
+                "profile": "agent",
+                "release_set_id": release_set_id,
+                "root": str(root),
+                "message": (
+                    "AI-Verse is installed, but automatic first-run stopped because "
+                    f"the current state is {before_state}. No repair, migration, or "
+                    "permission change was attempted."
+                ),
+                "verification": {
+                    "status": before_state,
+                    "doctor_ok": False,
+                },
+                "onboarding": {
+                    "mode": "progressive",
+                    "deep_questionnaire_required": False,
+                    "started": False,
+                },
+                "next": [
+                    "Run aiverse doctor --json for the exact technical reason.",
+                    "Use explicit lifecycle/recovery commands only after reviewing that result.",
+                ],
+            }
+        else:
+            return {
+                "state": "needs-attention",
+                "ready": False,
+                "profile": "agent",
+                "release_set_id": release_set_id,
+                "root": str(root),
+                "message": (
+                    "AI-Verse installation state is not safe for automatic first-run. "
+                    "No mutation beyond the locked install was attempted."
+                ),
+                "verification": {
+                    "status": before_state,
+                    "doctor_ok": False,
+                },
+                "onboarding": {
+                    "mode": "progressive",
+                    "deep_questionnaire_required": False,
+                    "started": False,
+                },
+                "next": ["Run aiverse status --json and aiverse doctor --json."],
+            }
+
+        doctor = self.doctor()
+        if doctor.get("ok") is not True:
+            return {
+                "state": "needs-attention",
+                "ready": False,
+                "profile": "agent",
+                "release_set_id": release_set_id,
+                "root": str(root),
+                "message": (
+                    "AI-Verse installed and setup ran, but health verification did not pass. "
+                    "No destructive repair or authority change was attempted."
+                ),
+                "verification": {
+                    "status": self.status().get("state"),
+                    "doctor_ok": False,
+                    "depth": doctor.get("depth", []),
+                },
+                "onboarding": {
+                    "mode": "progressive",
+                    "deep_questionnaire_required": False,
+                    "started": False,
+                },
+                "next": [
+                    "Run aiverse doctor --json for technical details.",
+                    "Resolve the reported owner issue before continuing.",
+                ],
+            }
+
+        lock = self.state.load() or {}
+        lock["first_run"] = {
+            "state": "ready",
+            "completed_at": now_iso(),
+            "profile": "agent",
+            "release_set_id": release_set_id,
+            "setup_performed": setup_performed,
+            "doctor_verified": True,
+            "onboarding": "progressive",
+            "permissions_granted": False,
+            "brain_strategy_transferred": False,
+        }
+        self.state.write(lock, archive_previous=False)
+
+        opened = self.open_info()
+        return {
+            "state": "ready",
+            "ready": True,
+            "profile": "agent",
+            "release_set_id": release_set_id,
+            "root": str(root),
+            "message": "AI-Verse is ready. What would you like help with?",
+            "verification": {
+                "status": "ready",
+                "doctor_ok": True,
+                "depth": doctor.get("depth", []),
+            },
+            "onboarding": {
+                "mode": "progressive",
+                "deep_questionnaire_required": False,
+                "started": True,
+                "prompt": "What would you like help with?",
+            },
+            "authority": {
+                "permissions_granted": False,
+                "brain_strategy_transferred": False,
+            },
+            "open": opened,
+            "next": [
+                "Open this AI-Verse root in a supported conversational runtime.",
+                "Start with whatever you want help with; deeper preferences can be learned when they become relevant.",
+            ],
+        }
+
     def onboard(self, brain_answers: Optional[Path] = None) -> Dict[str, Any]:
         lock = self.state.load()
         if not lock:
