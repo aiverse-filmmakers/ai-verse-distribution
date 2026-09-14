@@ -30,7 +30,7 @@ GATEWAY_PORT = 18787
 BOTS_PORT = 18788
 GATEWAY_TOKEN = "distribution-agent-acceptance-token-2026"
 EXPECTED_REFS = {
-    "ai-verse-os": "eb5f9ec2a0bc0404bb3b6b0e5e1298a2a17c4431",
+    "ai-verse-os": "69df8055a56fd4a83ae9d65cb7657a939319549e",
     "ai-verse-brain": "619dd17daac9c1bd7eaf4381a5889e56ab05ec59",
     "ai-verse-memory": "031e1e77c97ed3c9012235c7ffe0a4ece05e3695",
     "ai-verse-skills": "042fda1ea2ddd8b79b74f1db9d3f65212953b64a",
