@@ -32,7 +32,7 @@ class ManifestDriftTests(unittest.TestCase):
         mapping = {
             "core-first-member-beta-2026-09-13": ROOT / "release-sets" / "core-first-member-beta.json",
             "core-public-beta-2026-09-13": ROOT / "release-sets" / "core-public-beta-2026-09-13.json",
-            "agent-public-beta-pending": ROOT / "release-sets" / "agent-public-beta-pending.json",
+            "agent-public-beta-2026-09-14": ROOT / "release-sets" / "agent-public-beta-2026-09-14.json",
             "full-public-beta-pending": ROOT / "release-sets" / "full-public-beta-pending.json",
         }
         for release_id, path in mapping.items():
@@ -44,6 +44,7 @@ class ManifestDriftTests(unittest.TestCase):
     def test_catalog_still_validates_after_public_mirroring(self):
         catalog = Catalog()
         self.assertEqual(catalog.resolve("core").id, "core-public-beta-2026-09-13")
+        self.assertEqual(catalog.resolve("agent").id, "agent-public-beta-2026-09-14")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # Distribution Acceptance
 
-**Updated:** 2026-09-13
+**Updated:** 2026-09-14
 
 ## Core Distribution acceptance gate
 
@@ -71,39 +71,47 @@ The clean-machine Agent workflow is:
 
 `.github/workflows/clean-machine-agent.yml`
 
-The Agent profile is not yet released.
+The accepted Agent release is:
 
-Today the workflow proves a required safety property and deliberately remains failing:
+`agent-public-beta-2026-09-14`
+
+Exact immutable components:
+
+- OS `d961ef8e2422d6f713d6519cf5a48916c600d63a`
+- Brain `619dd17daac9c1bd7eaf4381a5889e56ab05ec59`
+- Memory `031e1e77c97ed3c9012235c7ffe0a4ece05e3695`
+- Skills `042fda1ea2ddd8b79b74f1db9d3f65212953b64a`
+- Data `189b13264ab86115d2f21fee3ba8cd5a8dac6581`
+- Gateway `240c2b1b71abc7a8dbdc4d573da7fd85a110ca8f`
+- Automations `494469a496d479cfec618bcd9511033c0cd3e815`
+- Multiple Bots `9bffdffd07fb8abcea848213642936a23ecf4ecf`
+- Token `23b7b8ecbc9d9ef267f5e10449f785eb11107dd4`
+
+The gate runs on Ubuntu, macOS, and Windows and must prove:
 
 ```text
-aiverse install --profile agent
--> RELEASE_BLOCKED
--> accepted Gateway / Automations / Token candidates remain uninstalled
--> Multiple Bots is complete through Phase 5.9, but remaining Phase 5 release slices + complete Agent composition acceptance remain outstanding
--> no partial Agent installation
-```
-
-This is not a complete Agent acceptance pass. The script exits non-zero after confirming fail-closed behavior so a blocked Agent can never appear green.
-
-Gateway, Automations, and Token now have exact accepted candidate refs recorded in the pending manifest. Once Multiple Bots completes its public-beta product/release gate, the Agent release-set record must be promoted with the complete exact immutable component set. The same harness must then be extended to prove:
-
-```text
-install
--> setup
--> onboarding
--> Gateway local ingress/open
--> Brain bounded goal path
+clean Agent install
+-> setup with one explicitly selected Data workspace
+-> ownership-safe onboarding
+-> status + doctor
+-> deterministic loopback Gateway run bound to canonical Brain Goal owner
+-> Gateway restart/recovery
 -> Memory recall
--> Skills owner path
--> Data
--> Multiple Bots optional path
--> Automations wake
--> Token when included
--> doctor
--> update/state preservation
+-> immutable Skills invocation
+-> structured Data create/read
+-> two durable Multiple Bots collaborate and survive restart
+-> Automations delivers a bounded wake into Multiple Bots owner ingress
+-> Token collection + usage projection without operational authority
+-> supported disable/enable
+-> Agent-only component uninstall/reinstall with canonical state preservation
+-> owner update lifecycle
+-> same-release update/rollback
+-> final ready/doctor/open
 ```
 
-Agent must not be marked released before that workflow passes on every claimed platform.
+The gate additionally asserts that Distribution grants no permissions, does not transfer Brain strategic authority, does not enable remote exposure, does not initialize unspecified Data workspaces, and does not mutate tracked component source.
+
+Agent qualification passed on Distribution head `a4f9ee17b65cddef8d7547115cca34738a41b3fe`. Distribution CI run `34852469436` passed all six jobs. Core clean-machine run `34852470941` passed Ubuntu job `104004051967`, macOS job `104004051563`, and Windows job `104004051988`. Agent clean-machine run `34852469415` passed Ubuntu job `104004060260`, macOS job `104004060743`, and Windows job `104004060677`. This freezes the Agent release set as accepted. Any later evidence-only branch change must still rerun the complete exact-head Distribution, Core, and Agent matrices before PR #2 is merged.
 
 ## Unit and portability gate
 
@@ -115,7 +123,7 @@ Agent must not be marked released before that workflow passes on every claimed p
 Unit coverage includes:
 
 - catalog and immutable-ref validation;
-- fail-closed Agent resolution;
+- exact immutable Agent release resolution;
 - custom-profile bounding;
 - no profile authority grants;
 - Distribution lock behavior;

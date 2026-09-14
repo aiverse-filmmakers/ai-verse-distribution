@@ -161,49 +161,169 @@
       }
     },
     {
-      "id": "agent-public-beta-pending",
+      "id": "agent-public-beta-2026-09-14",
       "profile": "agent",
-      "status": "blocked",
-      "created_at": "2026-09-13",
-      "components": [],
-      "blockers": [
-        "AI-Verse-Multiple-Bots is complete through Phase 5.9; remaining Phase 5 release slices and final public-beta release acceptance are still outstanding",
-        "No complete immutable Agent release set can be admitted until Multiple Bots supplies its accepted public-beta artifact alongside the accepted Gateway, Automations and Token candidates",
-        "The complete Agent clean-machine install/setup/onboard/doctor/use acceptance has not yet passed"
+      "status": "released",
+      "created_at": "2026-09-14",
+      "components": [
+        {
+          "id": "ai-verse-os",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+          "revision": "d961ef8e2422d6f713d6519cf5a48916c600d63a",
+          "install_order": 10
+        },
+        {
+          "id": "ai-verse-brain",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+          "revision": "619dd17daac9c1bd7eaf4381a5889e56ab05ec59",
+          "install_order": 20
+        },
+        {
+          "id": "ai-verse-memory",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+          "revision": "031e1e77c97ed3c9012235c7ffe0a4ece05e3695",
+          "install_order": 30
+        },
+        {
+          "id": "ai-verse-skills",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+          "revision": "042fda1ea2ddd8b79b74f1db9d3f65212953b64a",
+          "install_order": 40
+        },
+        {
+          "id": "ai-verse-data",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+          "revision": "189b13264ab86115d2f21fee3ba8cd5a8dac6581",
+          "install_order": 50,
+          "dependency_lock": {
+            "scheme": "distribution-companion-npm-lock-v1",
+            "manifest": "ai-verse-data/189b13264ab86115d2f21fee3ba8cd5a8dac6581/lock.json",
+            "manifest_sha256": "758fb5a3de9a5fff31a638a72fe4797b100a5fd84456dab02eb768882b6e0b14"
+          }
+        },
+        {
+          "id": "ai-verse-gateway",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Gateway.git",
+          "revision": "240c2b1b71abc7a8dbdc4d573da7fd85a110ca8f",
+          "install_order": 60
+        },
+        {
+          "id": "ai-verse-automations",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Automations.git",
+          "revision": "494469a496d479cfec618bcd9511033c0cd3e815",
+          "install_order": 70
+        },
+        {
+          "id": "ai-verse-multiple-bots",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Multiple-Bots.git",
+          "revision": "9bffdffd07fb8abcea848213642936a23ecf4ecf",
+          "install_order": 80
+        },
+        {
+          "id": "ai-verse-token",
+          "repository": "https://github.com/aiverse-filmmakers/ai-verse-token.git",
+          "revision": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
+          "install_order": 90
+        }
       ],
+      "evidence": {
+        "os": {
+          "revision": "d961ef8e2422d6f713d6519cf5a48916c600d63a",
+          "hosted_workflows": [
+            34852273733,
+            34852274061,
+            34852273850,
+            34852274136,
+            34852274005,
+            34852273793,
+            34852273711
+          ]
+        },
+        "brain": {
+          "revision": "619dd17daac9c1bd7eaf4381a5889e56ab05ec59",
+          "hosted_workflows": [
+            34834005026,
+            34834005113,
+            34834005157
+          ]
+        },
+        "memory": {
+          "revision": "031e1e77c97ed3c9012235c7ffe0a4ece05e3695",
+          "hosted_workflows": [
+            34769753452
+          ]
+        },
+        "skills": {
+          "revision": "042fda1ea2ddd8b79b74f1db9d3f65212953b64a",
+          "hosted_workflows": [
+            34781546151,
+            34781546160
+          ]
+        },
+        "data": {
+          "revision": "189b13264ab86115d2f21fee3ba8cd5a8dac6581",
+          "hosted_workflows": [
+            34721902478
+          ],
+          "companion_dependency_lock": "distribution-companion-npm-lock-v1"
+        },
+        "gateway": {
+          "revision": "240c2b1b71abc7a8dbdc4d573da7fd85a110ca8f",
+          "hosted_workflows": [
+            34824931710
+          ]
+        },
+        "automations": {
+          "revision": "494469a496d479cfec618bcd9511033c0cd3e815",
+          "hosted_workflows": [
+            34777316822
+          ]
+        },
+        "multiple_bots": {
+          "revision": "9bffdffd07fb8abcea848213642936a23ecf4ecf",
+          "hosted_workflows": [
+            34816778904
+          ],
+          "phase": "5.14-complete"
+        },
+        "token": {
+          "revision": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
+          "version": "0.1.0-beta.3",
+          "hosted_workflows": [
+            34778240376
+          ]
+        },
+        "distribution_acceptance": {
+          "status": "accepted",
+          "qualification_head": "a4f9ee17b65cddef8d7547115cca34738a41b3fe",
+          "distribution_ci_run": 34852469436,
+          "distribution_ci_jobs": {
+            "ubuntu-3.9": 104003901367,
+            "ubuntu-3.12": 104003901426,
+            "macos-3.9": 104003901057,
+            "macos-3.12": 104003901405,
+            "windows-3.9": 104003901310,
+            "windows-3.12": 104003901263
+          },
+          "core_clean_machine_run": 34852470941,
+          "core_jobs": {
+            "ubuntu": 104004051967,
+            "macos": 104004051563,
+            "windows": 104004051988
+          },
+          "agent_clean_machine_run": 34852469415,
+          "agent_jobs": {
+            "ubuntu": 104004060260,
+            "macos": 104004060743,
+            "windows": 104004060677
+          }
+        }
+      },
       "authority": {
         "grants_permissions": false,
         "transfers_brain_strategy": false,
         "initializes_all_workspaces": false,
         "exposes_gateway_remotely": false
-      },
-      "candidates": {
-        "gateway": {
-          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Gateway.git",
-          "revision": "b20d56eddec6514ec4bc65b510318289b9cffa41",
-          "version": "0.1.0-beta.1",
-          "hosted_ci": [
-            34777260839
-          ],
-          "accepted_candidate": true
-        },
-        "automations": {
-          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Automations.git",
-          "revision": "494469a496d479cfec618bcd9511033c0cd3e815",
-          "hosted_ci": [
-            34777316822
-          ],
-          "accepted_candidate": true
-        },
-        "token": {
-          "repository": "https://github.com/aiverse-filmmakers/ai-verse-token.git",
-          "revision": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
-          "version": "0.1.0-beta.3",
-          "hosted_ci": [
-            34778240376
-          ],
-          "accepted_candidate": true
-        }
       }
     },
     {
@@ -213,7 +333,6 @@
       "created_at": "2026-09-13",
       "components": [],
       "blockers": [
-        "Agent profile does not yet have an admitted immutable public-beta release set",
         "AI-Verse Connections, Dashboard, and Apps do not yet have one admitted compatible Full release set"
       ],
       "authority": {

@@ -30,22 +30,6 @@
         "core-first-member-beta-2026-09-13"
       ]
     },
-    "agent-public-beta-pending": {
-      "profile": "agent",
-      "status": "blocked",
-      "platforms": [
-        "darwin",
-        "linux",
-        "win32"
-      ],
-      "python_min": "3.9",
-      "node_min": "22.5",
-      "blockers": [
-        "AI-Verse-Multiple-Bots is complete through Phase 5.9; remaining Phase 5 release slices and final public-beta release acceptance are still outstanding",
-        "No complete immutable Agent release set can be admitted until Multiple Bots supplies its accepted public-beta artifact alongside the accepted Gateway, Automations and Token candidates",
-        "The complete Agent clean-machine install/setup/onboard/doctor/use acceptance has not yet passed"
-      ]
-    },
     "full-public-beta-pending": {
       "profile": "full",
       "status": "blocked",
@@ -78,6 +62,25 @@
       ],
       "rollback_to": [
         "core-public-beta-2026-09-13"
+      ]
+    },
+    "agent-public-beta-2026-09-14": {
+      "profile": "agent",
+      "status": "released",
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "python_min": "3.11",
+      "node_min": "22.5",
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "update_from": [
+        "agent-public-beta-2026-09-14"
+      ],
+      "rollback_to": [
+        "agent-public-beta-2026-09-14"
       ]
     }
   }

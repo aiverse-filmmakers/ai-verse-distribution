@@ -17,9 +17,27 @@ class CatalogTests(unittest.TestCase):
         for component in release.components:
             self.assertEqual(len(component.revision), 40)
 
-    def test_agent_fails_closed_until_exact_release_exists(self):
-        with self.assertRaises(ReleaseBlockedError):
-            self.catalog.resolve("agent")
+    def test_agent_is_exact_and_released(self):
+        release = self.catalog.resolve("agent")
+        self.assertEqual(release.id, "agent-public-beta-2026-09-14")
+        self.assertEqual(
+            [x.id for x in release.components],
+            [
+                "ai-verse-os",
+                "ai-verse-brain",
+                "ai-verse-memory",
+                "ai-verse-skills",
+                "ai-verse-data",
+                "ai-verse-gateway",
+                "ai-verse-automations",
+                "ai-verse-multiple-bots",
+                "ai-verse-token",
+            ],
+        )
+        self.assertEqual(
+            next(x.revision for x in release.components if x.id == "ai-verse-token"),
+            "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
+        )
 
     def test_custom_is_bounded_by_compatible_release_set(self):
         release = self.catalog.resolve(
