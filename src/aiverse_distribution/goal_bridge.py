@@ -13,6 +13,15 @@ from typing import Any
 PROTOCOL = "ai-verse-goal-owner/1.0"
 
 
+def _brain_command(brain: str) -> list[str]:
+    executable = Path(brain).resolve()
+    python_name = "python.exe" if os.name == "nt" else "python"
+    interpreter = executable.parent / python_name
+    if interpreter.is_file():
+        return [str(interpreter), "-X", "utf8", "-m", "aiverse_brain.cli"]
+    return [str(executable)]
+
+
 def _run_json(argv: list[str]) -> dict[str, Any]:
     env = os.environ.copy()
     env["PYTHONUTF8"] = "1"
@@ -76,7 +85,7 @@ def handle(request: dict[str, Any], *, brain: str, root: str) -> dict[str, Any]:
 
     if operation == "goal.get":
         result = _run_json([
-            brain, "goal", root, "show",
+            *_brain_command(brain), "goal", root, "show",
             "--scope", scope,
             "--goal-id", goal_id,
             "--json",
@@ -94,7 +103,7 @@ def handle(request: dict[str, Any], *, brain: str, root: str) -> dict[str, Any]:
             input_path = Path(handle_file.name)
         try:
             result = _run_json([
-                brain, "goal", root, "evaluate",
+                *_brain_command(brain), "goal", root, "evaluate",
                 "--scope", scope,
                 "--goal-id", goal_id,
                 "--expected-version", str(expected),
