@@ -16,6 +16,7 @@ def _run_json(argv: list[str]) -> dict[str, Any]:
     completed = subprocess.run(
         argv,
         text=True,
+        encoding="utf-8",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=False,
