@@ -22,7 +22,7 @@ from .adapters import (
 )
 from .release_catalog import Catalog, ComponentRef, DistributionError, ReleaseSet
 from .process import run, version_line, which
-from .redaction import sanitize_text
+from .redaction import sanitize, sanitize_text
 from .state import StateStore, now_iso
 
 
@@ -42,12 +42,21 @@ def _at_least(actual: str, minimum: str) -> bool:
     return a + (0,) * (width - len(a)) >= b + (0,) * (width - len(b))
 
 
+def _safe_output(value: str) -> str:
+    text = value or ""
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return sanitize_text(text)
+    return json.dumps(sanitize(parsed), sort_keys=True)
+
+
 def _safe_result(result: Any) -> Dict[str, Any]:
     return {
-        "argv": list(getattr(result, "argv", [])),
+        "argv": sanitize(list(getattr(result, "argv", []))),
         "returncode": int(getattr(result, "returncode", 1)),
-        "stdout": sanitize_text(getattr(result, "stdout", "") or ""),
-        "stderr": sanitize_text(getattr(result, "stderr", "") or ""),
+        "stdout": _safe_output(getattr(result, "stdout", "") or ""),
+        "stderr": _safe_output(getattr(result, "stderr", "") or ""),
     }
 
 
@@ -72,15 +81,15 @@ class Orchestrator:
             raise DistributionError("Git is required")
 
         component_ids = {component.id for component in release.components}
-        node_required = bool(component_ids & {"ai-verse-os", "ai-verse-data"})
+        node_required = bool(component_ids & {"ai-verse-os", "ai-verse-data", "ai-verse-gateway", "ai-verse-multiple-bots", "ai-verse-token"})
         node_line = version_line("node")
         node_min = str(compatibility.get("node_min", "22.0"))
         if node_required and (not node_line or not _at_least(node_line, node_min)):
             raise DistributionError(f"Node.js {node_min}+ is required; found {node_line or 'missing'}")
 
         npm_line = version_line("npm")
-        if "ai-verse-data" in component_ids and not npm_line:
-            raise DistributionError("npm is required when AI-Verse Data is selected")
+        if component_ids & {"ai-verse-data", "ai-verse-multiple-bots", "ai-verse-token"} and not npm_line:
+            raise DistributionError("npm is required when Data, Multiple Bots, or Token is selected")
 
         for component in release.components:
             if component.id == "ai-verse-data":
@@ -481,6 +490,66 @@ class Orchestrator:
         if not (runtime / "dist" / "src" / "cli.js").is_file():
             raise DistributionError("AI-Verse Data deterministic runtime build is missing")
 
+    def _prepare_typescript_owner(
+        self,
+        source: Path,
+        component: ComponentRef,
+        release: ReleaseSet,
+    ) -> Dict[str, Any]:
+        self._verify_exact_source(component, source)
+        package_path = source / "package.json"
+        package = json.loads(package_path.read_text(encoding="utf-8"))
+        if package.get("dependencies", {}) not in ({}, None):
+            raise DistributionError(f"{component.id} has unexpected runtime npm dependencies")
+        if package.get("devDependencies") != {"typescript": "5.8.3"}:
+            raise DistributionError(
+                f"{component.id} build dependencies drifted from the admitted TypeScript toolchain"
+            )
+        npm = which("npm")
+        if not npm:
+            raise DistributionError(f"npm is required to stage {component.id}")
+        runtime = self.state.runtime_dir(release.id, component.id)
+        self._copy_tracked_source(source, runtime)
+        run([
+            npm,
+            "install",
+            "--ignore-scripts",
+            "--no-audit",
+            "--no-fund",
+            "--package-lock=false",
+        ], cwd=runtime)
+        tool = runtime / "node_modules" / "typescript" / "package.json"
+        installed = json.loads(tool.read_text(encoding="utf-8"))
+        if installed.get("version") != "5.8.3":
+            raise DistributionError(f"{component.id} TypeScript build tool drifted")
+        run([npm, "run", "build"], cwd=runtime)
+        if not (runtime / "dist" / "src" / "cli.js").is_file():
+            raise DistributionError(f"{component.id} build did not produce dist/src/cli.js")
+        self._verify_exact_source(component, source)
+        return {
+            "runtime_source": str(runtime),
+            "source_package_sha256": self._sha256_file(package_path),
+            "build_tool": "typescript@5.8.3",
+        }
+
+    def _verify_typescript_runtime(
+        self,
+        component: ComponentRef,
+        source: Path,
+        runtime: Path,
+        receipt: Dict[str, Any],
+    ) -> None:
+        if not runtime.is_dir() or not (runtime / "dist" / "src" / "cli.js").is_file():
+            raise DistributionError(f"{component.id} staged runtime is missing")
+        if self._sha256_file(source / "package.json") != receipt.get("source_package_sha256"):
+            raise DistributionError(f"{component.id} source package receipt drifted")
+        tool = runtime / "node_modules" / "typescript" / "package.json"
+        if not tool.is_file():
+            raise DistributionError(f"{component.id} staged TypeScript toolchain is missing")
+        package = json.loads(tool.read_text(encoding="utf-8"))
+        if package.get("version") != "5.8.3":
+            raise DistributionError(f"{component.id} staged TypeScript toolchain drifted")
+
     def _stage_component(self, component: ComponentRef, root: Path, release: ReleaseSet) -> Dict[str, Any]:
         """Prepare exact software bytes without changing live component attachment/authority."""
         source = root if component.id == "ai-verse-os" else self.state.source_dir(release.id, component.id)
@@ -491,7 +560,15 @@ class Orchestrator:
             self._prepare_brain(source, component.revision)
         elif component.id == "ai-verse-data":
             extra = self._prepare_data(source, component, release)
-        elif component.id in {"ai-verse-os", "ai-verse-memory", "ai-verse-skills"}:
+        elif component.id in {"ai-verse-multiple-bots", "ai-verse-token"}:
+            extra = self._prepare_typescript_owner(source, component, release)
+        elif component.id in {
+            "ai-verse-os",
+            "ai-verse-memory",
+            "ai-verse-skills",
+            "ai-verse-gateway",
+            "ai-verse-automations",
+        }:
             pass
         else:
             raise DistributionError(
@@ -510,7 +587,7 @@ class Orchestrator:
 
     def _install_component(self, component: ComponentRef, root: Path, release: ReleaseSet) -> Dict[str, Any]:
         receipt = self._stage_component(component, root, release)
-        source = Path(receipt["source"])
+        source = Path(receipt.get("runtime_source", receipt["source"]))
         if component.id == "ai-verse-skills":
             # Initial install creates the immutable active provider generation.
             # Release-set update uses _stage_component instead so staging never flips live Skills.
@@ -611,6 +688,8 @@ class Orchestrator:
         owner_source = Path(receipt.get("runtime_source", source)).expanduser().resolve()
         if component.id == "ai-verse-data":
             self._verify_data_runtime(component, source, owner_source, receipt)
+        if component.id in {"ai-verse-multiple-bots", "ai-verse-token"}:
+            self._verify_typescript_runtime(component, source, owner_source, receipt)
         return lock, release, component, root, owner_source
 
     def _profile_component_ids(self, lock: Dict[str, Any], release: ReleaseSet) -> List[str]:
