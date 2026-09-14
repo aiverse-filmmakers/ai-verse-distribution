@@ -16,12 +16,28 @@ class UnsupportedLifecycle(RuntimeError):
 
 PUBLIC_BETA_OS = "9600929b946746c25c64e48471fcc83031fddda9"
 PUBLIC_BETA_BRAIN = "80019be5e6df29aee70371544bd96cedbf0329b9"
+PUBLIC_BETA_AGENT_BRAIN = "619dd17daac9c1bd7eaf4381a5889e56ab05ec59"
+PUBLIC_BETA_BRAIN_REVISIONS = frozenset({PUBLIC_BETA_BRAIN, PUBLIC_BETA_AGENT_BRAIN})
 PUBLIC_BETA_MEMORY = "031e1e77c97ed3c9012235c7ffe0a4ece05e3695"
 PUBLIC_BETA_SKILLS = "042fda1ea2ddd8b79b74f1db9d3f65212953b64a"
 PUBLIC_BETA_GATEWAY = "240c2b1b71abc7a8dbdc4d573da7fd85a110ca8f"
 PUBLIC_BETA_AUTOMATIONS = "494469a496d479cfec618bcd9511033c0cd3e815"
 PUBLIC_BETA_BOTS = "9bffdffd07fb8abcea848213642936a23ecf4ecf"
 PUBLIC_BETA_TOKEN = "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4"
+
+
+def _is_public_beta_brain(revision: str) -> bool:
+    return revision in PUBLIC_BETA_BRAIN_REVISIONS
+
+
+def _installed_brain_revision(state: StateStore) -> str:
+    current = state.load() or {}
+    components = current.get("components") or {}
+    brain = components.get("ai-verse-brain") or {}
+    revision = brain.get("revision")
+    if revision not in PUBLIC_BETA_BRAIN_REVISIONS:
+        raise RuntimeError("current release does not contain a supported public-beta Brain revision")
+    return revision
 
 
 def _brain_executable(state: StateStore, revision: str) -> Path:
@@ -75,7 +91,7 @@ def _gateway_goal_config(state: StateStore, root: Path) -> Path:
             "-m",
             "aiverse_distribution.goal_bridge",
             "--brain",
-            str(_brain_executable(state, PUBLIC_BETA_BRAIN)),
+            str(_brain_executable(state, _installed_brain_revision(state))),
             "--root",
             str(root),
         ],
@@ -152,7 +168,7 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
 
     if component_id == "ai-verse-brain":
         cli = _brain_executable(state, revision)
-        if revision == PUBLIC_BETA_BRAIN:
+        if _is_public_beta_brain(revision):
             results.append(run([str(cli), "setup", str(root), "--apply", "--json"]))
             return results
         if (root / "AI-VERSE.yaml").is_file():
@@ -238,7 +254,7 @@ def owner_status(component_id: str, *, root: Path, source: Path, revision: str, 
             ], cwd=root, check=False)
         return run([_node(), str(root / "bin" / "ai-verse-os.mjs"), "doctor", "--dir", str(root)], check=False)
     if component_id == "ai-verse-brain":
-        if revision == PUBLIC_BETA_BRAIN:
+        if _is_public_beta_brain(revision):
             return run([str(_brain_executable(state, revision)), "status", str(root), "--json"], check=False)
         return run([str(_brain_executable(state, revision)), "doctor", str(root)], check=False)
     if component_id == "ai-verse-memory":
@@ -271,7 +287,7 @@ def owner_doctor(component_id: str, *, root: Path, source: Path, revision: str, 
             _node(), str(root / "bin" / "ai-verse-os.mjs"),
             "doctor", "--dir", str(root), "--json",
         ], cwd=root, check=False)
-    if component_id == "ai-verse-brain" and revision == PUBLIC_BETA_BRAIN:
+    if component_id == "ai-verse-brain" and _is_public_beta_brain(revision):
         return run([str(_brain_executable(state, revision)), "doctor", str(root), "--json"], check=False)
     if component_id == "ai-verse-memory" and revision == PUBLIC_BETA_MEMORY:
         return run(_memory_component(source, root, "doctor"), cwd=source, check=False)
@@ -335,7 +351,7 @@ def owner_enablement(
         ], cwd=source)
 
     if component_id == "ai-verse-brain":
-        if revision == PUBLIC_BETA_BRAIN:
+        if _is_public_beta_brain(revision):
             return run([
                 str(_brain_executable(state, revision)),
                 action, str(root), "--apply", "--json",
@@ -357,7 +373,7 @@ def owner_enablement(
 
 def owner_uninstall(component_id: str, *, root: Path, source: Path, revision: str, state: StateStore) -> CommandResult:
     if component_id == "ai-verse-brain":
-        if revision == PUBLIC_BETA_BRAIN:
+        if _is_public_beta_brain(revision):
             return run([
                 str(_brain_executable(state, revision)),
                 "uninstall", str(root), "--apply", "--json",
@@ -404,7 +420,7 @@ def owner_uninstall(component_id: str, *, root: Path, source: Path, revision: st
 
 def owner_update(component_id: str, *, root: Path, source: Path, revision: str, state: StateStore) -> Optional[CommandResult]:
     if component_id == "ai-verse-brain":
-        if revision == PUBLIC_BETA_BRAIN:
+        if _is_public_beta_brain(revision):
             return run([
                 str(_brain_executable(state, revision)),
                 "update", str(root), "--apply", "--json",
