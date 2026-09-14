@@ -1,21 +1,30 @@
 from __future__ import annotations
 
+import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from aiverse_distribution.orchestrator import Orchestrator
 from aiverse_distribution.release_catalog import DistributionError
 
+BRAIN_REVISION = "619dd17daac9c1bd7eaf4381a5889e56ab05ec59"
+
 
 class FakeState:
-    def __init__(self, value=None):
+    def __init__(self, value=None, home=None):
         self.value = value
         self.writes = []
+        self.home = Path(home or tempfile.gettempdir())
 
     def load(self):
         return self.value
+
+    def venv_dir(self, revision):
+        return self.home / "venvs" / "ai-verse-brain" / revision
 
     def write(self, value, archive_previous=False):
         self.value = value
@@ -24,7 +33,13 @@ class FakeState:
 
 class FakeCatalog:
     def get_release(self, release_set_id, require_released=True):
-        return SimpleNamespace(id=release_set_id, profile="agent")
+        return SimpleNamespace(
+            id=release_set_id,
+            profile="agent",
+            components=(
+                SimpleNamespace(id="ai-verse-brain", revision=BRAIN_REVISION),
+            ),
+        )
 
 
 class FakeBootstrap:
@@ -37,6 +52,12 @@ class FakeBootstrap:
         self.setup_calls = 0
         self.doctor_calls = 0
         self.open_calls = 0
+        self.reconcile_calls = 0
+        self.reconcile_result = {
+            "state": "repaired",
+            "safe": True,
+            "mutated": True,
+        }
 
     def install(self, *, profile, root, release_set_id=None, components=None):
         self.install_calls.append({
@@ -82,6 +103,12 @@ class FakeBootstrap:
             "depth": ["structural", "runtime", "system-composed"],
         }
 
+    def safe_reconcile(self):
+        self.reconcile_calls += 1
+        if self.reconcile_result.get("state") == "repaired":
+            self.before = "ready"
+        return self.reconcile_result
+
     def open_info(self):
         self.open_calls += 1
         return {
@@ -90,6 +117,173 @@ class FakeBootstrap:
             "release_set_id": self.state.value["release_set_id"],
             "next": ["Open this AI-Verse OS root in a supported runtime."],
         }
+
+
+class SafeReconcileTests(unittest.TestCase):
+    def _app(self, root: Path):
+        (root / "bin").mkdir(parents=True, exist_ok=True)
+        (root / "bin" / "ai-verse-os.mjs").write_text("// fixture\n", encoding="utf-8")
+        state = FakeState({
+            "schema_version": 1,
+            "profile": "agent",
+            "release_set_id": "agent-public-beta-2026-09-14",
+            "root": str(root.resolve()),
+            "state": "setup",
+            "setup_completed_at": "2026-09-14T00:00:00Z",
+            "components": {
+                "ai-verse-brain": {
+                    "revision": BRAIN_REVISION,
+                },
+            },
+        }, home=root.parent / "distribution")
+        brain_root = state.venv_dir(BRAIN_REVISION)
+        brain_cli = (
+            brain_root / "Scripts" / "ai-verse-brain.exe"
+            if os.name == "nt"
+            else brain_root / "bin" / "ai-verse-brain"
+        )
+        brain_cli.parent.mkdir(parents=True, exist_ok=True)
+        brain_cli.write_text("fixture\n", encoding="utf-8")
+        return Orchestrator(state=state, catalog=FakeCatalog())
+
+    def _result(self, payload, code=0):
+        return SimpleNamespace(
+            stdout=json.dumps(payload),
+            stderr="",
+            returncode=code,
+            argv=[],
+        )
+
+    def test_exact_brain_owner_reconcile_is_applied(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            app = self._app(root)
+            plan = {
+                "mode": "plan",
+                "registry_lock": {"state": "absent"},
+                "migration_required": False,
+                "actions": [{
+                    "component": "ai-verse-brain",
+                    "kind": "setup",
+                    "automatic": True,
+                    "argv": ["ai-verse-brain", "attach", str(root.resolve()), "--apply"],
+                    "followup_argv": ["ai-verse-brain", "init", str(root.resolve()), "--apply"],
+                }],
+            }
+            applied = {
+                "mode": "apply",
+                "mutated": True,
+                "results": [{
+                    "component": "ai-verse-brain",
+                    "status": "executed",
+                    "owner_command": True,
+                }],
+            }
+            with patch(
+                "aiverse_distribution.orchestrator.run",
+                side_effect=[self._result(plan, 2), self._result(applied, 0)],
+            ) as runner:
+                result = app.safe_reconcile()
+
+            self.assertEqual(result["state"], "repaired")
+            self.assertTrue(result["safe"])
+            self.assertTrue(result["mutated"])
+            self.assertEqual(runner.call_count, 2)
+            apply_argv = runner.call_args_list[1].args[0]
+            self.assertIn("--apply", apply_argv)
+            self.assertIn("--json", apply_argv)
+
+    def test_registry_lock_blocks_without_apply(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            app = self._app(root)
+            plan = {
+                "mode": "plan",
+                "registry_lock": {"state": "locked"},
+                "migration_required": False,
+                "actions": [],
+            }
+            with patch(
+                "aiverse_distribution.orchestrator.run",
+                return_value=self._result(plan, 2),
+            ) as runner:
+                result = app.safe_reconcile()
+            self.assertEqual(result["state"], "blocked")
+            self.assertFalse(result["safe"])
+            self.assertFalse(result["mutated"])
+            self.assertEqual(runner.call_count, 1)
+
+    def test_migration_required_blocks_without_apply(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            app = self._app(root)
+            plan = {
+                "mode": "plan",
+                "registry_lock": {"state": "absent"},
+                "migration_required": True,
+                "actions": [{
+                    "component": "ai-verse-brain",
+                    "kind": "migration",
+                    "automatic": False,
+                }],
+            }
+            with patch(
+                "aiverse_distribution.orchestrator.run",
+                return_value=self._result(plan, 2),
+            ) as runner:
+                result = app.safe_reconcile()
+            self.assertEqual(result["state"], "blocked")
+            self.assertFalse(result["safe"])
+            self.assertEqual(runner.call_count, 1)
+
+    def test_unknown_automatic_action_is_rejected_before_apply(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            app = self._app(root)
+            plan = {
+                "mode": "plan",
+                "registry_lock": {"state": "absent"},
+                "migration_required": False,
+                "actions": [{
+                    "component": "ai-verse-memory",
+                    "kind": "setup",
+                    "automatic": True,
+                    "argv": ["unexpected-owner", "--apply"],
+                }],
+            }
+            with patch(
+                "aiverse_distribution.orchestrator.run",
+                return_value=self._result(plan, 2),
+            ) as runner:
+                result = app.safe_reconcile()
+            self.assertEqual(result["state"], "blocked")
+            self.assertFalse(result["safe"])
+            self.assertIn("unrecognized automatic action", result["reason"])
+            self.assertEqual(runner.call_count, 1)
+
+    def test_no_automatic_owner_action_does_not_mutate(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            app = self._app(root)
+            plan = {
+                "mode": "plan",
+                "registry_lock": {"state": "absent"},
+                "migration_required": False,
+                "actions": [{
+                    "component": "ai-verse-memory",
+                    "kind": "setup",
+                    "automatic": False,
+                }],
+            }
+            with patch(
+                "aiverse_distribution.orchestrator.run",
+                return_value=self._result(plan, 2),
+            ) as runner:
+                result = app.safe_reconcile()
+            self.assertEqual(result["state"], "no-safe-action")
+            self.assertTrue(result["safe"])
+            self.assertFalse(result["mutated"])
+            self.assertEqual(runner.call_count, 1)
 
 
 class ProductBootstrapTests(unittest.TestCase):
@@ -116,6 +310,58 @@ class ProductBootstrapTests(unittest.TestCase):
             self.assertEqual(first_run["onboarding"], "progressive")
             self.assertFalse(first_run["permissions_granted"])
             self.assertFalse(first_run["brain_strategy_transferred"])
+
+    def test_previously_setup_install_uses_safe_reconcile_instead_of_full_setup(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            current = {
+                "schema_version": 1,
+                "profile": "agent",
+                "release_set_id": "agent-public-beta-2026-09-14",
+                "root": str(root.resolve()),
+                "state": "setup",
+                "setup_completed_at": "2026-09-14T00:00:00Z",
+                "authority": {
+                    "permissions_granted": False,
+                    "brain_strategy_transferred": False,
+                },
+                "components": {},
+            }
+            app = FakeBootstrap(current=current, before="setup-required")
+            result = Orchestrator.start(app)
+
+            self.assertTrue(result["ready"])
+            self.assertEqual(app.setup_calls, 0)
+            self.assertEqual(app.reconcile_calls, 1)
+            self.assertTrue(result["self_heal"]["attempted"])
+            self.assertEqual(result["self_heal"]["state"], "repaired")
+            self.assertTrue(result["self_heal"]["mutated"])
+
+    def test_nonautomatic_remaining_setup_issue_stops_after_safe_reconcile(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "AI-Verse"
+            current = {
+                "schema_version": 1,
+                "profile": "agent",
+                "release_set_id": "agent-public-beta-2026-09-14",
+                "root": str(root.resolve()),
+                "state": "setup",
+                "setup_completed_at": "2026-09-14T00:00:00Z",
+                "components": {},
+            }
+            app = FakeBootstrap(current=current, before="setup-required")
+            app.reconcile_result = {
+                "state": "no-safe-action",
+                "safe": True,
+                "mutated": False,
+            }
+            result = Orchestrator.start(app)
+
+            self.assertFalse(result["ready"])
+            self.assertEqual(result["state"], "needs-attention")
+            self.assertEqual(app.setup_calls, 0)
+            self.assertEqual(app.reconcile_calls, 1)
+            self.assertEqual(result["self_heal"]["state"], "no-safe-action")
 
     def test_ready_start_is_idempotent_and_does_not_rerun_setup(self):
         with tempfile.TemporaryDirectory() as td:

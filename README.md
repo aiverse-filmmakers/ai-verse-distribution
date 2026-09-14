@@ -54,6 +54,8 @@ aiverse start --root ~/AI-Verse
 
 `aiverse start` always uses a released immutable Agent set. If a Distribution lock already exists, it never silently changes profile, release set or installation root. Disabled, unhealthy, migration-required or ambiguous states stop with a safe diagnostic handoff rather than being auto-repaired.
 
+For an installation that was previously set up and later becomes specifically `setup-required`, `aiverse start` may use the exact released OS reconcile contract. The automatic allowlist is intentionally tiny: one owner-controlled Brain attachment/init action, using the exact Brain revision already locked by Distribution. Registry locks, migrations, unknown automatic actions, multiple automatic actions, other component setup, credentials, permissions and destructive changes are never auto-repaired. Every repair is followed by normal status/doctor verification before the conversational handoff.
+
 Deep onboarding is not a mandatory first-run questionnaire. The normal path becomes useful first, then learns additional information when it becomes relevant. Explicit `aiverse onboard` remains available for advanced configuration.
 
 Distribution does not currently invent a background service manager. A successful start returns the verified AI-Verse root and conversational handoff; supported runtimes remain the execution owners.
