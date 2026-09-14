@@ -9,7 +9,6 @@ from aiverse_distribution import goal_bridge
 
 
 class GoalBridgeTests(unittest.TestCase):
-    @patch("aiverse_distribution.goal_bridge.os.name", "nt")
     def test_brain_command_uses_venv_python_with_utf8_mode_on_windows(self):
         with tempfile.TemporaryDirectory() as tmp:
             scripts = Path(tmp) / "Scripts"
