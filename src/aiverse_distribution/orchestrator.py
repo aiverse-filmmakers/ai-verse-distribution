@@ -807,6 +807,28 @@ class Orchestrator:
                 "mutated": False,
             }
 
+        try:
+            _, _, brain_component, _, _ = self._context("ai-verse-brain")
+            from .adapters import _brain_executable  # trusted internal owner adapter
+            brain_cli = _brain_executable(self.state, brain_component.revision)
+        except Exception as exc:
+            return {
+                "state": "not-applied",
+                "safe": False,
+                "reason": f"trusted Brain owner executable is unavailable: {exc}",
+                "mutated": False,
+            }
+        if not brain_cli.is_file():
+            return {
+                "state": "not-applied",
+                "safe": False,
+                "reason": "trusted Brain owner executable is missing",
+                "mutated": False,
+            }
+
+        reconcile_env = {
+            "PATH": str(brain_cli.parent) + os.pathsep + os.environ.get("PATH", ""),
+        }
         plan_result = run(
             [
                 "node",
@@ -817,6 +839,7 @@ class Orchestrator:
                 str(root),
                 "--json",
             ],
+            env=reconcile_env,
             check=False,
         )
         try:
@@ -902,6 +925,7 @@ class Orchestrator:
                 "--apply",
                 "--json",
             ],
+            env=reconcile_env,
             check=False,
         )
         try:
