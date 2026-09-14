@@ -29,6 +29,8 @@ def _emit(payload: Any, as_json: bool = False) -> None:
             print(f"profile: {payload['profile']}")
         if "root" in payload:
             print(f"root: {payload['root']}")
+        if "message" in payload:
+            print(payload["message"])
         components = payload.get("components")
         if isinstance(components, dict):
             for cid, item in components.items():
@@ -175,6 +177,11 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--version", action="store_true", help="show Distribution version")
     sub = p.add_subparsers(dest="command")
 
+    q = sub.add_parser("start", help="one-action first run using the exact released Agent profile")
+    q.add_argument("--release-set", help="advanced exact released Agent set override")
+    q.add_argument("--root", type=Path, help="installation root; defaults to ~/AI-Verse for a fresh install")
+    q.add_argument("--json", action="store_true")
+
     q = sub.add_parser("install", help="install an exact compatible AI-Verse release set")
     q.add_argument("--profile", choices=["core", "agent", "full", "custom"])
     q.add_argument("--component", action="append", default=[])
@@ -251,6 +258,14 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
     app = Orchestrator()
     try:
+        if args.command == "start":
+            payload = app.start(
+                root=args.root,
+                release_set_id=args.release_set,
+            )
+            _emit(payload, args.json)
+            return 0 if payload.get("ready") is True else 1
+
         if args.command == "install":
             profile = _choose_profile(args.profile)
             components = (
