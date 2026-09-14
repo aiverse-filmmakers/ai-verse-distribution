@@ -22,14 +22,10 @@
         "ai-verse-data",
         "ai-verse-gateway",
         "ai-verse-automations",
-        "ai-verse-multiple-bots"
+        "ai-verse-multiple-bots",
+        "ai-verse-token"
       ],
-      "conditional": [
-        {
-          "component": "ai-verse-token",
-          "when": "public-beta-ready"
-        }
-      ]
+      "conditional": []
     },
     "full": {
       "display_name": "Full",
@@ -66,6 +62,22 @@
   },
   "dependencies": {
     "ai-verse-data": [
+      "ai-verse-os"
+    ],
+    "ai-verse-gateway": [
+      "ai-verse-os",
+      "ai-verse-brain"
+    ],
+    "ai-verse-automations": [
+      "ai-verse-os"
+    ],
+    "ai-verse-multiple-bots": [
+      "ai-verse-os",
+      "ai-verse-brain",
+      "ai-verse-memory",
+      "ai-verse-skills"
+    ],
+    "ai-verse-token": [
       "ai-verse-os"
     ]
   }
