@@ -15,6 +15,8 @@ class UnsupportedLifecycle(RuntimeError):
 
 
 PUBLIC_BETA_OS = "9600929b946746c25c64e48471fcc83031fddda9"
+PUBLIC_BETA_AGENT_OS = "eb5f9ec2a0bc0404bb3b6b0e5e1298a2a17c4431"
+PUBLIC_BETA_OS_REVISIONS = frozenset({PUBLIC_BETA_OS, PUBLIC_BETA_AGENT_OS})
 PUBLIC_BETA_BRAIN = "80019be5e6df29aee70371544bd96cedbf0329b9"
 PUBLIC_BETA_AGENT_BRAIN = "619dd17daac9c1bd7eaf4381a5889e56ab05ec59"
 PUBLIC_BETA_BRAIN_REVISIONS = frozenset({PUBLIC_BETA_BRAIN, PUBLIC_BETA_AGENT_BRAIN})
@@ -24,6 +26,10 @@ PUBLIC_BETA_GATEWAY = "240c2b1b71abc7a8dbdc4d573da7fd85a110ca8f"
 PUBLIC_BETA_AUTOMATIONS = "494469a496d479cfec618bcd9511033c0cd3e815"
 PUBLIC_BETA_BOTS = "9bffdffd07fb8abcea848213642936a23ecf4ecf"
 PUBLIC_BETA_TOKEN = "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4"
+
+
+def _is_public_beta_os(revision: str) -> bool:
+    return revision in PUBLIC_BETA_OS_REVISIONS
 
 
 def _is_public_beta_brain(revision: str) -> bool:
@@ -155,7 +161,7 @@ def owner_install(
 def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, state: StateStore) -> List[CommandResult]:
     results: List[CommandResult] = []
     if component_id == "ai-verse-os":
-        if revision == PUBLIC_BETA_OS:
+        if _is_public_beta_os(revision):
             results.append(run([
                 _node(), str(root / "bin" / "ai-verse-os.mjs"),
                 "setup", "--dir", str(root), "--json",
@@ -247,7 +253,7 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
 
 def owner_status(component_id: str, *, root: Path, source: Path, revision: str, state: StateStore) -> CommandResult:
     if component_id == "ai-verse-os":
-        if revision == PUBLIC_BETA_OS:
+        if _is_public_beta_os(revision):
             return run([
                 _node(), str(root / "bin" / "ai-verse-os.mjs"),
                 "status", "--dir", str(root), "--json",
@@ -282,7 +288,7 @@ def owner_status(component_id: str, *, root: Path, source: Path, revision: str, 
 
 
 def owner_doctor(component_id: str, *, root: Path, source: Path, revision: str, state: StateStore) -> CommandResult:
-    if component_id == "ai-verse-os" and revision == PUBLIC_BETA_OS:
+    if component_id == "ai-verse-os" and _is_public_beta_os(revision):
         return run([
             _node(), str(root / "bin" / "ai-verse-os.mjs"),
             "doctor", "--dir", str(root), "--json",
