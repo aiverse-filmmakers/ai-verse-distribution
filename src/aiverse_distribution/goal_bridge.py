@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,9 @@ PROTOCOL = "ai-verse-goal-owner/1.0"
 
 
 def _run_json(argv: list[str]) -> dict[str, Any]:
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
     completed = subprocess.run(
         argv,
         text=True,
@@ -21,6 +25,7 @@ def _run_json(argv: list[str]) -> dict[str, Any]:
         stderr=subprocess.PIPE,
         shell=False,
         check=False,
+        env=env,
     )
     if completed.returncode != 0:
         raise RuntimeError(completed.stderr.strip() or completed.stdout.strip() or f"Brain Goal CLI exited {completed.returncode}")
