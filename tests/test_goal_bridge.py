@@ -17,6 +17,8 @@ class GoalBridgeTests(unittest.TestCase):
         payload = goal_bridge._run_json(["brain"])
         self.assertEqual(payload["message"], "verificare românească")
         self.assertEqual(mocked.call_args.kwargs["encoding"], "utf-8")
+        self.assertEqual(mocked.call_args.kwargs["env"]["PYTHONUTF8"], "1")
+        self.assertEqual(mocked.call_args.kwargs["env"]["PYTHONIOENCODING"], "utf-8")
         self.assertTrue(mocked.call_args.kwargs["text"])
         self.assertFalse(mocked.call_args.kwargs["shell"])
 
