@@ -198,6 +198,7 @@ class SafeReconcileTests(unittest.TestCase):
             root = Path(td) / "AI-Verse"
             app = self._app(root)
             plan = {
+                "mode": "plan",
                 "registry_lock": {"state": "locked"},
                 "migration_required": False,
                 "actions": [],
@@ -217,6 +218,7 @@ class SafeReconcileTests(unittest.TestCase):
             root = Path(td) / "AI-Verse"
             app = self._app(root)
             plan = {
+                "mode": "plan",
                 "registry_lock": {"state": "absent"},
                 "migration_required": True,
                 "actions": [{
@@ -239,6 +241,7 @@ class SafeReconcileTests(unittest.TestCase):
             root = Path(td) / "AI-Verse"
             app = self._app(root)
             plan = {
+                "mode": "plan",
                 "registry_lock": {"state": "absent"},
                 "migration_required": False,
                 "actions": [{
@@ -263,6 +266,7 @@ class SafeReconcileTests(unittest.TestCase):
             root = Path(td) / "AI-Verse"
             app = self._app(root)
             plan = {
+                "mode": "plan",
                 "registry_lock": {"state": "absent"},
                 "migration_required": False,
                 "actions": [{
