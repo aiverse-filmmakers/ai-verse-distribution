@@ -293,7 +293,31 @@
             34778240376
           ]
         },
-        "distribution_acceptance": "candidate-pending-agent-clean-machine"
+        "distribution_acceptance": {
+          "status": "accepted",
+          "qualification_head": "a4f9ee17b65cddef8d7547115cca34738a41b3fe",
+          "distribution_ci_run": 34852469436,
+          "distribution_ci_jobs": {
+            "ubuntu-3.9": 104003901367,
+            "ubuntu-3.12": 104003901426,
+            "macos-3.9": 104003901057,
+            "macos-3.12": 104003901405,
+            "windows-3.9": 104003901310,
+            "windows-3.12": 104003901263
+          },
+          "core_clean_machine_run": 34852470941,
+          "core_jobs": {
+            "ubuntu": 104004051967,
+            "macos": 104004051563,
+            "windows": 104004051988
+          },
+          "agent_clean_machine_run": 34852469415,
+          "agent_jobs": {
+            "ubuntu": 104004060260,
+            "macos": 104004060743,
+            "windows": 104004060677
+          }
+        }
       },
       "authority": {
         "grants_permissions": false,
@@ -309,7 +333,6 @@
       "created_at": "2026-09-13",
       "components": [],
       "blockers": [
-        "Agent profile does not yet have an admitted immutable public-beta release set",
         "AI-Verse Connections, Dashboard, and Apps do not yet have one admitted compatible Full release set"
       ],
       "authority": {
