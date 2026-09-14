@@ -1,0 +1,149 @@
+name: Invisible Intelligence Scenarios A-F
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/invisible-intelligence-scenarios-a-f.yml"
+      - "tests/acceptance/**"
+      - "src/aiverse_distribution/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scenario-a-grandma-first-run:
+    name: A - Grandma first run
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Distribution under test
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Pin tested npm major
+        run: npm install --global npm@10.9.2
+
+      - name: Install Distribution
+        run: python -m pip install .
+
+      - name: Prove fresh non-technical Agent path
+        run: python tests/acceptance/agent_acceptance.py
+
+  scenarios-b-f-cross-owner:
+    name: B-F - cross-owner composition
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GATEWAY_SHA: 7627df658b2071ecb4ea242572343edfb7abf768
+      OS_SHA: 156f15f162c6d63159b54d3ad87e0342ec7cf9aa
+      SKILLS_SHA: 71264af6b2b9a575812fe18858d75a54ea2ff545
+      DATA_SHA: 8edde7dca5afa34e300130cc6b8ee2b4170ad40f
+    steps:
+      - name: Checkout Distribution acceptance owner
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned Gateway
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Gateway
+          ref: ${{ env.GATEWAY_SHA }}
+          path: _scenario/gateway
+
+      - name: Checkout pinned OS
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-OS
+          ref: ${{ env.OS_SHA }}
+          path: _scenario/os
+
+      - name: Checkout pinned Skills
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Skills
+          ref: ${{ env.SKILLS_SHA }}
+          path: _scenario/skills
+
+      - name: Checkout pinned Data
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Data
+          ref: ${{ env.DATA_SHA }}
+          path: _scenario/data
+
+      - name: Verify exact accepted refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _scenario/gateway rev-parse HEAD)" = "$GATEWAY_SHA"
+          test "$(git -C _scenario/os rev-parse HEAD)" = "$OS_SHA"
+          test "$(git -C _scenario/skills rev-parse HEAD)" = "$SKILLS_SHA"
+          test "$(git -C _scenario/data rev-parse HEAD)" = "$DATA_SHA"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: B - prove automatic client workspace routing plus canonical OS owner
+        shell: bash
+        run: |
+          set -euo pipefail
+          node _scenario/os/scripts/test-workspace-owner.mjs
+          cd _scenario/gateway
+          npm ci --ignore-scripts
+          node --test --test-concurrency=1 --test-reporter=spec \
+            --test-name-pattern="automatic workspace organization rebinds the durable session for later turns" \
+            test/loop-contracts.test.mjs
+
+      - name: C and D - prove safe learned Skill use and dangerous candidate quarantine
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd _scenario/skills
+          python -m unittest discover -s tests -p "test_public_beta_learning.py" -v
+          cd ../gateway
+          node --test --test-concurrency=1 --test-reporter=spec \
+            --test-name-pattern="a later normal run rediscovers and uses a persisted learned Skill after Gateway restart|runtime cannot forge trusted learning candidate identity or provenance" \
+            test/loop-contracts.test.mjs
+
+      - name: E and F - prove safe automatic Data and destructive fail-closed boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd _scenario/data
+          npm ci
+          npm run build
+          node --test \
+            dist/test/os-host-protocol.test.js \
+            dist/test/migrations.test.js
+          cd ../gateway
+          node --test --test-concurrency=1 --test-reporter=spec \
+            --test-name-pattern="automatic structured Data survives restart and is read on a later normal turn|runtime cannot forge trusted automatic Data identity or provenance" \
+            test/loop-contracts.test.mjs
+
+      - name: A-F ownership summary
+        shell: bash
+        run: |
+          cat <<'EOF'
+          A Grandma first run: Distribution clean-machine Agent acceptance
+          B automatic client workspace: Gateway routing + OS canonical workspace owner
+          C automatic safe Skill learning/use: Gateway later-use + Skills immutable auto-promotion
+          D dangerous Skill blocked/quarantined: Gateway trusted-boundary rejection + Skills quarantine gates
+          E automatic safe Data: Gateway structured-truth routing + Data trusted host automatic ensure
+          F destructive Data change does not happen silently: Gateway forgery rejection + Data explicit migration-required boundary
+          EOF
