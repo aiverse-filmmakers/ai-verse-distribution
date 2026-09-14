@@ -383,6 +383,14 @@ def prove_automation_wake(install: dict[str, Any], root: Path) -> None:
         "--action-class", "read_local",
         "--wake", json.dumps({"objective": "Process one bounded Agent release wake."}, separators=(",", ":")),
     )
+    automation_cli(
+        source,
+        "add-trigger",
+        "distribution-agent-wake",
+        "--id", "distribution-agent-wake-trigger",
+        "--kind", "once",
+        "--spec", json.dumps({"at": "2099-01-01T00:00:00Z"}, separators=(",", ":")),
+    )
     run = automation_cli(source, "run-now", "distribution-agent-wake")
     if str(run.get("status") or "").lower() not in {"succeeded", "completed", "success"}:
         raise RuntimeError(f"Automations did not deliver the bounded wake: {run}")
