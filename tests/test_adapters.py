@@ -1,4 +1,6 @@
+import json
 import tempfile
+import sys
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -137,6 +139,10 @@ class PublicBetaAdapterTests(unittest.TestCase):
         gateway = mocked.call_args.args[0]
         self.assertIn("--goal-owner-config", gateway)
         self.assertNotIn("--allow-remote", gateway)
+        config_path = Path(gateway[gateway.index("--goal-owner-config") + 1])
+        goal_config = json.loads(config_path.read_text(encoding="utf-8"))
+        self.assertEqual(goal_config["command"][:4], [sys.executable, "-X", "utf8", "-m"])
+        self.assertEqual(goal_config["command"][4], "aiverse_distribution.goal_bridge")
 
         mocked.reset_mock()
         adapters.owner_setup(
