@@ -77,7 +77,7 @@ The frozen candidate release is:
 
 Exact immutable components:
 
-- OS `eb5f9ec2a0bc0404bb3b6b0e5e1298a2a17c4431`
+- OS `69df8055a56fd4a83ae9d65cb7657a939319549e`
 - Brain `619dd17daac9c1bd7eaf4381a5889e56ab05ec59`
 - Memory `031e1e77c97ed3c9012235c7ffe0a4ece05e3695`
 - Skills `042fda1ea2ddd8b79b74f1db9d3f65212953b64a`
