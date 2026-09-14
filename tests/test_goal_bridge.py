@@ -12,14 +12,12 @@ class GoalBridgeTests(unittest.TestCase):
     @patch("aiverse_distribution.goal_bridge.subprocess.run")
     def test_brain_json_protocol_is_explicit_utf8(self, mocked):
         mocked.return_value = subprocess.CompletedProcess(
-            ["brain"], 0, stdout=json.dumps({"message": "verificare românească"}), stderr=""
+            ["brain"], 0, stdout=json.dumps({"message": "verificare românească"}).encode("utf-8"), stderr=b""
         )
         payload = goal_bridge._run_json(["brain"])
         self.assertEqual(payload["message"], "verificare românească")
-        self.assertEqual(mocked.call_args.kwargs["encoding"], "utf-8")
         self.assertEqual(mocked.call_args.kwargs["env"]["PYTHONUTF8"], "1")
         self.assertEqual(mocked.call_args.kwargs["env"]["PYTHONIOENCODING"], "utf-8")
-        self.assertTrue(mocked.call_args.kwargs["text"])
         self.assertFalse(mocked.call_args.kwargs["shell"])
 
     @patch("aiverse_distribution.goal_bridge._run_json")
