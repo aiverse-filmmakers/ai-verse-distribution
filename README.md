@@ -2,22 +2,63 @@
 
 **The canonical one-product installer, release-set manager, and lifecycle orchestrator for AI-Verse.**
 
-AI-Verse remains modular internally. Distribution gives a normal user one product path:
+AI-Verse remains modular internally. Distribution gives a normal user one product path while keeping the detailed lifecycle available for CI, support, recovery and advanced use.
+
+For an ordinary first run:
+
+```bash
+aiverse start
+```
+
+That one action:
 
 ```text
-install AI-Verse
--> choose Core / Agent / Full / Custom
--> resolve exact compatible versions
--> install
--> setup
--> onboard
--> doctor
--> open/use
+installs the exact released Agent set
+-> performs safe owner-controlled setup
+-> verifies whole-profile health
+-> stops instead of guessing if repair/migration is needed
+-> hands off to conversational use
+-> keeps deeper onboarding progressive
 ```
+
+A successful first run ends with:
+
+> AI-Verse is ready. What would you like help with?
+
+It does not silently grant permissions, transfer Brain strategy, initialize arbitrary Data workspaces, enable remote exposure, or create a second runtime owner.
 
 Distribution coordinates owner-controlled component lifecycle. It does not absorb component engines or become a source of truth for Brain, Memory, Data, Skills, Bots, Gateway, Automations, Connections, Token, Dashboard, or Apps.
 
-## Install
+## Start: ordinary product path
+
+Requirements for the released Agent beta set:
+
+- Python 3.9+
+- Node.js 22+
+- npm 10.x for the frozen Data companion dependency lock
+- Git
+- macOS, Linux, or Windows
+
+Install the Distribution CLI from this repository, then run:
+
+```bash
+python -m pip install .
+aiverse start
+```
+
+Optional fresh-install root:
+
+```bash
+aiverse start --root ~/AI-Verse
+```
+
+`aiverse start` always uses a released immutable Agent set. If a Distribution lock already exists, it never silently changes profile, release set or installation root. Disabled, unhealthy, migration-required or ambiguous states stop with a safe diagnostic handoff rather than being auto-repaired.
+
+Deep onboarding is not a mandatory first-run questionnaire. The normal path becomes useful first, then learns additional information when it becomes relevant. Explicit `aiverse onboard` remains available for advanced configuration.
+
+Distribution does not currently invent a background service manager. A successful start returns the verified AI-Verse root and conversational handoff; supported runtimes remain the execution owners.
+
+## Advanced lifecycle: install
 
 Requirements for the released Core beta set:
 
@@ -32,7 +73,7 @@ Install the Distribution CLI from this repository:
 python -m pip install .
 ```
 
-Then install AI-Verse:
+For explicit lifecycle control, install a profile without running the product bootstrap:
 
 ```bash
 aiverse install
