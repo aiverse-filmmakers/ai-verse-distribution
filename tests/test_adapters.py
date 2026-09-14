@@ -166,38 +166,40 @@ class PublicBetaAdapterTests(unittest.TestCase):
 
     @patch("aiverse_distribution.adapters.run", side_effect=fake_run)
     def test_os_setup_status_and_doctor_use_json_lifecycle(self, mocked):
-        adapters.owner_setup(
-            "ai-verse-os",
-            root=self.root,
-            source=self.root,
-            revision=adapters.PUBLIC_BETA_OS,
-            state=self.state,
-        )
-        setup = mocked.call_args.args[0]
-        self.assertIn("setup", setup)
-        self.assertIn("--json", setup)
+        for revision in (adapters.PUBLIC_BETA_OS, adapters.PUBLIC_BETA_AGENT_OS):
+            mocked.reset_mock()
+            adapters.owner_setup(
+                "ai-verse-os",
+                root=self.root,
+                source=self.root,
+                revision=revision,
+                state=self.state,
+            )
+            setup = mocked.call_args.args[0]
+            self.assertIn("setup", setup)
+            self.assertIn("--json", setup)
 
-        mocked.reset_mock()
-        adapters.owner_status(
-            "ai-verse-os",
-            root=self.root,
-            source=self.root,
-            revision=adapters.PUBLIC_BETA_OS,
-            state=self.state,
-        )
-        self.assertIn("status", mocked.call_args.args[0])
-        self.assertIn("--json", mocked.call_args.args[0])
+            mocked.reset_mock()
+            adapters.owner_status(
+                "ai-verse-os",
+                root=self.root,
+                source=self.root,
+                revision=revision,
+                state=self.state,
+            )
+            self.assertIn("status", mocked.call_args.args[0])
+            self.assertIn("--json", mocked.call_args.args[0])
 
-        mocked.reset_mock()
-        adapters.owner_doctor(
-            "ai-verse-os",
-            root=self.root,
-            source=self.root,
-            revision=adapters.PUBLIC_BETA_OS,
-            state=self.state,
-        )
-        self.assertIn("doctor", mocked.call_args.args[0])
-        self.assertIn("--json", mocked.call_args.args[0])
+            mocked.reset_mock()
+            adapters.owner_doctor(
+                "ai-verse-os",
+                root=self.root,
+                source=self.root,
+                revision=revision,
+                state=self.state,
+            )
+            self.assertIn("doctor", mocked.call_args.args[0])
+            self.assertIn("--json", mocked.call_args.args[0])
 
 
 if __name__ == "__main__":
