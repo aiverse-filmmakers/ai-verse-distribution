@@ -204,7 +204,7 @@
         {
           "id": "ai-verse-gateway",
           "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Gateway.git",
-          "revision": "b20d56eddec6514ec4bc65b510318289b9cffa41",
+          "revision": "240c2b1b71abc7a8dbdc4d573da7fd85a110ca8f",
           "install_order": 60
         },
         {
@@ -268,9 +268,9 @@
           "companion_dependency_lock": "distribution-companion-npm-lock-v1"
         },
         "gateway": {
-          "revision": "b20d56eddec6514ec4bc65b510318289b9cffa41",
+          "revision": "240c2b1b71abc7a8dbdc4d573da7fd85a110ca8f",
           "hosted_workflows": [
-            34777260839
+            34824931710
           ]
         },
         "automations": {
