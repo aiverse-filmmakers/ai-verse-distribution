@@ -70,6 +70,8 @@ def _gateway_goal_config(state: StateStore, root: Path) -> Path:
         "transport": "json-subprocess",
         "command": [
             sys.executable,
+            "-X",
+            "utf8",
             "-m",
             "aiverse_distribution.goal_bridge",
             "--brain",
