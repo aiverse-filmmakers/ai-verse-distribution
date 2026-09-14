@@ -269,7 +269,7 @@ def bot_manifest(bot_id: str, name: str) -> dict[str, Any]:
         "kind": "durable",
         "status": "active",
         "role": {"title": name, "mission": f"Collaborate in the Agent release check as {name}."},
-        "runtime": {"adapter": "native"},
+        "runtime": {"adapter": "deterministic"},
         "execution": {"environment_policy": "shared_workspace", "environment_ref": "host-default"},
         "scope": {"type": "workspace", "workspace_id": "alpha"},
         "permissions": {"policy_ref": "default-bot", "allowed_peers": ["*"]},
