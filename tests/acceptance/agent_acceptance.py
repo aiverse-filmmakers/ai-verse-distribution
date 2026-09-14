@@ -13,6 +13,7 @@ from typing import Any
 
 from profile_acceptance import (
     brain_onboarding_payload,
+    call_data,
     prove_brain_no_silent_handover,
     prove_data,
     prove_data_dependency_lock,
@@ -399,6 +400,33 @@ def prove_automation_wake(install: dict[str, Any], root: Path) -> None:
         raise RuntimeError(f"Multiple Bots did not accept the Automations wake: {executions}")
 
 
+def prove_memory_preserved(root: Path) -> None:
+    engine = root / "scripts" / "ai-verse-memory" / "memory.py"
+    marker = "distribution-core-memory-marker"
+    recalled = run_process([
+        sys.executable, str(engine), "--root", str(root), "recall",
+        marker, "--workspace", "alpha",
+    ])
+    if marker not in recalled.stdout:
+        raise RuntimeError("Memory canonical history did not survive Agent uninstall/reinstall")
+
+
+def prove_data_preserved(root: Path) -> None:
+    listed = call_data(root, {
+        "protocol": "ai-verse-os-data-host/1.0",
+        "request_id": "distribution-preserved-list",
+        "operation": "request",
+        "scope": "workspace:alpha",
+        "reason": "Verify preserved acceptance record after Agent lifecycle.",
+        "data": {
+            "operation": "data.record.list",
+            "payload": {"spaceId": "acceptance", "entity": "items"},
+        },
+    })
+    if "distribution-core-data-marker" not in json.dumps(listed):
+        raise RuntimeError(f"Data canonical record did not survive Agent uninstall/reinstall: {listed}")
+
+
 def token_cli(runtime: Path, root: Path, command: str) -> dict[str, Any]:
     result = run_process([
         "node", str(runtime / "bin" / "ai-verse-token.mjs"),
@@ -531,8 +559,8 @@ def main() -> int:
         if token_after.get("summary") != token_before.get("summary"):
             raise RuntimeError("Token canonical usage summary changed across uninstall/reinstall")
 
-        prove_memory(root)
-        prove_data(root)
+        prove_memory_preserved(root)
+        prove_data_preserved(root)
 
         for component in (
             "ai-verse-gateway",
