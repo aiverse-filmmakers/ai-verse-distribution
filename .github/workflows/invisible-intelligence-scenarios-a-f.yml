@@ -126,7 +126,7 @@ jobs:
         run: |
           set -euo pipefail
           cd _scenario/data
-          npm ci
+          npm install --no-audit --no-fund
           npm run build
           node --test \
             dist/test/os-host-protocol.test.js \
