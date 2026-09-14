@@ -808,7 +808,14 @@ class Orchestrator:
             }
 
         try:
-            _, _, brain_component, _, _ = self._context("ai-verse-brain")
+            release = self.catalog.get_release(lock["release_set_id"], require_released=True)
+            brain_component = next(
+                (component for component in release.components if component.id == "ai-verse-brain"),
+                None,
+            )
+            brain_receipt = lock.get("components", {}).get("ai-verse-brain") or {}
+            if brain_component is None or brain_receipt.get("revision") != brain_component.revision:
+                raise RuntimeError("locked Brain revision does not match the released catalog")
             from .adapters import _brain_executable  # trusted internal owner adapter
             brain_cli = _brain_executable(self.state, brain_component.revision)
         except Exception as exc:
