@@ -232,15 +232,22 @@ class Catalog:
                 )
         else:
             candidates = [r for r in self.release_sets() if r.profile == profile]
-            if profile == "core":
-                channel_id = self.release_data.get("channels", {}).get("beta")
+            channels = self.release_data.get("channels", {})
+            channel_id = channels.get(profile)
+            if profile == "core" and not channel_id:
+                channel_id = channels.get("beta")
+            if channel_id:
                 release = self.get_release(channel_id, require_released=True)
+                if profile != "custom" and release.profile != profile:
+                    raise CatalogValidationError(
+                        f"channel {profile}: release {release.id} belongs to profile {release.profile}"
+                    )
             elif candidates:
                 release = candidates[-1]
                 if release.status != "released":
                     raise ReleaseBlockedError(release.id, release.blockers)
             elif profile == "custom":
-                release = self.get_release(self.release_data["channels"]["beta"], require_released=True)
+                release = self.get_release(channels["beta"], require_released=True)
             else:
                 raise ReleaseBlockedError(
                     f"{profile}-public-beta",

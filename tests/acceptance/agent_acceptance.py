@@ -25,11 +25,12 @@ from profile_acceptance import (
     write_acceptance_workspace,
 )
 
-AGENT_RELEASE = "agent-public-beta-2026-09-14"
+DEFAULT_AGENT_RELEASE = "agent-public-beta-2026-09-14"
+AGENT_RELEASE = os.environ.get("AI_VERSE_ACCEPTANCE_RELEASE_SET", DEFAULT_AGENT_RELEASE)
 GATEWAY_PORT = 18787
 BOTS_PORT = 18788
 GATEWAY_TOKEN = "distribution-agent-acceptance-token-2026"
-EXPECTED_REFS = {
+DEFAULT_EXPECTED_REFS = {
     "ai-verse-os": "d961ef8e2422d6f713d6519cf5a48916c600d63a",
     "ai-verse-brain": "619dd17daac9c1bd7eaf4381a5889e56ab05ec59",
     "ai-verse-memory": "031e1e77c97ed3c9012235c7ffe0a4ece05e3695",
@@ -40,6 +41,18 @@ EXPECTED_REFS = {
     "ai-verse-multiple-bots": "9bffdffd07fb8abcea848213642936a23ecf4ecf",
     "ai-verse-token": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
 }
+_expected_refs_json = os.environ.get("AI_VERSE_ACCEPTANCE_EXPECTED_REFS")
+EXPECTED_REFS = (
+    json.loads(_expected_refs_json)
+    if _expected_refs_json
+    else dict(DEFAULT_EXPECTED_REFS)
+)
+if (
+    not isinstance(EXPECTED_REFS, dict)
+    or set(EXPECTED_REFS) != set(DEFAULT_EXPECTED_REFS)
+    or any(not isinstance(value, str) or len(value) != 40 for value in EXPECTED_REFS.values())
+):
+    raise RuntimeError("AI_VERSE_ACCEPTANCE_EXPECTED_REFS must be an exact full Agent ref map")
 
 
 def http_json(
@@ -466,7 +479,10 @@ def main() -> int:
     gateway_process: subprocess.Popen[str] | None = None
     bots_process: subprocess.Popen[str] | None = None
     try:
-        started = run_cli("start", "--root", str(root))
+        start_args = ["start", "--root", str(root)]
+        if AGENT_RELEASE != DEFAULT_AGENT_RELEASE:
+            start_args.extend(["--release-set", AGENT_RELEASE])
+        started = run_cli(*start_args)
         if started.get("ready") is not True or started.get("state") != "ready":
             raise RuntimeError(f"Grandma first-run did not become ready: {started}")
         if started.get("release_set_id") != AGENT_RELEASE:
@@ -662,7 +678,36 @@ def main() -> int:
         ):
             run_cli("component", "update", component)
 
-        update = run_cli("update", "--apply")
+        cross_release_update_blocked = False
+        cross_release_rollback_blocked = False
+        if AGENT_RELEASE != DEFAULT_AGENT_RELEASE:
+            blocked_update = run_cli("update", "--apply", expect=2)
+            if (
+                blocked_update.get("error") != "DISTRIBUTION_ERROR"
+                or DEFAULT_AGENT_RELEASE not in str(blocked_update.get("message") or "")
+                or AGENT_RELEASE not in str(blocked_update.get("message") or "")
+            ):
+                raise RuntimeError(
+                    f"candidate did not fail closed on implicit cross-release update: {blocked_update}"
+                )
+            cross_release_update_blocked = True
+
+            blocked_rollback = run_cli(
+                "rollback", "--to", DEFAULT_AGENT_RELEASE, "--apply", expect=2
+            )
+            if (
+                blocked_rollback.get("error") != "DISTRIBUTION_ERROR"
+                or DEFAULT_AGENT_RELEASE not in str(blocked_rollback.get("message") or "")
+                or AGENT_RELEASE not in str(blocked_rollback.get("message") or "")
+            ):
+                raise RuntimeError(
+                    f"candidate did not fail closed on rollback to the old release: {blocked_rollback}"
+                )
+            cross_release_rollback_blocked = True
+
+            update = run_cli("update", "--to", AGENT_RELEASE, "--apply")
+        else:
+            update = run_cli("update", "--apply")
         if update.get("changed") is not False:
             raise RuntimeError(f"same-release Agent update should be a no-op: {update}")
         rollback = run_cli("rollback", "--to", AGENT_RELEASE, "--apply")
@@ -709,6 +754,8 @@ def main() -> int:
             "uninstall_reinstall_state_preserved": True,
             "update_lifecycle": True,
             "same_release_update_rollback": True,
+            "cross_release_update_blocked": cross_release_update_blocked,
+            "cross_release_rollback_blocked": cross_release_rollback_blocked,
             "permissions_granted": False,
             "brain_authority_transferred": False,
             "remote_exposure_enabled": False,

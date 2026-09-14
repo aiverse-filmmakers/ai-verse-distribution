@@ -82,6 +82,25 @@
       "rollback_to": [
         "agent-public-beta-2026-09-14"
       ]
+    },
+    "agent-invisible-intelligence-rc1-2026-09-14": {
+      "profile": "agent",
+      "status": "released",
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "python_min": "3.11",
+      "node_min": "22.5",
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "update_from": [
+        "agent-invisible-intelligence-rc1-2026-09-14"
+      ],
+      "rollback_to": [
+        "agent-invisible-intelligence-rc1-2026-09-14"
+      ]
     }
   }
 }

@@ -5,6 +5,11 @@ on:
     paths:
       - ".github/workflows/invisible-intelligence-scenarios-g-m.yml"
       - ".github/workflows/invisible-intelligence-scenarios-a-f.yml"
+      - ".github/workflows/clean-machine-invisible-candidate.yml"
+      - "src/aiverse_distribution/catalog/**"
+      - "src/aiverse_distribution/dependency_locks/**"
+      - "src/aiverse_distribution/release_catalog.py"
+      - "tests/acceptance/**"
   workflow_dispatch:
 
 permissions:

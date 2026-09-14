@@ -16,15 +16,50 @@ class UnsupportedLifecycle(RuntimeError):
 
 PUBLIC_BETA_OS = "9600929b946746c25c64e48471fcc83031fddda9"
 PUBLIC_BETA_AGENT_OS = "d961ef8e2422d6f713d6519cf5a48916c600d63a"
-PUBLIC_BETA_OS_REVISIONS = frozenset({PUBLIC_BETA_OS, PUBLIC_BETA_AGENT_OS})
+INVISIBLE_INTELLIGENCE_OS = "156f15f162c6d63159b54d3ad87e0342ec7cf9aa"
+PUBLIC_BETA_OS_REVISIONS = frozenset({
+    PUBLIC_BETA_OS,
+    PUBLIC_BETA_AGENT_OS,
+    INVISIBLE_INTELLIGENCE_OS,
+})
 PUBLIC_BETA_BRAIN = "80019be5e6df29aee70371544bd96cedbf0329b9"
 PUBLIC_BETA_AGENT_BRAIN = "619dd17daac9c1bd7eaf4381a5889e56ab05ec59"
-PUBLIC_BETA_BRAIN_REVISIONS = frozenset({PUBLIC_BETA_BRAIN, PUBLIC_BETA_AGENT_BRAIN})
+INVISIBLE_INTELLIGENCE_BRAIN = "16c0b7ea32fcb4759cfb8368876b6985016eab68"
+PUBLIC_BETA_BRAIN_REVISIONS = frozenset({
+    PUBLIC_BETA_BRAIN,
+    PUBLIC_BETA_AGENT_BRAIN,
+    INVISIBLE_INTELLIGENCE_BRAIN,
+})
 PUBLIC_BETA_MEMORY = "031e1e77c97ed3c9012235c7ffe0a4ece05e3695"
+INVISIBLE_INTELLIGENCE_MEMORY = "1c6acf036d42937e57d94dfe48ac501727861653"
+SUPPORTED_MEMORY_REVISIONS = frozenset({
+    PUBLIC_BETA_MEMORY,
+    INVISIBLE_INTELLIGENCE_MEMORY,
+})
 PUBLIC_BETA_SKILLS = "042fda1ea2ddd8b79b74f1db9d3f65212953b64a"
+INVISIBLE_INTELLIGENCE_SKILLS = "71264af6b2b9a575812fe18858d75a54ea2ff545"
+SUPPORTED_SKILLS_REVISIONS = frozenset({
+    PUBLIC_BETA_SKILLS,
+    INVISIBLE_INTELLIGENCE_SKILLS,
+})
 PUBLIC_BETA_GATEWAY = "240c2b1b71abc7a8dbdc4d573da7fd85a110ca8f"
+INVISIBLE_INTELLIGENCE_GATEWAY = "7627df658b2071ecb4ea242572343edfb7abf768"
+SUPPORTED_GATEWAY_REVISIONS = frozenset({
+    PUBLIC_BETA_GATEWAY,
+    INVISIBLE_INTELLIGENCE_GATEWAY,
+})
 PUBLIC_BETA_AUTOMATIONS = "494469a496d479cfec618bcd9511033c0cd3e815"
+INVISIBLE_INTELLIGENCE_AUTOMATIONS = "caaed83b98026dd955640fc015d181529b91a1c6"
+SUPPORTED_AUTOMATIONS_REVISIONS = frozenset({
+    PUBLIC_BETA_AUTOMATIONS,
+    INVISIBLE_INTELLIGENCE_AUTOMATIONS,
+})
 PUBLIC_BETA_BOTS = "9bffdffd07fb8abcea848213642936a23ecf4ecf"
+INVISIBLE_INTELLIGENCE_BOTS = "c600e2bc014351a61e1c0e2673fc63f5d5fa54ec"
+SUPPORTED_BOTS_REVISIONS = frozenset({
+    PUBLIC_BETA_BOTS,
+    INVISIBLE_INTELLIGENCE_BOTS,
+})
 PUBLIC_BETA_TOKEN = "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4"
 
 
@@ -145,13 +180,13 @@ def owner_install(
     revision: str,
     state: StateStore,
 ) -> Optional[CommandResult]:
-    if component_id == "ai-verse-memory" and revision == PUBLIC_BETA_MEMORY:
+    if component_id == "ai-verse-memory" and revision in SUPPORTED_MEMORY_REVISIONS:
         return run(_memory_component(source, root, "install"), cwd=source)
-    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+    if component_id == "ai-verse-gateway" and revision in SUPPORTED_GATEWAY_REVISIONS:
         return run(_gateway(source, "install", "--json"), cwd=source)
-    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+    if component_id == "ai-verse-automations" and revision in SUPPORTED_AUTOMATIONS_REVISIONS:
         return run(_automations(source, "--json", "install"), cwd=source, env=_automations_env(source))
-    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+    if component_id == "ai-verse-multiple-bots" and revision in SUPPORTED_BOTS_REVISIONS:
         return run(_bots(source, "os", "install", "--root", str(root)), cwd=source)
     if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
         return run(_token(source, "install", "--root", str(root), "--json"), cwd=source)
@@ -183,7 +218,7 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
         return results
 
     if component_id == "ai-verse-memory":
-        if revision == PUBLIC_BETA_MEMORY:
+        if revision in SUPPORTED_MEMORY_REVISIONS:
             results.append(run(_memory_component(source, root, "setup"), cwd=source))
             return results
         results.append(
@@ -199,7 +234,7 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
         return results
 
     if component_id == "ai-verse-skills":
-        if revision == PUBLIC_BETA_SKILLS:
+        if revision in SUPPORTED_SKILLS_REVISIONS:
             results.append(run(_skills(source, "setup", "--json"), cwd=source))
             return results
         # The frozen Core Skills generation predates the later explicit setup verb.
@@ -220,7 +255,7 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
         )
         return results
 
-    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+    if component_id == "ai-verse-gateway" and revision in SUPPORTED_GATEWAY_REVISIONS:
         goal_config = _gateway_goal_config(state, root)
         results.append(run(_gateway(
             source,
@@ -232,7 +267,7 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
         ), cwd=source))
         return results
 
-    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+    if component_id == "ai-verse-automations" and revision in SUPPORTED_AUTOMATIONS_REVISIONS:
         results.append(run(
             _automations(source, "--json", "setup", "--os-root", str(root)),
             cwd=source,
@@ -240,7 +275,7 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
         ))
         return results
 
-    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+    if component_id == "ai-verse-multiple-bots" and revision in SUPPORTED_BOTS_REVISIONS:
         results.append(run(_bots(source, "setup", "--mode", "os", "--root", str(root)), cwd=source))
         return results
 
@@ -264,11 +299,11 @@ def owner_status(component_id: str, *, root: Path, source: Path, revision: str, 
             return run([str(_brain_executable(state, revision)), "status", str(root), "--json"], check=False)
         return run([str(_brain_executable(state, revision)), "doctor", str(root)], check=False)
     if component_id == "ai-verse-memory":
-        if revision == PUBLIC_BETA_MEMORY:
+        if revision in SUPPORTED_MEMORY_REVISIONS:
             return run(_memory_component(source, root, "status"), cwd=source, check=False)
         return run(_memory_installed(root, "doctor"), check=False)
     if component_id == "ai-verse-skills":
-        if revision == PUBLIC_BETA_SKILLS:
+        if revision in SUPPORTED_SKILLS_REVISIONS:
             return run(_skills(source, "status", "--json"), cwd=source, check=False)
         return run(_skills(source, "doctor"), cwd=source, check=False)
     if component_id == "ai-verse-data":
@@ -276,11 +311,11 @@ def owner_status(component_id: str, *, root: Path, source: Path, revision: str, 
             _node(), str(source / "dist" / "src" / "cli.js"),
             "status", "--root", str(root), "--json",
         ], cwd=source, check=False)
-    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+    if component_id == "ai-verse-gateway" and revision in SUPPORTED_GATEWAY_REVISIONS:
         return run(_gateway(source, "status", "--json"), cwd=source, check=False)
-    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+    if component_id == "ai-verse-automations" and revision in SUPPORTED_AUTOMATIONS_REVISIONS:
         return run(_automations(source, "--json", "status"), cwd=source, env=_automations_env(source), check=False)
-    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+    if component_id == "ai-verse-multiple-bots" and revision in SUPPORTED_BOTS_REVISIONS:
         return run(_bots(source, "status", "--mode", "os", "--root", str(root)), cwd=source, check=False)
     if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
         return run(_token(source, "status", "--root", str(root), "--json"), cwd=source, check=False)
@@ -295,10 +330,10 @@ def owner_doctor(component_id: str, *, root: Path, source: Path, revision: str, 
         ], cwd=root, check=False)
     if component_id == "ai-verse-brain" and _is_public_beta_brain(revision):
         return run([str(_brain_executable(state, revision)), "doctor", str(root), "--json"], check=False)
-    if component_id == "ai-verse-memory" and revision == PUBLIC_BETA_MEMORY:
+    if component_id == "ai-verse-memory" and revision in SUPPORTED_MEMORY_REVISIONS:
         return run(_memory_component(source, root, "doctor"), cwd=source, check=False)
     if component_id == "ai-verse-skills":
-        if revision == PUBLIC_BETA_SKILLS:
+        if revision in SUPPORTED_SKILLS_REVISIONS:
             return run(_skills(source, "doctor", "--depth", "system", "--json"), cwd=source, check=False)
         return run(_skills(source, "doctor", "--readiness"), cwd=source, check=False)
     if component_id == "ai-verse-data":
@@ -306,11 +341,11 @@ def owner_doctor(component_id: str, *, root: Path, source: Path, revision: str, 
             _node(), str(source / "dist" / "src" / "cli.js"),
             "doctor", "--root", str(root), "--json",
         ], cwd=source, check=False)
-    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+    if component_id == "ai-verse-gateway" and revision in SUPPORTED_GATEWAY_REVISIONS:
         return run(_gateway(source, "doctor", "--json"), cwd=source, check=False)
-    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+    if component_id == "ai-verse-automations" and revision in SUPPORTED_AUTOMATIONS_REVISIONS:
         return run(_automations(source, "--json", "doctor"), cwd=source, env=_automations_env(source), check=False)
-    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+    if component_id == "ai-verse-multiple-bots" and revision in SUPPORTED_BOTS_REVISIONS:
         return run(_bots(source, "doctor", "--mode", "os", "--root", str(root)), cwd=source, check=False)
     if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
         return run(_token(source, "doctor", "--root", str(root), "--json"), cwd=source, check=False)
@@ -330,7 +365,7 @@ def owner_enablement(
         raise ValueError(action)
 
     if component_id == "ai-verse-memory":
-        if revision == PUBLIC_BETA_MEMORY:
+        if revision in SUPPORTED_MEMORY_REVISIONS:
             return run(_memory_component(source, root, action), cwd=source)
         if not (root / "AI-VERSE.yaml").is_file():
             raise UnsupportedLifecycle(
@@ -347,7 +382,7 @@ def owner_enablement(
             action,
         ])
 
-    if component_id == "ai-verse-skills" and revision == PUBLIC_BETA_SKILLS:
+    if component_id == "ai-verse-skills" and revision in SUPPORTED_SKILLS_REVISIONS:
         return run(_skills(source, action, "--json"), cwd=source)
 
     if component_id == "ai-verse-data":
@@ -366,9 +401,9 @@ def owner_enablement(
             "the frozen Brain release is not exposed for disable through Distribution because it has no matching owner-controlled enable route"
         )
 
-    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+    if component_id == "ai-verse-gateway" and revision in SUPPORTED_GATEWAY_REVISIONS:
         return run(_gateway(source, action, "--json"), cwd=source)
-    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+    if component_id == "ai-verse-automations" and revision in SUPPORTED_AUTOMATIONS_REVISIONS:
         return run(_automations(source, "--json", action), cwd=source, env=_automations_env(source))
     if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
         return run(_token(source, action, "--root", str(root), "--json"), cwd=source)
@@ -390,7 +425,7 @@ def owner_uninstall(component_id: str, *, root: Path, source: Path, revision: st
             )
         return run([str(_brain_executable(state, revision)), "detach", str(root), "--apply"])
     if component_id == "ai-verse-memory":
-        if revision == PUBLIC_BETA_MEMORY:
+        if revision in SUPPORTED_MEMORY_REVISIONS:
             return run(_memory_component(source, root, "uninstall"), cwd=source)
         if not (root / "AI-VERSE.yaml").is_file():
             raise UnsupportedLifecycle(
@@ -401,7 +436,7 @@ def owner_uninstall(component_id: str, *, root: Path, source: Path, revision: st
             "--target", str(root), "--source-dir", str(source), "--action", "detach",
         ])
     if component_id == "ai-verse-skills":
-        if revision == PUBLIC_BETA_SKILLS:
+        if revision in SUPPORTED_SKILLS_REVISIONS:
             return run(_skills(source, "uninstall", "--json"), cwd=source)
         return run(_skills(source, "uninstall"), cwd=source)
     if component_id == "ai-verse-data":
@@ -409,11 +444,11 @@ def owner_uninstall(component_id: str, *, root: Path, source: Path, revision: st
             _node(), str(source / "dist" / "src" / "cli.js"),
             "uninstall", "--root", str(root), "--json",
         ], cwd=source)
-    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+    if component_id == "ai-verse-gateway" and revision in SUPPORTED_GATEWAY_REVISIONS:
         return run(_gateway(source, "uninstall", "--json"), cwd=source)
-    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+    if component_id == "ai-verse-automations" and revision in SUPPORTED_AUTOMATIONS_REVISIONS:
         return run(_automations(source, "--json", "uninstall"), cwd=source, env=_automations_env(source))
-    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+    if component_id == "ai-verse-multiple-bots" and revision in SUPPORTED_BOTS_REVISIONS:
         return run(_bots(source, "os", "uninstall", "--root", str(root)), cwd=source)
     if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
         return run(_token(source, "uninstall", "--root", str(root), "--json"), cwd=source)
@@ -433,14 +468,14 @@ def owner_update(component_id: str, *, root: Path, source: Path, revision: str, 
             ])
         return run([str(_brain_executable(state, revision)), "migrate", str(root), "--apply"])
     if component_id == "ai-verse-memory":
-        if revision == PUBLIC_BETA_MEMORY:
+        if revision in SUPPORTED_MEMORY_REVISIONS:
             return run(_memory_component(source, root, "update"), cwd=source)
         return run([
             sys.executable, str(source / "scripts" / "install.py"),
             "--target", str(root), "--source-dir", str(source),
         ])
     if component_id == "ai-verse-skills":
-        if revision == PUBLIC_BETA_SKILLS:
+        if revision in SUPPORTED_SKILLS_REVISIONS:
             return run(_skills(source, "update", "--json"), cwd=source)
         return run(_skills(source, "update"), cwd=source)
     if component_id == "ai-verse-data":
@@ -448,11 +483,11 @@ def owner_update(component_id: str, *, root: Path, source: Path, revision: str, 
             _node(), str(source / "dist" / "src" / "cli.js"),
             "update", "--root", str(root), "--json",
         ], cwd=source)
-    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+    if component_id == "ai-verse-gateway" and revision in SUPPORTED_GATEWAY_REVISIONS:
         return run(_gateway(source, "update", "--json"), cwd=source)
-    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+    if component_id == "ai-verse-automations" and revision in SUPPORTED_AUTOMATIONS_REVISIONS:
         return run(_automations(source, "--json", "update"), cwd=source, env=_automations_env(source))
-    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+    if component_id == "ai-verse-multiple-bots" and revision in SUPPORTED_BOTS_REVISIONS:
         return run(_bots(source, "update", "--mode", "os", "--root", str(root)), cwd=source)
     if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
         return run(_token(source, "update", "--root", str(root), "--json"), cwd=source)
