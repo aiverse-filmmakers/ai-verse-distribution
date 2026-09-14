@@ -15,7 +15,7 @@ PROTOCOL = "ai-verse-goal-owner/1.0"
 
 def _brain_command(brain: str) -> list[str]:
     executable = Path(brain).resolve()
-    python_name = "python.exe" if os.name == "nt" else "python"
+    python_name = "python.exe" if executable.suffix.lower() == ".exe" else "python"
     interpreter = executable.parent / python_name
     if interpreter.is_file():
         return [str(interpreter), "-X", "utf8", "-m", "aiverse_brain.cli"]
