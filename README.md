@@ -55,7 +55,7 @@ The current released Core set is:
 
 `core-public-beta-2026-09-13`
 
-The Agent profile remains deliberately blocked until the complete immutable Agent set exists and its composed clean-machine acceptance passes. Gateway, Automations, and Token have exact accepted candidate artifacts recorded in the pending Agent manifest. Multiple Bots is complete through Phase 5.9; its remaining Phase 5 release slices and final Agent composition acceptance are still outstanding. Distribution fails closed instead of constructing a partial Agent release.
+The frozen Agent public-beta candidate is `agent-public-beta-2026-09-14`: Core + Gateway + Automations + Multiple Bots + Token at exact immutable revisions. It is admitted on this release branch only so the real clean-machine release gate can install and exercise it. Agent is not accepted until the Ubuntu/macOS/Windows composed gate passes and the acceptance evidence is frozen.
 
 The Full profile is also explicitly blocked until Agent has an admitted immutable release set and Connections, Dashboard, and Apps have one compatible Full release set.
 
@@ -188,7 +188,7 @@ OS + Brain + Memory + Skills + Data.
 
 **Agent**
 
-Core + Gateway + Automations + Multiple Bots + Token when Token is public-beta ready.
+Core + Gateway + Automations + Multiple Bots + Token. Token is a required public-beta component and remains attribution/cost truth only, never operational authority.
 
 **Full**
 
@@ -206,7 +206,7 @@ Machine-readable definitions:
 - `compatibility/matrix.json`
 - `release-sets/core-public-beta-2026-09-13.json`
 - `release-sets/core-first-member-beta.json` (historical first-member set)
-- `release-sets/agent-public-beta-pending.json`
+- `release-sets/agent-public-beta-2026-09-14.json`
 - `release-sets/full-public-beta-pending.json`
 
 The CLI ships a validated copy of the release catalog under `src/aiverse_distribution/catalog/`.
@@ -236,7 +236,7 @@ install -> setup -> explicit onboarding -> status -> doctor
 -> update no-op -> rollback no-op -> open/use handoff
 ```
 
-`.github/workflows/clean-machine-agent.yml` is the Agent release gate. Until the Agent prerequisites have immutable public-beta artifacts, it proves that Agent installation fails closed with the exact blockers and deliberately exits non-zero, so the release gate cannot be mistaken for an Agent acceptance pass. Once an admitted Agent release set exists, the workflow must be extended to the complete Agent clean-machine path before it can turn green.
+`.github/workflows/clean-machine-agent.yml` is the Agent release gate. It installs the complete immutable Agent candidate on Ubuntu, macOS, and Windows and proves real composed use: Gateway + Brain Goal ownership, Memory, Skills, Data, two durable collaborating Bots, Automations wake delivery, Token collection/projection, restart/recovery, safe lifecycle operations, and state preservation.
 
 See `docs/ACCEPTANCE.md`.
 
