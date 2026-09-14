@@ -971,7 +971,7 @@ class Orchestrator:
             "open": opened,
             "next": [
                 "Open this AI-Verse root in a supported conversational runtime.",
-                "Start with whatever you want help with; deeper setup can be learned when it becomes relevant.",
+                "Start with whatever you want help with; deeper preferences can be learned when they become relevant.",
             ],
         }
 
