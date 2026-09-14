@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -17,6 +18,10 @@ PUBLIC_BETA_OS = "9600929b946746c25c64e48471fcc83031fddda9"
 PUBLIC_BETA_BRAIN = "80019be5e6df29aee70371544bd96cedbf0329b9"
 PUBLIC_BETA_MEMORY = "031e1e77c97ed3c9012235c7ffe0a4ece05e3695"
 PUBLIC_BETA_SKILLS = "042fda1ea2ddd8b79b74f1db9d3f65212953b64a"
+PUBLIC_BETA_GATEWAY = "b20d56eddec6514ec4bc65b510318289b9cffa41"
+PUBLIC_BETA_AUTOMATIONS = "494469a496d479cfec618bcd9511033c0cd3e815"
+PUBLIC_BETA_BOTS = "9bffdffd07fb8abcea848213642936a23ecf4ecf"
+PUBLIC_BETA_TOKEN = "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4"
 
 
 def _brain_executable(state: StateStore, revision: str) -> Path:
@@ -33,6 +38,54 @@ def _node() -> str:
 def _skills(source: Path, *args: str) -> List[str]:
     return [sys.executable, str(source / "installer" / "aiverse_skills.py"), *args]
 
+
+
+def _gateway(source: Path, *args: str) -> List[str]:
+    return [_node(), str(source / "bin" / "aiverse-gateway.mjs"), *args]
+
+
+def _automations(source: Path, *args: str) -> List[str]:
+    return [sys.executable, "-m", "aiverse_automations.cli", *args]
+
+
+def _automations_env(source: Path) -> Dict[str, str]:
+    existing = os.environ.get("PYTHONPATH", "")
+    prefix = str(source / "src")
+    return {"PYTHONPATH": prefix + (os.pathsep + existing if existing else "")}
+
+
+def _bots(source: Path, *args: str) -> List[str]:
+    return [_node(), str(source / "dist" / "src" / "cli.js"), *args]
+
+
+def _token(source: Path, *args: str) -> List[str]:
+    return [_node(), str(source / "bin" / "ai-verse-token.mjs"), *args]
+
+
+def _gateway_goal_config(state: StateStore, root: Path) -> Path:
+    target = state.home / "adapters" / "gateway-goal-owner.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": "1.0",
+        "transport": "json-subprocess",
+        "command": [
+            sys.executable,
+            "-m",
+            "aiverse_distribution.goal_bridge",
+            "--brain",
+            str(_brain_executable(state, PUBLIC_BETA_BRAIN)),
+            "--root",
+            str(root),
+        ],
+        "timeout_seconds": 60,
+        "max_input_bytes": 2097152,
+        "max_output_bytes": 2097152,
+        "max_stderr_bytes": 65536,
+        "env_names": [],
+        "cwd": str(root),
+    }
+    target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return target
 
 def _memory_component(source: Path, root: Path, *args: str) -> List[str]:
     return [
@@ -70,6 +123,14 @@ def owner_install(
 ) -> Optional[CommandResult]:
     if component_id == "ai-verse-memory" and revision == PUBLIC_BETA_MEMORY:
         return run(_memory_component(source, root, "install"), cwd=source)
+    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+        return run(_gateway(source, "install", "--json"), cwd=source)
+    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+        return run(_automations(source, "--json", "install"), cwd=source, env=_automations_env(source))
+    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+        return run(_bots(source, "os", "install", "--root", str(root)), cwd=source)
+    if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
+        return run(_token(source, "install", "--root", str(root), "--json"), cwd=source)
     return None
 
 
@@ -135,6 +196,34 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
         )
         return results
 
+    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+        goal_config = _gateway_goal_config(state, root)
+        results.append(run(_gateway(
+            source,
+            "setup",
+            "--system-root", str(root),
+            "--runtime", "deterministic",
+            "--goal-owner-config", str(goal_config),
+            "--json",
+        ), cwd=source))
+        return results
+
+    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+        results.append(run(
+            _automations(source, "--json", "setup", "--os-root", str(root)),
+            cwd=source,
+            env=_automations_env(source),
+        ))
+        return results
+
+    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+        results.append(run(_bots(source, "setup", "--mode", "os", "--root", str(root)), cwd=source))
+        return results
+
+    if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
+        results.append(run(_token(source, "setup", "--root", str(root), "--json"), cwd=source))
+        return results
+
     raise UnsupportedLifecycle(f"no trusted setup adapter for {component_id}")
 
 
@@ -163,6 +252,14 @@ def owner_status(component_id: str, *, root: Path, source: Path, revision: str, 
             _node(), str(source / "dist" / "src" / "cli.js"),
             "status", "--root", str(root), "--json",
         ], cwd=source, check=False)
+    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+        return run(_gateway(source, "status", "--json"), cwd=source, check=False)
+    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+        return run(_automations(source, "--json", "status"), cwd=source, env=_automations_env(source), check=False)
+    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+        return run(_bots(source, "status", "--mode", "os", "--root", str(root)), cwd=source, check=False)
+    if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
+        return run(_token(source, "status", "--root", str(root), "--json"), cwd=source, check=False)
     raise UnsupportedLifecycle(f"no trusted status adapter for {component_id}")
 
 
@@ -185,6 +282,14 @@ def owner_doctor(component_id: str, *, root: Path, source: Path, revision: str, 
             _node(), str(source / "dist" / "src" / "cli.js"),
             "doctor", "--root", str(root), "--json",
         ], cwd=source, check=False)
+    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+        return run(_gateway(source, "doctor", "--json"), cwd=source, check=False)
+    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+        return run(_automations(source, "--json", "doctor"), cwd=source, env=_automations_env(source), check=False)
+    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+        return run(_bots(source, "doctor", "--mode", "os", "--root", str(root)), cwd=source, check=False)
+    if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
+        return run(_token(source, "doctor", "--root", str(root), "--json"), cwd=source, check=False)
     return owner_status(component_id, root=root, source=source, revision=revision, state=state)
 
 
@@ -237,6 +342,12 @@ def owner_enablement(
             "the frozen Brain release is not exposed for disable through Distribution because it has no matching owner-controlled enable route"
         )
 
+    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+        return run(_gateway(source, action, "--json"), cwd=source)
+    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+        return run(_automations(source, "--json", action), cwd=source, env=_automations_env(source))
+    if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
+        return run(_token(source, action, "--root", str(root), "--json"), cwd=source)
     raise UnsupportedLifecycle(
         f"{component_id}@{revision[:12]} does not expose an owner-controlled {action} command in this release"
     )
@@ -274,6 +385,14 @@ def owner_uninstall(component_id: str, *, root: Path, source: Path, revision: st
             _node(), str(source / "dist" / "src" / "cli.js"),
             "uninstall", "--root", str(root), "--json",
         ], cwd=source)
+    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+        return run(_gateway(source, "uninstall", "--json"), cwd=source)
+    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+        return run(_automations(source, "--json", "uninstall"), cwd=source, env=_automations_env(source))
+    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+        return run(_bots(source, "os", "uninstall", "--root", str(root)), cwd=source)
+    if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
+        return run(_token(source, "uninstall", "--root", str(root), "--json"), cwd=source)
     if component_id == "ai-verse-os":
         raise UnsupportedLifecycle(
             "Distribution will not delete the AI-Verse OS host root because it may contain user-owned canonical state"
@@ -305,6 +424,14 @@ def owner_update(component_id: str, *, root: Path, source: Path, revision: str, 
             _node(), str(source / "dist" / "src" / "cli.js"),
             "update", "--root", str(root), "--json",
         ], cwd=source)
+    if component_id == "ai-verse-gateway" and revision == PUBLIC_BETA_GATEWAY:
+        return run(_gateway(source, "update", "--json"), cwd=source)
+    if component_id == "ai-verse-automations" and revision == PUBLIC_BETA_AUTOMATIONS:
+        return run(_automations(source, "--json", "update"), cwd=source, env=_automations_env(source))
+    if component_id == "ai-verse-multiple-bots" and revision == PUBLIC_BETA_BOTS:
+        return run(_bots(source, "update", "--mode", "os", "--root", str(root)), cwd=source)
+    if component_id == "ai-verse-token" and revision == PUBLIC_BETA_TOKEN:
+        return run(_token(source, "update", "--root", str(root), "--json"), cwd=source)
     if component_id == "ai-verse-os":
         return None
     raise UnsupportedLifecycle(f"no trusted update adapter for {component_id}")
