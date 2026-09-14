@@ -1,6 +1,6 @@
 # AI-Verse Distribution Roadmap
 
-**Status:** Core Distribution accepted; immutable Agent candidate frozen; composed Agent acceptance pending  
+**Status:** Core and Agent Distribution accepted; Agent public beta released  
 **Updated:** 2026-09-14
 
 ## Phase 0: Reset and contract
@@ -74,7 +74,7 @@ Remote workflow results are release evidence only after GitHub Actions completes
 
 ## Phase 5: Agent profile
 
-The complete immutable Agent candidate is frozen as `agent-public-beta-2026-09-14`.
+The complete immutable Agent public beta is released as `agent-public-beta-2026-09-14`.
 
 - [x] Gateway accepted ref: `240c2b1b71abc7a8dbdc4d573da7fd85a110ca8f`;
 - [x] Automations accepted ref: `494469a496d479cfec618bcd9511033c0cd3e815`;
@@ -82,12 +82,12 @@ The complete immutable Agent candidate is frozen as `agent-public-beta-2026-09-1
 - [x] Token `0.1.0-beta.3` accepted ref: `23b7b8ecbc9d9ef267f5e10449f785eb11107dd4`;
 - [x] trusted Distribution lifecycle adapters for all Agent components;
 - [x] real composed Agent clean-machine harness implemented;
-- [ ] Ubuntu Agent gate green;
-- [ ] macOS Agent gate green;
-- [ ] Windows Agent gate green;
-- [ ] freeze exact Agent acceptance evidence and merge the release branch.
+- [x] Ubuntu Agent gate green;
+- [x] macOS Agent gate green;
+- [x] Windows Agent gate green;
+- [x] freeze exact Agent acceptance evidence;\n- [ ] merge the release branch after the final evidence-only exact-head rerun.
 
-The branch-local candidate is executable so the release gate can test the exact set. Agent becomes released product truth only when the green acceptance evidence is frozen and this branch is merged. Full-profile work remains out of scope.
+Qualification passed on Distribution head `a4f9ee17b65cddef8d7547115cca34738a41b3fe`: Distribution CI run `34852469436`, Core clean-machine run `34852470941`, and Agent clean-machine run `34852469415`, including Ubuntu, macOS, and Windows. The evidence-only final branch head must rerun the same matrices before merge. Full-profile work remains out of scope.
 
 ## Phase 6: Full profile
 
