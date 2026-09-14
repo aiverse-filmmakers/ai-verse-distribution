@@ -891,6 +891,15 @@ class Orchestrator:
                 "plan": sanitize(plan),
             }
 
+        if plan.get("mode") != "plan":
+            return {
+                "state": "blocked",
+                "safe": False,
+                "reason": "released OS reconcile response is not a plan",
+                "mutated": False,
+                "plan": sanitize(plan),
+            }
+
         automatic = [
             action for action in actions
             if isinstance(action, dict) and action.get("automatic") is True
@@ -903,23 +912,39 @@ class Orchestrator:
                 "mutated": False,
                 "plan": sanitize(plan),
             }
+        if len(automatic) != 1:
+            return {
+                "state": "blocked",
+                "safe": False,
+                "reason": "reconcile plan contains more than one automatic action",
+                "mutated": False,
+                "plan": sanitize(plan),
+            }
 
-        expected_argv = ["ai-verse-brain", "attach", str(root), "--apply"]
-        expected_followup = ["ai-verse-brain", "init", str(root), "--apply"]
-        for action in automatic:
-            if (
-                action.get("component") != "ai-verse-brain"
-                or action.get("kind") != "setup"
-                or action.get("argv") != expected_argv
-                or action.get("followup_argv") != expected_followup
-            ):
-                return {
-                    "state": "blocked",
-                    "safe": False,
-                    "reason": "reconcile plan contains an unrecognized automatic action",
-                    "mutated": False,
-                    "plan": sanitize(plan),
-                }
+        def matches_brain_owner_argv(value: Any, verb: str) -> bool:
+            if not isinstance(value, list) or len(value) != 4:
+                return False
+            if value[0] != "ai-verse-brain" or value[1] != verb or value[3] != "--apply":
+                return False
+            try:
+                return Path(value[2]).expanduser().resolve() == root
+            except (OSError, TypeError, ValueError):
+                return False
+
+        action = automatic[0]
+        if (
+            action.get("component") != "ai-verse-brain"
+            or action.get("kind") != "setup"
+            or not matches_brain_owner_argv(action.get("argv"), "attach")
+            or not matches_brain_owner_argv(action.get("followup_argv"), "init")
+        ):
+            return {
+                "state": "blocked",
+                "safe": False,
+                "reason": "reconcile plan contains an unrecognized automatic action",
+                "mutated": False,
+                "plan": sanitize(plan),
+            }
 
         apply_result = run(
             [
@@ -946,6 +971,15 @@ class Orchestrator:
                 "apply_exit_code": apply_result.returncode,
             }
 
+        if applied.get("mode") != "apply":
+            return {
+                "state": "failed",
+                "safe": True,
+                "reason": "released OS reconcile response is not an apply result",
+                "mutated": False,
+                "result": sanitize(applied),
+            }
+
         results = applied.get("results", [])
         failed = [
             result for result in results
@@ -960,7 +994,7 @@ class Orchestrator:
             if result.get("component") != "ai-verse-brain"
             or result.get("owner_command") is not True
         ]
-        if failed or unexpected_executed:
+        if failed or unexpected_executed or len(executed) > 1:
             return {
                 "state": "failed",
                 "safe": True,
