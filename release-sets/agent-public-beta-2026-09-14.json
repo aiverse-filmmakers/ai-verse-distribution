@@ -14,7 +14,7 @@
     {
       "id": "ai-verse-brain",
       "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
-      "revision": "80019be5e6df29aee70371544bd96cedbf0329b9",
+      "revision": "619dd17daac9c1bd7eaf4381a5889e56ab05ec59",
       "install_order": 20
     },
     {
@@ -79,11 +79,11 @@
       ]
     },
     "brain": {
-      "revision": "80019be5e6df29aee70371544bd96cedbf0329b9",
+      "revision": "619dd17daac9c1bd7eaf4381a5889e56ab05ec59",
       "hosted_workflows": [
-        34778357624,
-        34778357586,
-        34778357592
+        34834005026,
+        34834005113,
+        34834005157
       ]
     },
     "memory": {
