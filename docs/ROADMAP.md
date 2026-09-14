@@ -1,7 +1,7 @@
 # AI-Verse Distribution Roadmap
 
-**Status:** Core implementation built; Distribution hosted acceptance pending runner execution; Agent release blocked on Multiple Bots + composed Agent acceptance  
-**Updated:** 2026-09-13
+**Status:** Core Distribution accepted; immutable Agent candidate frozen; composed Agent acceptance pending  
+**Updated:** 2026-09-14
 
 ## Phase 0: Reset and contract
 
@@ -74,17 +74,20 @@ Remote workflow results are release evidence only after GitHub Actions completes
 
 ## Phase 5: Agent profile
 
-Profile contract is implemented.
+The complete immutable Agent candidate is frozen as `agent-public-beta-2026-09-14`.
 
-Current Agent state:
+- [x] Gateway accepted ref: `b20d56eddec6514ec4bc65b510318289b9cffa41`;
+- [x] Automations accepted ref: `494469a496d479cfec618bcd9511033c0cd3e815`;
+- [x] Multiple Bots Phase 5.14 accepted ref: `9bffdffd07fb8abcea848213642936a23ecf4ecf`;
+- [x] Token `0.1.0-beta.3` accepted ref: `23b7b8ecbc9d9ef267f5e10449f785eb11107dd4`;
+- [x] trusted Distribution lifecycle adapters for all Agent components;
+- [x] real composed Agent clean-machine harness implemented;
+- [ ] Ubuntu Agent gate green;
+- [ ] macOS Agent gate green;
+- [ ] Windows Agent gate green;
+- [ ] freeze exact Agent acceptance evidence and merge the release branch.
 
-- [x] Gateway exact accepted candidate: `b20d56eddec6514ec4bc65b510318289b9cffa41`;
-- [x] Automations exact accepted candidate: `494469a496d479cfec618bcd9511033c0cd3e815`;
-- [x] Token `0.1.0-beta.3` exact accepted candidate: `23b7b8ecbc9d9ef267f5e10449f785eb11107dd4`;
-- [ ] Multiple Bots complete public-beta lifecycle/readiness/release gate;
-- [ ] complete immutable Agent composition acceptance across the claimed platforms.
-
-The Agent clean-machine workflow exists as a release gate, currently proves fail-closed behavior, and deliberately exits non-zero while the profile is blocked. It must not turn green or be reported as an Agent acceptance pass until an admitted immutable Agent set exists and the full flow runs.
+The branch-local candidate is executable so the release gate can test the exact set. Agent becomes released product truth only when the green acceptance evidence is frozen and this branch is merged. Full-profile work remains out of scope.
 
 ## Phase 6: Full profile
 
