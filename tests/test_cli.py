@@ -1,3 +1,4 @@
+import io
 import json
 import tempfile
 import unittest
@@ -5,7 +6,7 @@ from unittest.mock import patch
 from pathlib import Path
 from types import SimpleNamespace
 
-from aiverse_distribution.cli import _choose_custom_components, _temporary_brain_answers
+from aiverse_distribution.cli import _choose_custom_components, _temporary_brain_answers, main
 from aiverse_distribution.release_catalog import Catalog, DistributionError
 
 
@@ -36,6 +37,45 @@ class CustomSelectionTests(unittest.TestCase):
         ):
             selected = _choose_custom_components(app, [])
         self.assertEqual(selected, ["ai-verse-os", "ai-verse-data"])
+
+
+class ProductStartCliTests(unittest.TestCase):
+    def test_start_dispatches_one_action_product_path(self):
+        payload = {
+            "state": "ready",
+            "ready": True,
+            "profile": "agent",
+            "release_set_id": "agent-public-beta-2026-09-14",
+            "root": "/tmp/AI-Verse",
+            "message": "AI-Verse is ready. What would you like help with?",
+            "next": ["Open this AI-Verse root in a supported conversational runtime."],
+        }
+        fake = SimpleNamespace(start=lambda **kwargs: payload)
+        stdout = io.StringIO()
+        with patch("aiverse_distribution.cli.Orchestrator", return_value=fake), patch(
+            "aiverse_distribution.cli.sys.stdout", stdout
+        ):
+            code = main(["start"])
+        self.assertEqual(code, 0)
+        rendered = stdout.getvalue()
+        self.assertIn("state: ready", rendered)
+        self.assertIn("AI-Verse is ready. What would you like help with?", rendered)
+        self.assertNotIn("component", rendered.lower())
+
+    def test_start_returns_nonzero_when_safe_bootstrap_stops(self):
+        payload = {
+            "state": "needs-attention",
+            "ready": False,
+            "profile": "agent",
+            "release_set_id": "agent-public-beta-2026-09-14",
+            "root": "/tmp/AI-Verse",
+            "message": "AI-Verse needs attention.",
+            "next": ["Run aiverse doctor --json for technical details."],
+        }
+        fake = SimpleNamespace(start=lambda **kwargs: payload)
+        with patch("aiverse_distribution.cli.Orchestrator", return_value=fake):
+            code = main(["start", "--json"])
+        self.assertEqual(code, 1)
 
 
 class OnboardingArgumentTests(unittest.TestCase):
