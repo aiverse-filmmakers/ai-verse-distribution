@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scheme": "distribution-companion-npm-lock-v1",
+  "component_id": "ai-verse-data",
+  "source_revision": "8edde7dca5afa34e300130cc6b8ee2b4170ad40f",
+  "source_manifest": "package.json",
+  "source_manifest_sha256": "a1813b822fa87700d6f876d86d97be428475afac6de47a877f21c3ce7110ba8b",
+  "lockfile": "package-lock.json",
+  "lockfile_sha256": "8c8ca3d9e2977ac53ccfb4ed82bcf24a634a497aaaf02f5ac13eb3d0ec1a073b",
+  "lockfile_version": 3,
+  "package_manager": "npm",
+  "package_manager_major": 10,
+  "node_major_min": 22,
+  "dependency_tree_sha256": "a3ac0422af7c690006e88dcbf917a27fa6101b3497662128774d315463d0b221",
+  "resolved_packages": [
+    {
+      "name": "@types/better-sqlite3",
+      "version": "9.6.0",
+      "integrity": "sha512-ZEEwBSgMu7GYJOynoagg5X9JbxfL6dTJDsgViJIqh67jV44kyOr9RXfmFjLK5rzC4MWssP06t9hu/JwGDnUbCg==",
+      "dev": true
+    },
+    {
+      "name": "@types/node",
+      "version": "22.15.30",
+      "integrity": "sha512-6Q7lr06bEHdlfplU6YRbgG1SFBdlsfNC4/lX+SkhiTs0cpJkOElmWls8PxDFv4yY/xKb8Y6SO0OmSX4wgqTZbA==",
+      "dev": true
+    },
+    {
+      "name": "better-sqlite3",
+      "version": "13.0.3",
+      "integrity": "sha512-RbOBxmLBG8uvFUc15X9+9SFemKcQ0WBuISBVkpuiaUB2qblC8UWlHEjdWVoZ8AdhSwmoEgsiXKfopX0CQxaACQ==",
+      "dev": false
+    },
+    {
+      "name": "node-addon-api",
+      "version": "8.9.2",
+      "integrity": "sha512-VijLXbi3UACN69I0JVXJsX4tjACjNoQDgv2gTF6sx2wWEi8tkSg2eX8p5gSIFi8z2+DL3oHmY6OyKce38SDolg==",
+      "dev": false
+    },
+    {
+      "name": "typescript",
+      "version": "5.8.3",
+      "integrity": "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==",
+      "dev": true
+    },
+    {
+      "name": "undici-types",
+      "version": "6.21.0",
+      "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==",
+      "dev": true
+    }
+  ],
+  "provenance": {
+    "owner": "AI-Verse Distribution",
+    "reason": "The accepted Invisible Intelligence AI-Verse Data revision retains the exact package manifest bytes used by the frozen Agent dependency tree. Distribution owns this release-scoped companion lock solely to make installation of that exact immutable source artifact reproducible without changing Data runtime/domain ownership.",
+    "source_commit_modified": false
+  },
+  "dependency_tree_digest_scheme": "sha256-canonical-package-path-version-v1"
+}
