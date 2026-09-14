@@ -1,6 +1,6 @@
 # Distribution Acceptance
 
-**Updated:** 2026-09-13
+**Updated:** 2026-09-14
 
 ## Core Distribution acceptance gate
 
@@ -71,7 +71,7 @@ The clean-machine Agent workflow is:
 
 `.github/workflows/clean-machine-agent.yml`
 
-The frozen candidate release is:
+The accepted Agent release is:
 
 `agent-public-beta-2026-09-14`
 
@@ -111,7 +111,7 @@ clean Agent install
 
 The gate additionally asserts that Distribution grants no permissions, does not transfer Brain strategic authority, does not enable remote exposure, does not initialize unspecified Data workspaces, and does not mutate tracked component source.
 
-The candidate is not accepted merely because this manifest exists. The release claim requires this exact Distribution head to complete the full three-platform gate successfully. After that evidence is frozen, the Agent manifest can be treated as the accepted public-beta set.
+Agent qualification passed on Distribution head `a4f9ee17b65cddef8d7547115cca34738a41b3fe`. Distribution CI run `34852469436` passed all six jobs. Core clean-machine run `34852470941` passed Ubuntu job `104004051967`, macOS job `104004051563`, and Windows job `104004051988`. Agent clean-machine run `34852469415` passed Ubuntu job `104004060260`, macOS job `104004060743`, and Windows job `104004060677`. This freezes the Agent release set as accepted. Any later evidence-only branch change must still rerun the complete exact-head Distribution, Core, and Agent matrices before PR #2 is merged.
 
 ## Unit and portability gate
 
