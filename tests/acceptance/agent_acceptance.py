@@ -512,7 +512,6 @@ def main() -> int:
         if persisted.get("status") != "completed":
             raise RuntimeError("Gateway canonical run state did not survive uninstall/reinstall")
 
-        bots_runtime = Path((run_cli("component", "status", "ai-verse-multiple-bots")["components"]["ai-verse-multiple-bots"]).get("runtime_source") or install["components"]["ai-verse-multiple-bots"]["runtime_source"])
         # Distribution may replace staged software bytes, never the owner database.
         current = json.loads((Path(os.environ["AIVERSE_DISTRIBUTION_HOME"]) / "locks" / "current.json").read_text(encoding="utf-8"))
         bots_runtime = Path(current["components"]["ai-verse-multiple-bots"]["runtime_source"])
