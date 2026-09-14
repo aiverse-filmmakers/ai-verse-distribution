@@ -370,7 +370,6 @@ def prove_automation_wake(install: dict[str, Any], root: Path) -> None:
     target = {
         "url": f"http://127.0.0.1:{BOTS_PORT}/v1/automations/invoke",
         "protocol": "ai-verse-multiple-bots-v1",
-        "os_root": str(root),
     }
     automation_cli(source, "configure-target", "bot", json.dumps(target, separators=(",", ":")))
     automation_cli(
