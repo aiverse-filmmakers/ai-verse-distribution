@@ -1,12 +1,26 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from aiverse_distribution.orchestrator import Orchestrator
+from aiverse_distribution.orchestrator import Orchestrator, _safe_result
 from aiverse_distribution.release_catalog import DistributionError
 from aiverse_distribution.process import CommandResult
 from aiverse_distribution.state import StateStore
+
+
+class SafeResultTests(unittest.TestCase):
+    def test_structured_gateway_token_is_redacted(self):
+        result = CommandResult(
+            ["node", "gateway", "setup"],
+            0,
+            json.dumps({"ok": True, "api_token": "super-secret-token-value"}),
+            "",
+        )
+        safe = _safe_result(result)
+        self.assertNotIn("super-secret-token-value", safe["stdout"])
+        self.assertIn("<redacted>", safe["stdout"])
 
 
 class OrchestratorPlanningTests(unittest.TestCase):
