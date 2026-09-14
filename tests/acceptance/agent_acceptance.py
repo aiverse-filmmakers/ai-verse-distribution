@@ -161,6 +161,20 @@ def create_goal(install: dict[str, Any], root: Path) -> dict[str, Any]:
     return goal
 
 
+def gateway_run_events(run_id: str) -> list[dict[str, Any]]:
+    events_path = Path(os.environ["HOME"]) / ".aiverse" / "gateway" / "state" / "events" / f"{run_id}.ndjson"
+    if not events_path.is_file():
+        raise RuntimeError(f"Gateway event log is missing for {run_id}")
+    events: list[dict[str, Any]] = []
+    for line in events_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        payload = json.loads(line)
+        if isinstance(payload, dict):
+            events.append(payload)
+    return events
+
+
 def gateway_run_diagnostic() -> dict[str, Any]:
     runs_dir = Path(os.environ["HOME"]) / ".aiverse" / "gateway" / "state" / "runs"
     if not runs_dir.is_dir():
@@ -222,6 +236,14 @@ def prove_gateway_goal(install: dict[str, Any], root: Path, source: Path) -> tup
     )
     if persisted.get("status") != "completed" or persisted.get("goal_binding", {}).get("goal_id") != goal["goal_id"]:
         raise RuntimeError(f"Gateway run did not survive restart with Brain Goal binding: {persisted}")
+    evaluations = [
+        event for event in gateway_run_events(run_id)
+        if event.get("type") == "goal.evaluated"
+        and event.get("data", {}).get("goal_id") == goal["goal_id"]
+    ]
+    if not evaluations or evaluations[-1].get("data", {}).get("verdict") != "complete":
+        raise RuntimeError(f"Gateway did not persist the canonical Brain Goal evaluation verdict: {evaluations}")
+
     goal_after = run_process([
         str(brain_executable(install)),
         "goal", str(root), "show",
@@ -230,8 +252,11 @@ def prove_gateway_goal(install: dict[str, Any], root: Path, source: Path) -> tup
         "--json",
     ])
     goal_payload = json.loads(goal_after.stdout)
-    if goal_payload.get("status") != "complete":
-        raise RuntimeError(f"Brain Goal owner did not evaluate the composed Gateway run: {goal_payload}")
+    if (
+        goal_payload.get("goal_id") != goal["goal_id"]
+        or goal_payload.get("objective") != "Complete one bounded deterministic Agent release verification run."
+    ):
+        raise RuntimeError(f"Canonical Brain Goal changed unexpectedly after Gateway evaluation: {goal_payload}")
     return run_id, process
 
 
