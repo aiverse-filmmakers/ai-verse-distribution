@@ -55,9 +55,9 @@ The current released Core set is:
 
 `core-public-beta-2026-09-13`
 
-The frozen Agent public-beta candidate is `agent-public-beta-2026-09-14`: Core + Gateway + Automations + Multiple Bots + Token at exact immutable revisions. It is admitted on this release branch only so the real clean-machine release gate can install and exercise it. Agent is not accepted until the Ubuntu/macOS/Windows composed gate passes and the acceptance evidence is frozen.
+The released Agent public beta is `agent-public-beta-2026-09-14`: Core + Gateway + Automations + Multiple Bots + Token at exact immutable revisions. Its composed clean-machine gate passed on Ubuntu, macOS, and Windows, with exact qualification evidence frozen in the release manifest.
 
-The Full profile is also explicitly blocked until Agent has an admitted immutable release set and Connections, Dashboard, and Apps have one compatible Full release set.
+The Full profile remains explicitly blocked until Connections, Dashboard, and Apps have one admitted compatible Full release set.
 
 ## Setup
 
