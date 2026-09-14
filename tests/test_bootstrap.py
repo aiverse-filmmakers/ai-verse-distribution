@@ -159,6 +159,7 @@ class SafeReconcileTests(unittest.TestCase):
             root = Path(td) / "AI-Verse"
             app = self._app(root)
             plan = {
+                "mode": "plan",
                 "registry_lock": {"state": "absent"},
                 "migration_required": False,
                 "actions": [{
@@ -170,6 +171,7 @@ class SafeReconcileTests(unittest.TestCase):
                 }],
             }
             applied = {
+                "mode": "apply",
                 "mutated": True,
                 "results": [{
                     "component": "ai-verse-brain",
