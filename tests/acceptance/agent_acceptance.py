@@ -161,25 +161,54 @@ def create_goal(install: dict[str, Any], root: Path) -> dict[str, Any]:
     return goal
 
 
+def gateway_run_diagnostic() -> dict[str, Any]:
+    runs_dir = Path(os.environ["HOME"]) / ".aiverse" / "gateway" / "state" / "runs"
+    if not runs_dir.is_dir():
+        return {"diagnostic": "gateway run directory missing"}
+    rows: list[dict[str, Any]] = []
+    for path in runs_dir.glob("*.json"):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        rows.append({
+            "run_id": payload.get("run_id"),
+            "status": payload.get("status"),
+            "error": payload.get("error"),
+            "checkpoint": payload.get("checkpoint"),
+            "goal_binding": payload.get("goal_binding"),
+            "updated_at": payload.get("updated_at"),
+        })
+    if not rows:
+        return {"diagnostic": "no persisted Gateway runs"}
+    rows.sort(key=lambda row: str(row.get("updated_at") or ""))
+    return rows[-1]
+
+
 def prove_gateway_goal(install: dict[str, Any], root: Path, source: Path) -> tuple[str, subprocess.Popen[str]]:
     goal = create_goal(install, root)
     process = start_gateway(source)
-    response = http_json(
-        "POST",
-        f"http://127.0.0.1:{GATEWAY_PORT}/v1/chat/completions",
-        {
-            "model": "aiverse",
-            "messages": [{"role": "user", "content": "Return a bounded deterministic release verification result."}],
-            "metadata": {
-                "workspace_id": "alpha",
-                "goal_id": goal["goal_id"],
-                "budget": {"max_tokens": 2048, "max_actions": 8},
+    try:
+        response = http_json(
+            "POST",
+            f"http://127.0.0.1:{GATEWAY_PORT}/v1/chat/completions",
+            {
+                "model": "aiverse",
+                "messages": [{"role": "user", "content": "Return a bounded deterministic release verification result."}],
+                "metadata": {
+                    "workspace_id": "alpha",
+                    "goal_id": goal["goal_id"],
+                    "budget": {"max_tokens": 2048, "max_actions": 8},
+                },
+                "timeout_ms": 60000,
             },
-            "timeout_ms": 60000,
-        },
-        token=GATEWAY_TOKEN,
-        timeout=90,
-    )
+            token=GATEWAY_TOKEN,
+            timeout=90,
+        )
+    except RuntimeError as exc:
+        raise RuntimeError(f"{exc}; Gateway run diagnostic: {gateway_run_diagnostic()}") from exc
     completion_id = str(response.get("id") or "")
     if not completion_id.startswith("chatcmpl-"):
         raise RuntimeError(f"Gateway did not complete a real bounded run: {response}")
