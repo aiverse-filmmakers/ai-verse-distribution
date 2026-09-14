@@ -8,7 +8,7 @@
     {
       "id": "ai-verse-os",
       "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
-      "revision": "69df8055a56fd4a83ae9d65cb7657a939319549e",
+      "revision": "d961ef8e2422d6f713d6519cf5a48916c600d63a",
       "install_order": 10
     },
     {
@@ -67,14 +67,15 @@
   ],
   "evidence": {
     "os": {
-      "revision": "69df8055a56fd4a83ae9d65cb7657a939319549e",
+      "revision": "d961ef8e2422d6f713d6519cf5a48916c600d63a",
       "hosted_workflows": [
-        34851375993,
-        34851375928,
-        34851375996,
-        34851376026,
-        34851375975,
-        34851375967
+        34852273733,
+        34852274061,
+        34852273850,
+        34852274136,
+        34852274005,
+        34852273793,
+        34852273711
       ]
     },
     "brain": {
