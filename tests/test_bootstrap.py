@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,14 +11,20 @@ from unittest.mock import patch
 from aiverse_distribution.orchestrator import Orchestrator
 from aiverse_distribution.release_catalog import DistributionError
 
+BRAIN_REVISION = "619dd17daac9c1bd7eaf4381a5889e56ab05ec59"
+
 
 class FakeState:
-    def __init__(self, value=None):
+    def __init__(self, value=None, home=None):
         self.value = value
         self.writes = []
+        self.home = Path(home or tempfile.gettempdir())
 
     def load(self):
         return self.value
+
+    def venv_dir(self, revision):
+        return self.home / "venvs" / "ai-verse-brain" / revision
 
     def write(self, value, archive_previous=False):
         self.value = value
@@ -26,7 +33,13 @@ class FakeState:
 
 class FakeCatalog:
     def get_release(self, release_set_id, require_released=True):
-        return SimpleNamespace(id=release_set_id, profile="agent")
+        return SimpleNamespace(
+            id=release_set_id,
+            profile="agent",
+            components=(
+                SimpleNamespace(id="ai-verse-brain", revision=BRAIN_REVISION),
+            ),
+        )
 
 
 class FakeBootstrap:
@@ -117,8 +130,20 @@ class SafeReconcileTests(unittest.TestCase):
             "root": str(root.resolve()),
             "state": "setup",
             "setup_completed_at": "2026-09-14T00:00:00Z",
-            "components": {},
-        })
+            "components": {
+                "ai-verse-brain": {
+                    "revision": BRAIN_REVISION,
+                },
+            },
+        }, home=root.parent / "distribution")
+        brain_root = state.venv_dir(BRAIN_REVISION)
+        brain_cli = (
+            brain_root / "Scripts" / "ai-verse-brain.exe"
+            if os.name == "nt"
+            else brain_root / "bin" / "ai-verse-brain"
+        )
+        brain_cli.parent.mkdir(parents=True, exist_ok=True)
+        brain_cli.write_text("fixture\n", encoding="utf-8")
         return Orchestrator(state=state, catalog=FakeCatalog())
 
     def _result(self, payload, code=0):
