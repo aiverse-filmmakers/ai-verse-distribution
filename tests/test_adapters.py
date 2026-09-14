@@ -50,30 +50,32 @@ class PublicBetaAdapterTests(unittest.TestCase):
 
     @patch("aiverse_distribution.adapters.run", side_effect=fake_run)
     def test_brain_setup_and_enable_are_explicit_apply_commands(self, mocked):
-        adapters.owner_setup(
-            "ai-verse-brain",
-            root=self.root,
-            source=self.source,
-            revision=adapters.PUBLIC_BETA_BRAIN,
-            state=self.state,
-        )
-        setup = mocked.call_args.args[0]
-        self.assertEqual(setup[1], "setup")
-        self.assertIn("--apply", setup)
-        self.assertIn("--json", setup)
+        for revision in (adapters.PUBLIC_BETA_BRAIN, adapters.PUBLIC_BETA_AGENT_BRAIN):
+            mocked.reset_mock()
+            adapters.owner_setup(
+                "ai-verse-brain",
+                root=self.root,
+                source=self.source,
+                revision=revision,
+                state=self.state,
+            )
+            setup = mocked.call_args.args[0]
+            self.assertEqual(setup[1], "setup")
+            self.assertIn("--apply", setup)
+            self.assertIn("--json", setup)
 
-        mocked.reset_mock()
-        adapters.owner_enablement(
-            "ai-verse-brain",
-            "disable",
-            root=self.root,
-            source=self.source,
-            revision=adapters.PUBLIC_BETA_BRAIN,
-            state=self.state,
-        )
-        disable = mocked.call_args.args[0]
-        self.assertEqual(disable[1], "disable")
-        self.assertIn("--apply", disable)
+            mocked.reset_mock()
+            adapters.owner_enablement(
+                "ai-verse-brain",
+                "disable",
+                root=self.root,
+                source=self.source,
+                revision=revision,
+                state=self.state,
+            )
+            disable = mocked.call_args.args[0]
+            self.assertEqual(disable[1], "disable")
+            self.assertIn("--apply", disable)
 
     @patch("aiverse_distribution.adapters.run", side_effect=fake_run)
     def test_skills_setup_status_and_doctor_use_public_beta_surface(self, mocked):
@@ -128,6 +130,12 @@ class PublicBetaAdapterTests(unittest.TestCase):
             argv = mocked.call_args.args[0]
             self.assertIn(expected, argv)
 
+        self.state.write({
+            "components": {
+                "ai-verse-brain": {"revision": adapters.PUBLIC_BETA_AGENT_BRAIN}
+            }
+        }, archive_previous=False)
+
         mocked.reset_mock()
         adapters.owner_setup(
             "ai-verse-gateway",
@@ -143,6 +151,8 @@ class PublicBetaAdapterTests(unittest.TestCase):
         goal_config = json.loads(config_path.read_text(encoding="utf-8"))
         self.assertEqual(goal_config["command"][:4], [sys.executable, "-X", "utf8", "-m"])
         self.assertEqual(goal_config["command"][4], "aiverse_distribution.goal_bridge")
+        brain_path = goal_config["command"][goal_config["command"].index("--brain") + 1]
+        self.assertIn(adapters.PUBLIC_BETA_AGENT_BRAIN, brain_path)
 
         mocked.reset_mock()
         adapters.owner_setup(
