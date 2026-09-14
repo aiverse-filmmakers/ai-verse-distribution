@@ -106,6 +106,49 @@ class PublicBetaAdapterTests(unittest.TestCase):
         self.assertEqual(doctor[-4:], ["doctor", "--depth", "system", "--json"])
 
     @patch("aiverse_distribution.adapters.run", side_effect=fake_run)
+    def test_agent_owner_lifecycles_use_exact_public_surfaces(self, mocked):
+        cases = [
+            ("ai-verse-gateway", adapters.PUBLIC_BETA_GATEWAY, "install"),
+            ("ai-verse-automations", adapters.PUBLIC_BETA_AUTOMATIONS, "install"),
+            ("ai-verse-multiple-bots", adapters.PUBLIC_BETA_BOTS, "install"),
+            ("ai-verse-token", adapters.PUBLIC_BETA_TOKEN, "install"),
+        ]
+        for component_id, revision, expected in cases:
+            mocked.reset_mock()
+            result = adapters.owner_install(
+                component_id,
+                root=self.root,
+                source=self.source,
+                revision=revision,
+                state=self.state,
+            )
+            self.assertIsNotNone(result)
+            argv = mocked.call_args.args[0]
+            self.assertIn(expected, argv)
+
+        mocked.reset_mock()
+        adapters.owner_setup(
+            "ai-verse-gateway",
+            root=self.root,
+            source=self.source,
+            revision=adapters.PUBLIC_BETA_GATEWAY,
+            state=self.state,
+        )
+        gateway = mocked.call_args.args[0]
+        self.assertIn("--goal-owner-config", gateway)
+        self.assertNotIn("--allow-remote", gateway)
+
+        mocked.reset_mock()
+        adapters.owner_setup(
+            "ai-verse-token",
+            root=self.root,
+            source=self.source,
+            revision=adapters.PUBLIC_BETA_TOKEN,
+            state=self.state,
+        )
+        self.assertIn("setup", mocked.call_args.args[0])
+
+    @patch("aiverse_distribution.adapters.run", side_effect=fake_run)
     def test_os_setup_status_and_doctor_use_json_lifecycle(self, mocked):
         adapters.owner_setup(
             "ai-verse-os",
