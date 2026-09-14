@@ -466,29 +466,51 @@ def main() -> int:
     gateway_process: subprocess.Popen[str] | None = None
     bots_process: subprocess.Popen[str] | None = None
     try:
-        install = run_cli("install", "--profile", "agent", "--root", str(root))
-        if install.get("release_set_id") != AGENT_RELEASE:
-            raise RuntimeError(f"wrong Agent release set: {install.get('release_set_id')}")
+        started = run_cli("start", "--root", str(root))
+        if started.get("ready") is not True or started.get("state") != "ready":
+            raise RuntimeError(f"Grandma first-run did not become ready: {started}")
+        if started.get("release_set_id") != AGENT_RELEASE:
+            raise RuntimeError(f"wrong Agent release set: {started.get('release_set_id')}")
+        if started.get("message") != "AI-Verse is ready. What would you like help with?":
+            raise RuntimeError(f"unexpected first-run conversation handoff: {started.get('message')}")
+        onboarding = started.get("onboarding", {})
+        if onboarding.get("mode") != "progressive" or onboarding.get("deep_questionnaire_required") is not False:
+            raise RuntimeError(f"first-run onboarding is not progressive: {onboarding}")
+        start_json = json.dumps(started)
+        if GATEWAY_TOKEN in start_json or '"api_token":' in start_json:
+            raise RuntimeError("Grandma first-run exposed the Gateway one-time API token")
+        if "setup" in [str(item).lower() for item in started.get("next", [])]:
+            raise RuntimeError("ordinary first-run told the user to run setup manually")
+        if "doctor" in [str(item).lower() for item in started.get("next", [])]:
+            raise RuntimeError("ordinary first-run told the user to run doctor manually")
+
+        current_path = Path(os.environ["AIVERSE_DISTRIBUTION_HOME"]) / "locks" / "current.json"
+        install = json.loads(current_path.read_text(encoding="utf-8"))
         actual_refs = {cid: row["revision"] for cid, row in install["components"].items()}
         if actual_refs != EXPECTED_REFS:
             raise RuntimeError(f"Agent immutable refs differ: {actual_refs}")
+        first_run = install.get("first_run", {})
+        if first_run.get("doctor_verified") is not True or first_run.get("onboarding") != "progressive":
+            raise RuntimeError(f"Distribution did not persist truthful first-run evidence: {first_run}")
         assert_authority_lock(install)
         prove_exact_sources(install)
         prove_data_dependency_lock(install)
         clean_tracked_sources(install)
 
         write_acceptance_workspace(root)
-        setup = run_cli("setup", "--workspace", "alpha")
-        setup_json = json.dumps(setup)
-        if GATEWAY_TOKEN in setup_json or '"api_token":' in setup_json:
-            raise RuntimeError("Distribution persisted the Gateway one-time API token")
-        if setup_json.lower().find("allow_remote") >= 0 and '"true"' in setup_json.lower():
-            raise RuntimeError("Agent setup appears to have enabled remote exposure")
+        data_setup = run_cli("component", "setup", "ai-verse-data", "--workspace", "alpha")
+        bots_setup = run_cli("component", "setup", "ai-verse-multiple-bots")
+        for setup_payload in (data_setup, bots_setup):
+            setup_json = json.dumps(setup_payload)
+            if GATEWAY_TOKEN in setup_json or '"api_token":' in setup_json:
+                raise RuntimeError("Distribution persisted the Gateway one-time API token")
+            if setup_json.lower().find("allow_remote") >= 0 and '"true"' in setup_json.lower():
+                raise RuntimeError("Agent setup appears to have enabled remote exposure")
 
         practice = "distribution-agent-brain-practice-marker"
         onboard = run_cli("onboard", "--practice", practice)
         if not brain_onboarding_payload(onboard).get("created_refs"):
-            raise RuntimeError("Agent onboarding did not persist Brain-owned practice state")
+            raise RuntimeError("advanced Agent onboarding did not persist Brain-owned practice state")
         prove_brain_no_silent_handover(install, root)
 
         status = run_cli("status")
@@ -498,6 +520,10 @@ def main() -> int:
         if doctor.get("ok") is not True:
             raise RuntimeError(f"Agent doctor failed: {doctor}")
 
+        started_again = run_cli("start")
+        if started_again.get("ready") is not True:
+            raise RuntimeError(f"idempotent first-run restart failed: {started_again}")
+
         prove_memory(root)
         prove_skills(install)
         prove_data(root)
@@ -506,7 +532,7 @@ def main() -> int:
         run_id, gateway_process = prove_gateway_goal(install, root, gateway_source)
 
         bots_runtime = Path(install["components"]["ai-verse-multiple-bots"]["runtime_source"])
-        bots_db = bots_database_from_setup(setup)
+        bots_db = bots_database_from_setup(bots_setup)
         bots_process = prove_bots_collaboration(bots_runtime, root, bots_db)
         prove_automation_wake(install, root)
         token_before = prove_token(install, root)
@@ -595,6 +621,10 @@ def main() -> int:
             "released_candidate": True,
             "exact_refs": EXPECTED_REFS,
             "clean_install": True,
+            "grandma_first_run": True,
+            "one_action_install_setup_doctor": True,
+            "progressive_onboarding": True,
+            "idempotent_first_run": True,
             "setup_onboarding": True,
             "status_doctor": True,
             "gateway_bounded_run": True,
