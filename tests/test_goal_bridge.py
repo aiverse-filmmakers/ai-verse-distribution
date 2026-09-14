@@ -9,6 +9,20 @@ from aiverse_distribution import goal_bridge
 
 
 class GoalBridgeTests(unittest.TestCase):
+    @patch("aiverse_distribution.goal_bridge.os.name", "nt")
+    def test_brain_command_uses_venv_python_with_utf8_mode_on_windows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            scripts = Path(tmp) / "Scripts"
+            scripts.mkdir()
+            brain = scripts / "ai-verse-brain.exe"
+            python = scripts / "python.exe"
+            brain.write_bytes(b"")
+            python.write_bytes(b"")
+            self.assertEqual(
+                goal_bridge._brain_command(str(brain)),
+                [str(python.resolve()), "-X", "utf8", "-m", "aiverse_brain.cli"],
+            )
+
     @patch("aiverse_distribution.goal_bridge.subprocess.run")
     def test_brain_json_protocol_is_explicit_utf8(self, mocked):
         mocked.return_value = subprocess.CompletedProcess(
