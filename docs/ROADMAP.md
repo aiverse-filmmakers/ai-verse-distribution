@@ -76,7 +76,7 @@ Remote workflow results are release evidence only after GitHub Actions completes
 
 The complete immutable Agent candidate is frozen as `agent-public-beta-2026-09-14`.
 
-- [x] Gateway accepted ref: `b20d56eddec6514ec4bc65b510318289b9cffa41`;
+- [x] Gateway accepted ref: `240c2b1b71abc7a8dbdc4d573da7fd85a110ca8f`;
 - [x] Automations accepted ref: `494469a496d479cfec618bcd9511033c0cd3e815`;
 - [x] Multiple Bots Phase 5.14 accepted ref: `9bffdffd07fb8abcea848213642936a23ecf4ecf`;
 - [x] Token `0.1.0-beta.3` accepted ref: `23b7b8ecbc9d9ef267f5e10449f785eb11107dd4`;
