@@ -34,7 +34,7 @@ EXPECTED_REFS = {
     "ai-verse-memory": "031e1e77c97ed3c9012235c7ffe0a4ece05e3695",
     "ai-verse-skills": "042fda1ea2ddd8b79b74f1db9d3f65212953b64a",
     "ai-verse-data": "189b13264ab86115d2f21fee3ba8cd5a8dac6581",
-    "ai-verse-gateway": "b20d56eddec6514ec4bc65b510318289b9cffa41",
+    "ai-verse-gateway": "240c2b1b71abc7a8dbdc4d573da7fd85a110ca8f",
     "ai-verse-automations": "494469a496d479cfec618bcd9511033c0cd3e815",
     "ai-verse-multiple-bots": "9bffdffd07fb8abcea848213642936a23ecf4ecf",
     "ai-verse-token": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
