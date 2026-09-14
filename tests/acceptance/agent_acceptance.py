@@ -479,9 +479,9 @@ def main() -> int:
         start_json = json.dumps(started)
         if GATEWAY_TOKEN in start_json or '"api_token":' in start_json:
             raise RuntimeError("Grandma first-run exposed the Gateway one-time API token")
-        if "setup" in [str(item).lower() for item in started.get("next", [])]:
+        if any("setup" in str(item).lower() for item in started.get("next", [])):
             raise RuntimeError("ordinary first-run told the user to run setup manually")
-        if "doctor" in [str(item).lower() for item in started.get("next", [])]:
+        if any("doctor" in str(item).lower() for item in started.get("next", [])):
             raise RuntimeError("ordinary first-run told the user to run doctor manually")
 
         current_path = Path(os.environ["AIVERSE_DISTRIBUTION_HOME"]) / "locks" / "current.json"
