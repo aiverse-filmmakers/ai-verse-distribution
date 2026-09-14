@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "id": "agent-public-beta-2026-09-14",
+  "profile": "agent",
+  "status": "released",
+  "created_at": "2026-09-14",
+  "components": [
+    {
+      "id": "ai-verse-os",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+      "revision": "9600929b946746c25c64e48471fcc83031fddda9",
+      "install_order": 10
+    },
+    {
+      "id": "ai-verse-brain",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+      "revision": "80019be5e6df29aee70371544bd96cedbf0329b9",
+      "install_order": 20
+    },
+    {
+      "id": "ai-verse-memory",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+      "revision": "031e1e77c97ed3c9012235c7ffe0a4ece05e3695",
+      "install_order": 30
+    },
+    {
+      "id": "ai-verse-skills",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+      "revision": "042fda1ea2ddd8b79b74f1db9d3f65212953b64a",
+      "install_order": 40
+    },
+    {
+      "id": "ai-verse-data",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+      "revision": "189b13264ab86115d2f21fee3ba8cd5a8dac6581",
+      "install_order": 50,
+      "dependency_lock": {
+        "scheme": "distribution-companion-npm-lock-v1",
+        "manifest": "ai-verse-data/189b13264ab86115d2f21fee3ba8cd5a8dac6581/lock.json",
+        "manifest_sha256": "758fb5a3de9a5fff31a638a72fe4797b100a5fd84456dab02eb768882b6e0b14"
+      }
+    },
+    {
+      "id": "ai-verse-gateway",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Gateway.git",
+      "revision": "b20d56eddec6514ec4bc65b510318289b9cffa41",
+      "install_order": 60
+    },
+    {
+      "id": "ai-verse-automations",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Automations.git",
+      "revision": "494469a496d479cfec618bcd9511033c0cd3e815",
+      "install_order": 70
+    },
+    {
+      "id": "ai-verse-multiple-bots",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Multiple-Bots.git",
+      "revision": "9bffdffd07fb8abcea848213642936a23ecf4ecf",
+      "install_order": 80
+    },
+    {
+      "id": "ai-verse-token",
+      "repository": "https://github.com/aiverse-filmmakers/ai-verse-token.git",
+      "revision": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
+      "install_order": 90
+    }
+  ],
+  "evidence": {
+    "os": {
+      "revision": "9600929b946746c25c64e48471fcc83031fddda9",
+      "hosted_workflows": [
+        34782218610,
+        34782218630,
+        34782218577,
+        34782218598,
+        34782218606,
+        34782218615,
+        34782218597
+      ]
+    },
+    "brain": {
+      "revision": "80019be5e6df29aee70371544bd96cedbf0329b9",
+      "hosted_workflows": [
+        34778357624,
+        34778357586,
+        34778357592
+      ]
+    },
+    "memory": {
+      "revision": "031e1e77c97ed3c9012235c7ffe0a4ece05e3695",
+      "hosted_workflows": [
+        34769753452
+      ]
+    },
+    "skills": {
+      "revision": "042fda1ea2ddd8b79b74f1db9d3f65212953b64a",
+      "hosted_workflows": [
+        34781546151,
+        34781546160
+      ]
+    },
+    "data": {
+      "revision": "189b13264ab86115d2f21fee3ba8cd5a8dac6581",
+      "hosted_workflows": [
+        34721902478
+      ],
+      "companion_dependency_lock": "distribution-companion-npm-lock-v1"
+    },
+    "gateway": {
+      "revision": "b20d56eddec6514ec4bc65b510318289b9cffa41",
+      "hosted_workflows": [
+        34777260839
+      ]
+    },
+    "automations": {
+      "revision": "494469a496d479cfec618bcd9511033c0cd3e815",
+      "hosted_workflows": [
+        34777316822
+      ]
+    },
+    "multiple_bots": {
+      "revision": "9bffdffd07fb8abcea848213642936a23ecf4ecf",
+      "hosted_workflows": [
+        34816778904
+      ],
+      "phase": "5.14-complete"
+    },
+    "token": {
+      "revision": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
+      "version": "0.1.0-beta.3",
+      "hosted_workflows": [
+        34778240376
+      ]
+    },
+    "distribution_acceptance": "candidate-pending-agent-clean-machine"
+  },
+  "authority": {
+    "grants_permissions": false,
+    "transfers_brain_strategy": false,
+    "initializes_all_workspaces": false,
+    "exposes_gateway_remotely": false
+  }
+}
