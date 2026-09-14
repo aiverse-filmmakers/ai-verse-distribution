@@ -792,6 +792,164 @@ class Orchestrator:
 
         return {"release_set_id": release.id, "root": str(root), "results": results}
 
+    def safe_reconcile(self) -> Dict[str, Any]:
+        """Apply only the exact released OS deterministic automatic reconcile action."""
+        lock = self.state.load()
+        if not lock:
+            raise DistributionError("AI-Verse is not installed through Distribution")
+        root = Path(lock["root"]).expanduser().resolve()
+        os_cli = root / "bin" / "ai-verse-os.mjs"
+        if not os_cli.is_file():
+            return {
+                "state": "not-applied",
+                "safe": False,
+                "reason": "released OS reconcile entrypoint is missing",
+                "mutated": False,
+            }
+
+        plan_result = run(
+            [
+                "node",
+                str(os_cli),
+                "components",
+                "reconcile",
+                "--dir",
+                str(root),
+                "--json",
+            ],
+            check=False,
+        )
+        try:
+            plan = json.loads(plan_result.stdout)
+        except json.JSONDecodeError:
+            return {
+                "state": "not-applied",
+                "safe": False,
+                "reason": "released OS reconcile plan was not valid JSON",
+                "mutated": False,
+                "plan_exit_code": plan_result.returncode,
+            }
+
+        registry_lock = plan.get("registry_lock", {})
+        actions = plan.get("actions", [])
+        if not isinstance(actions, list):
+            return {
+                "state": "not-applied",
+                "safe": False,
+                "reason": "released OS reconcile plan has an invalid action list",
+                "mutated": False,
+            }
+
+        if registry_lock.get("state") != "absent":
+            return {
+                "state": "blocked",
+                "safe": False,
+                "reason": "shared registry lock is present",
+                "mutated": False,
+                "plan": sanitize(plan),
+            }
+
+        if plan.get("migration_required") is True or any(
+            isinstance(action, dict) and action.get("kind") in {"migration", "blocked"}
+            for action in actions
+        ):
+            return {
+                "state": "blocked",
+                "safe": False,
+                "reason": "migration or blocked owner state requires explicit handling",
+                "mutated": False,
+                "plan": sanitize(plan),
+            }
+
+        automatic = [
+            action for action in actions
+            if isinstance(action, dict) and action.get("automatic") is True
+        ]
+        if not automatic:
+            return {
+                "state": "no-safe-action",
+                "safe": True,
+                "reason": "released OS reconcile plan has no automatic owner action",
+                "mutated": False,
+                "plan": sanitize(plan),
+            }
+
+        expected_argv = ["ai-verse-brain", "attach", str(root), "--apply"]
+        expected_followup = ["ai-verse-brain", "init", str(root), "--apply"]
+        for action in automatic:
+            if (
+                action.get("component") != "ai-verse-brain"
+                or action.get("kind") != "setup"
+                or action.get("argv") != expected_argv
+                or action.get("followup_argv") != expected_followup
+            ):
+                return {
+                    "state": "blocked",
+                    "safe": False,
+                    "reason": "reconcile plan contains an unrecognized automatic action",
+                    "mutated": False,
+                    "plan": sanitize(plan),
+                }
+
+        apply_result = run(
+            [
+                "node",
+                str(os_cli),
+                "components",
+                "reconcile",
+                "--dir",
+                str(root),
+                "--apply",
+                "--json",
+            ],
+            check=False,
+        )
+        try:
+            applied = json.loads(apply_result.stdout)
+        except json.JSONDecodeError:
+            return {
+                "state": "failed",
+                "safe": True,
+                "reason": "released OS reconcile apply result was not valid JSON",
+                "mutated": False,
+                "apply_exit_code": apply_result.returncode,
+            }
+
+        results = applied.get("results", [])
+        failed = [
+            result for result in results
+            if isinstance(result, dict) and result.get("status") == "failed"
+        ]
+        executed = [
+            result for result in results
+            if isinstance(result, dict) and result.get("status") == "executed"
+        ]
+        unexpected_executed = [
+            result for result in executed
+            if result.get("component") != "ai-verse-brain"
+            or result.get("owner_command") is not True
+        ]
+        if failed or unexpected_executed:
+            return {
+                "state": "failed",
+                "safe": True,
+                "reason": "owner-controlled reconcile did not complete cleanly",
+                "mutated": bool(applied.get("mutated")),
+                "result": sanitize(applied),
+            }
+
+        return {
+            "state": "repaired" if executed else "no-safe-action",
+            "safe": True,
+            "reason": (
+                "released OS owner-controlled Brain attachment was reconciled"
+                if executed else
+                "released OS reconcile applied no automatic owner action"
+            ),
+            "mutated": bool(applied.get("mutated")),
+            "result": sanitize(applied),
+        }
+
     def start(
         self,
         *,
@@ -808,6 +966,9 @@ class Orchestrator:
         """
         current = self.state.load()
         setup_performed = False
+        self_heal = None
+        had_completed_setup = bool(current and current.get("setup_completed_at"))
+        resumed_interrupted_install = bool(current and current.get("state") == "installing")
 
         if current:
             if current.get("profile") != "agent":
@@ -850,8 +1011,37 @@ class Orchestrator:
         before = self.status()
         before_state = before.get("state")
         if before_state in {"installed", "setup-required"}:
-            self.setup()
-            setup_performed = True
+            if not had_completed_setup or resumed_interrupted_install:
+                self.setup()
+                setup_performed = True
+            else:
+                self_heal = self.safe_reconcile()
+                after_reconcile = self.status()
+                if after_reconcile.get("state") != "ready":
+                    return {
+                        "state": "needs-attention",
+                        "ready": False,
+                        "profile": "agent",
+                        "release_set_id": release_set_id,
+                        "root": str(root),
+                        "message": (
+                            "AI-Verse found a setup issue, but only safe deterministic repair "
+                            "was allowed. The remaining issue needs explicit review."
+                        ),
+                        "verification": {
+                            "status": after_reconcile.get("state"),
+                            "doctor_ok": False,
+                        },
+                        "self_heal": self_heal,
+                        "onboarding": {
+                            "mode": "progressive",
+                            "deep_questionnaire_required": False,
+                            "started": False,
+                        },
+                        "next": [
+                            "Run aiverse doctor --json for the remaining technical issue.",
+                        ],
+                    }
         elif before_state == "ready":
             pass
         elif before_state in {"disabled", "unhealthy", "migration-required", "absent"}:
@@ -938,6 +1128,11 @@ class Orchestrator:
             "profile": "agent",
             "release_set_id": release_set_id,
             "setup_performed": setup_performed,
+            "safe_self_heal": {
+                "attempted": self_heal is not None,
+                "state": self_heal.get("state") if self_heal else None,
+                "mutated": bool(self_heal and self_heal.get("mutated")),
+            },
             "doctor_verified": True,
             "onboarding": "progressive",
             "permissions_granted": False,
@@ -967,6 +1162,11 @@ class Orchestrator:
             "authority": {
                 "permissions_granted": False,
                 "brain_strategy_transferred": False,
+            },
+            "self_heal": {
+                "attempted": self_heal is not None,
+                "state": self_heal.get("state") if self_heal else None,
+                "mutated": bool(self_heal and self_heal.get("mutated")),
             },
             "open": opened,
             "next": [
