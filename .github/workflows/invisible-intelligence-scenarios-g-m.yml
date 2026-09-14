@@ -1,0 +1,234 @@
+name: Invisible Intelligence Scenarios G-M
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/invisible-intelligence-scenarios-g-m.yml"
+      - ".github/workflows/invisible-intelligence-scenarios-a-f.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scenarios-g-h-automations:
+    name: G-H - Automation recommendation and consent
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GATEWAY_SHA: 7627df658b2071ecb4ea242572343edfb7abf768
+      OS_SHA: 156f15f162c6d63159b54d3ad87e0342ec7cf9aa
+      AUTOMATIONS_SHA: caaed83b98026dd955640fc015d181529b91a1c6
+    steps:
+      - name: Checkout Distribution acceptance owner
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned Gateway
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Gateway
+          ref: ${{ env.GATEWAY_SHA }}
+          path: _scenario/gateway
+
+      - name: Checkout pinned OS
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-OS
+          ref: ${{ env.OS_SHA }}
+          path: _scenario/os
+
+      - name: Checkout pinned Automations
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Automations
+          ref: ${{ env.AUTOMATIONS_SHA }}
+          path: _scenario/automations
+
+      - name: Verify exact accepted refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _scenario/gateway rev-parse HEAD)" = "$GATEWAY_SHA"
+          test "$(git -C _scenario/os rev-parse HEAD)" = "$OS_SHA"
+          test "$(git -C _scenario/automations rev-parse HEAD)" = "$AUTOMATIONS_SHA"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install accepted owners
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm --prefix _scenario/gateway install --no-audit --no-fund
+          python -m pip install ./_scenario/automations
+
+      - name: G - recommendation must not create canonical recurring state
+        shell: bash
+        env:
+          AUT_STATE: ${{ runner.temp }}/g-recommendation-state
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from aiverse_automations.db import initialize
+          from aiverse_automations.store import Store
+          state = Path(os.environ["AUT_STATE"])
+          initialize(state)
+          assert Store(state).list_automations() == []
+          print("Empty canonical Automations baseline: PASS")
+          PY
+          cd _scenario/gateway
+          node --test --test-concurrency=1 --test-reporter=spec \
+            --test-name-pattern="clear repeated responsibility is recommended naturally without creating recurring state|one-off work does not produce a recurring responsibility recommendation|repeated need without explicit recurring instruction does not create Automation" \
+            test/loop-contracts.test.mjs
+          cd ../..
+          python - <<'PY'
+          import os, sqlite3
+          from pathlib import Path
+          from aiverse_automations.db import db_path
+          from aiverse_automations.store import Store
+          state = Path(os.environ["AUT_STATE"])
+          assert Store(state).list_automations() == []
+          conn = sqlite3.connect(db_path(state))
+          try:
+              assert conn.execute("SELECT COUNT(*) FROM triggers").fetchone()[0] == 0
+              assert conn.execute("SELECT COUNT(*) FROM runs").fetchone()[0] == 0
+          finally:
+              conn.close()
+          print("Recommendation left canonical recurring state empty: PASS")
+          PY
+
+      - name: H - direct recurring request reaches canonical Automations owner
+        shell: bash
+        working-directory: _scenario/gateway
+        env:
+          OS_ROOT: ${{ github.workspace }}/_scenario/os
+          AUTOMATIONS_STATE: ${{ runner.temp }}/h-automations-state
+          HOST_CONFIG: ${{ runner.temp }}/h-os-host.json
+        run: node scripts/test-automation-consent-composition.mjs
+
+  scenarios-i-m-boundaries:
+    name: I-M - Bots Workers language restart authority
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GATEWAY_SHA: 7627df658b2071ecb4ea242572343edfb7abf768
+      OS_SHA: 156f15f162c6d63159b54d3ad87e0342ec7cf9aa
+      BOTS_SHA: c600e2bc014351a61e1c0e2673fc63f5d5fa54ec
+    steps:
+      - name: Checkout Distribution acceptance owner
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned Gateway
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Gateway
+          ref: ${{ env.GATEWAY_SHA }}
+          path: _scenario/gateway
+
+      - name: Checkout pinned OS
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-OS
+          ref: ${{ env.OS_SHA }}
+          path: _scenario/os
+
+      - name: Checkout pinned Multiple Bots
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Multiple-Bots
+          ref: ${{ env.BOTS_SHA }}
+          path: _scenario/bots
+
+      - name: Verify exact accepted refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _scenario/gateway rev-parse HEAD)" = "$GATEWAY_SHA"
+          test "$(git -C _scenario/os rev-parse HEAD)" = "$OS_SHA"
+          test "$(git -C _scenario/bots rev-parse HEAD)" = "$BOTS_SHA"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install accepted runtime owners
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm --prefix _scenario/gateway install --no-audit --no-fund
+          npm --prefix _scenario/bots install --no-audit --no-fund
+          npm --prefix _scenario/bots run build
+
+      - name: I - permanent Bot requires real consent and conservative authority
+        shell: bash
+        working-directory: _scenario/gateway
+        run: |
+          node --test --test-concurrency=1 --test-reporter=spec \
+            --test-name-pattern="direct user request counts as durable Bot consent without redundant confirmation|model cannot create a durable Bot from repeated need without explicit user consent|temporary-only request never counts as consent for a durable Bot|runtime cannot forge durable Bot consent, runtime, permissions, scope or provenance" \
+            test/loop-contracts.test.mjs
+
+      - name: J - temporary Worker stays bounded and non-durable
+        shell: bash
+        working-directory: _scenario/gateway
+        run: |
+          node --test --test-concurrency=1 --test-reporter=spec \
+            --test-name-pattern="Gateway injects trusted runtime, provenance and safety evidence for one temporary specialist|Gateway suppresses automatic temporary Workers when its runtime has no owner-compatible adapter|runtime cannot forge temporary Worker runtime, authority, provenance or budget fields|Gateway admits at most one automatic temporary specialist per foreground run" \
+            test/loop-contracts.test.mjs
+
+      - name: Prove canonical Multiple Bots owner invariants
+        shell: bash
+        working-directory: _scenario/bots
+        run: npm test
+
+      - name: K - ordinary outcome language hides subsystem-choice jargon
+        shell: bash
+        working-directory: _scenario/gateway
+        run: |
+          node --test --test-concurrency=1 --test-reporter=spec \
+            --test-name-pattern="ordinary user outcomes hide subsystem jargon while technical receipts remain exact" \
+            test/loop-contracts.test.mjs
+
+      - name: L - restart truth and idempotent replay do not duplicate canonical state
+        shell: bash
+        working-directory: _scenario/gateway
+        run: |
+          node --test --test-concurrency=1 --test-reporter=spec \
+            --test-name-pattern="durable organization proposal resumes after restart with stable owner idempotency|Automations wake ingress creates one ordinary Gateway run and replays by invocation id" \
+            test/loop-contracts.test.mjs
+
+      - name: M - no silent authority expansion across Gateway and OS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd _scenario/gateway
+          node --test --test-concurrency=1 --test-reporter=spec \
+            --test-name-pattern="runtime cannot forge temporary Worker runtime, authority, provenance or budget fields|runtime cannot forge durable Bot consent, runtime, permissions, scope or provenance|runtime cannot forge Automation consent, target, authority, scope or provenance" \
+            test/loop-contracts.test.mjs
+          cd ../os
+          node scripts/test-action-permission.mjs
+          node scripts/test-direction-owner.mjs
+          node scripts/test-write-command.mjs
+
+      - name: G-M ownership summary
+        shell: bash
+        run: |
+          cat <<'EOF'
+          G Automation recommendation boundary: recommendation leaves canonical Automations state empty
+          H direct Automation request: Gateway -> OS -> Automations consent composition
+          I permanent Bot boundary: explicit consent only, forged/repeated need suppressed
+          J temporary Workers: bounded one-run authority with no durable promotion
+          K no subsystem-choice jargon: ordinary Gateway output naturalized, technical receipts preserved
+          L restart truth/no duplicate canonical state: stable replay/idempotency across restart/wake
+          M no silent authority expansion: Gateway forgery rejection plus OS final authority checks
+          EOF
