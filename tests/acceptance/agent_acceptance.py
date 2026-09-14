@@ -678,7 +678,36 @@ def main() -> int:
         ):
             run_cli("component", "update", component)
 
-        update = run_cli("update", "--apply")
+        cross_release_update_blocked = False
+        cross_release_rollback_blocked = False
+        if AGENT_RELEASE != DEFAULT_AGENT_RELEASE:
+            blocked_update = run_cli("update", "--apply", expect=2)
+            if (
+                blocked_update.get("error") != "DISTRIBUTION_ERROR"
+                or DEFAULT_AGENT_RELEASE not in str(blocked_update.get("message") or "")
+                or AGENT_RELEASE not in str(blocked_update.get("message") or "")
+            ):
+                raise RuntimeError(
+                    f"candidate did not fail closed on implicit cross-release update: {blocked_update}"
+                )
+            cross_release_update_blocked = True
+
+            blocked_rollback = run_cli(
+                "rollback", "--to", DEFAULT_AGENT_RELEASE, "--apply", expect=2
+            )
+            if (
+                blocked_rollback.get("error") != "DISTRIBUTION_ERROR"
+                or DEFAULT_AGENT_RELEASE not in str(blocked_rollback.get("message") or "")
+                or AGENT_RELEASE not in str(blocked_rollback.get("message") or "")
+            ):
+                raise RuntimeError(
+                    f"candidate did not fail closed on rollback to the old release: {blocked_rollback}"
+                )
+            cross_release_rollback_blocked = True
+
+            update = run_cli("update", "--to", AGENT_RELEASE, "--apply")
+        else:
+            update = run_cli("update", "--apply")
         if update.get("changed") is not False:
             raise RuntimeError(f"same-release Agent update should be a no-op: {update}")
         rollback = run_cli("rollback", "--to", AGENT_RELEASE, "--apply")
@@ -725,6 +754,8 @@ def main() -> int:
             "uninstall_reinstall_state_preserved": True,
             "update_lifecycle": True,
             "same_release_update_rollback": True,
+            "cross_release_update_blocked": cross_release_update_blocked,
+            "cross_release_rollback_blocked": cross_release_rollback_blocked,
             "permissions_granted": False,
             "brain_authority_transferred": False,
             "remote_exposure_enabled": False,
