@@ -497,6 +497,72 @@ def main() -> int:
         prove_data_dependency_lock(install)
         clean_tracked_sources(install)
 
+        # Create one bounded, reversible setup defect: remove only the Brain
+        # attachment entry while leaving the Brain-owned installation marker.
+        registry_path = root / ".aiverse" / "extensions" / "registry.json"
+        registry_before = json.loads(registry_path.read_text(encoding="utf-8"))
+        extensions_before = dict(registry_before.get("extensions", {}))
+        brain_before = extensions_before.get("ai-verse-brain")
+        if not isinstance(brain_before, dict):
+            raise RuntimeError("Agent baseline is missing the Brain registry attachment")
+        drifted_registry = json.loads(json.dumps(registry_before))
+        drifted_registry["extensions"].pop("ai-verse-brain", None)
+        registry_path.write_text(
+            json.dumps(drifted_registry, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+        drifted = run_cli("status")
+        if drifted.get("state") != "setup-required":
+            raise RuntimeError(f"bounded Brain attachment drift was not detected: {drifted}")
+
+        healed = run_cli("start")
+        self_heal = healed.get("self_heal", {})
+        if healed.get("ready") is not True or self_heal.get("state") != "repaired":
+            raise RuntimeError(f"safe deterministic self-heal did not repair Brain attachment: {healed}")
+        if self_heal.get("attempted") is not True or self_heal.get("mutated") is not True:
+            raise RuntimeError(f"self-heal receipt is not truthful: {self_heal}")
+
+        registry_after = json.loads(registry_path.read_text(encoding="utf-8"))
+        extensions_after = registry_after.get("extensions", {})
+        if not isinstance(extensions_after.get("ai-verse-brain"), dict):
+            raise RuntimeError("Brain owner reconcile did not restore the attachment")
+        for extension_id, entry in extensions_before.items():
+            if extension_id == "ai-verse-brain":
+                continue
+            if extensions_after.get(extension_id) != entry:
+                raise RuntimeError(
+                    f"safe self-heal changed unrelated extension {extension_id}"
+                )
+
+        healed_doctor = run_cli("doctor")
+        if healed_doctor.get("ok") is not True:
+            raise RuntimeError(f"Agent did not return to ready after safe self-heal: {healed_doctor}")
+
+        # A shared registry lock is authoritative. First-run must not steal or
+        # remove it while attempting repair.
+        registry_lock = root / ".aiverse" / "extensions" / "registry.json.lock"
+        lock_payload = {
+            "extension_id": "acceptance-lock-owner",
+            "reason": "prove fail-closed self-heal",
+        }
+        registry_lock.write_text(
+            json.dumps(lock_payload, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        blocked_start = run_cli("start", expect=1)
+        if blocked_start.get("ready") is not False:
+            raise RuntimeError(f"registry-lock self-heal did not fail closed: {blocked_start}")
+        if not registry_lock.is_file():
+            raise RuntimeError("safe self-heal stole/deleted the owner registry lock")
+        if json.loads(registry_lock.read_text(encoding="utf-8")) != lock_payload:
+            raise RuntimeError("safe self-heal modified the owner registry lock")
+        registry_lock.unlink()
+
+        ready_after_lock = run_cli("start")
+        if ready_after_lock.get("ready") is not True:
+            raise RuntimeError(f"Agent did not recover after explicit lock removal: {ready_after_lock}")
+
         write_acceptance_workspace(root)
         data_setup = run_cli("component", "setup", "ai-verse-data", "--workspace", "alpha")
         bots_setup = run_cli("component", "setup", "ai-verse-multiple-bots")
@@ -625,6 +691,9 @@ def main() -> int:
             "one_action_install_setup_doctor": True,
             "progressive_onboarding": True,
             "idempotent_first_run": True,
+            "safe_deterministic_self_heal": True,
+            "self_heal_scope": "brain-owner-attachment-only",
+            "registry_lock_not_stolen": True,
             "setup_onboarding": True,
             "status_doctor": True,
             "gateway_bounded_run": True,
