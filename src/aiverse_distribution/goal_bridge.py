@@ -19,18 +19,18 @@ def _run_json(argv: list[str]) -> dict[str, Any]:
     env["PYTHONIOENCODING"] = "utf-8"
     completed = subprocess.run(
         argv,
-        text=True,
-        encoding="utf-8",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=False,
         check=False,
         env=env,
     )
+    stdout = completed.stdout.decode("utf-8", errors="strict")
+    stderr = completed.stderr.decode("utf-8", errors="replace")
     if completed.returncode != 0:
-        raise RuntimeError(completed.stderr.strip() or completed.stdout.strip() or f"Brain Goal CLI exited {completed.returncode}")
+        raise RuntimeError(stderr.strip() or stdout.strip() or f"Brain Goal CLI exited {completed.returncode}")
     try:
-        payload = json.loads(completed.stdout)
+        payload = json.loads(stdout)
     except json.JSONDecodeError as exc:
         raise RuntimeError("Brain Goal CLI returned invalid JSON") from exc
     if not isinstance(payload, dict):
