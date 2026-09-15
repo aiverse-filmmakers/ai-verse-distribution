@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "id": "agent-context-ladder-rc1-2026-09-15",
+  "profile": "agent",
+  "status": "released",
+  "created_at": "2026-09-15",
+  "classification": "explicit-install-qualification-candidate",
+  "promotion": {
+    "default_channel": false,
+    "automatic_update": false,
+    "cross_release_transition_admitted": false
+  },
+  "components": [
+    {
+      "id": "ai-verse-os",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+      "revision": "924a21a3dc1094d0fb6cc422f55fdfc714634e4d",
+      "install_order": 10
+    },
+    {
+      "id": "ai-verse-brain",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+      "revision": "6f986e8d06c7f9c069fbf05aa92ae7b7a1af9bf4",
+      "install_order": 20
+    },
+    {
+      "id": "ai-verse-memory",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+      "revision": "406b14fb4398eb1b16dd5f30e50520e8c3540972",
+      "install_order": 30
+    },
+    {
+      "id": "ai-verse-skills",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+      "revision": "71264af6b2b9a575812fe18858d75a54ea2ff545",
+      "install_order": 40
+    },
+    {
+      "id": "ai-verse-data",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+      "revision": "8edde7dca5afa34e300130cc6b8ee2b4170ad40f",
+      "install_order": 50,
+      "dependency_lock": {
+        "scheme": "distribution-companion-npm-lock-v1",
+        "manifest": "ai-verse-data/8edde7dca5afa34e300130cc6b8ee2b4170ad40f/lock.json",
+        "manifest_sha256": "4f1c204079f62d0d3c4202f99722ccc9c70264e2879b43ad8d704471c592de23"
+      }
+    },
+    {
+      "id": "ai-verse-gateway",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Gateway.git",
+      "revision": "46c15ee58b028dd7fb8b310327ea705ef618805e",
+      "install_order": 60
+    },
+    {
+      "id": "ai-verse-automations",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Automations.git",
+      "revision": "caaed83b98026dd955640fc015d181529b91a1c6",
+      "install_order": 70
+    },
+    {
+      "id": "ai-verse-multiple-bots",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Multiple-Bots.git",
+      "revision": "c600e2bc014351a61e1c0e2673fc63f5d5fa54ec",
+      "install_order": 80
+    },
+    {
+      "id": "ai-verse-token",
+      "repository": "https://github.com/aiverse-filmmakers/ai-verse-token.git",
+      "revision": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
+      "install_order": 90
+    }
+  ],
+  "evidence": {
+    "context_ladder": {
+      "system_plan": "aiverse-filmmakers/AI-Verse-System/docs/CONTEXT-LADDER-AND-LOSSLESS-MEMORY-IMPLEMENTATION-PLAN.md",
+      "system_ref": "58bbcefe953e03e556bd361e106ddbd76535ab8c",
+      "gateway_j2_merge": "46c15ee58b028dd7fb8b310327ea705ef618805e",
+      "gateway_post_merge_ci": 34992616000,
+      "memory_test": 34983522129,
+      "os_five_component_acceptance": 34988213714,
+      "brain_ci": 34969997987
+    },
+    "distribution_acceptance": {
+      "status": "qualification-pending"
+    }
+  },
+  "authority": {
+    "grants_permissions": false,
+    "transfers_brain_strategy": false,
+    "initializes_all_workspaces": false,
+    "exposes_gateway_remotely": false
+  }
+}
