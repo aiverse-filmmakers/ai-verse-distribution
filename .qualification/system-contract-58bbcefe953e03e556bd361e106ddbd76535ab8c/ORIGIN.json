@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "purpose": "Qualification-only immutable snapshot used because AI-Verse-System private hosted jobs fail before runner step 1. It is not canonical contract authority.",
+  "canonical_repository": "aiverse-filmmakers/AI-Verse-System",
+  "canonical_revision": "58bbcefe953e03e556bd361e106ddbd76535ab8c",
+  "canonical_workflow": ".github/workflows/contract-validation.yml",
+  "exact_git_blob_shas": {
+    "contracts/component-release-descriptor.schema.json": "ebd1694a8113c963509654cf890f6ff2ebc8606d",
+    "contracts/release-preservation-result.schema.json": "9da8c7380d94ef22ebfc3a6a03fecadb7c0b894f",
+    "contracts/examples/component-release-descriptor.invalid-floating-ref.json": "11b7965d174d46e53f0d976d2faff86d648257e6",
+    "contracts/examples/component-release-descriptor.valid.json": "300135d9af20253266a4e95b8a01e2ee9a88e91e",
+    "contracts/examples/release-preservation-result.invalid-safe-with-failed-upgrade.json": "d06d5fe920e9d55ce7d4d2109408415945a1c676",
+    "contracts/examples/release-preservation-result.valid.json": "d3b57bb6da0cb212a9d4e83daf113b6d575f0bf0",
+    "scripts/validate_component_release_descriptor.py": "fea989f706beb63fda9f5a0abc71077b565538b8",
+    "scripts/validate_release_preservation_result.py": "d9e3644b99bcceb9288ae03c7862b8f342ea3126",
+    "tests/test_component_release_descriptor.py": "f617cfa733902de99b0b55f58054e1ddce237b01",
+    "tests/test_release_preservation_result.py": "99d8aa9c57d590db9c615790c22883e97af8929b"
+  }
+}
