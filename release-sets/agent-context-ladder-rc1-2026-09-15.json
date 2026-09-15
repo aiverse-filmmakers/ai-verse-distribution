@@ -82,7 +82,28 @@
       "brain_ci": 34969997987
     },
     "distribution_acceptance": {
-      "status": "qualification-pending"
+      "status": "accepted",
+      "qualification_head": "e0fd4c22077eca0d8f4ff1e37c2574aeb16436bc",
+      "distribution_ci_run": 34994419346,
+      "distribution_ci_jobs": {
+        "windows-3.12": 104467281601,
+        "macos-3.12": 104467281776,
+        "ubuntu-3.9": 104467281841,
+        "ubuntu-3.12": 104467281938,
+        "macos-3.9": 104467281965,
+        "windows-3.9": 104467282025
+      },
+      "core_clean_machine_run": 34994419168,
+      "agent_clean_machine_run": 34994419240,
+      "invisible_candidate_run": 34994419155,
+      "invisible_scenarios_a_f_run": 34994419173,
+      "invisible_scenarios_g_m_run": 34994419159,
+      "context_ladder_clean_machine_run": 34994419265,
+      "context_ladder_jobs": {
+        "ubuntu": 104467441328,
+        "windows": 104467441640,
+        "macos": 104467441767
+      }
     }
   },
   "authority": {
