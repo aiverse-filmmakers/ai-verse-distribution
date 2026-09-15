@@ -29,6 +29,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
         for revision in (
             adapters.PUBLIC_BETA_MEMORY,
             adapters.INVISIBLE_INTELLIGENCE_MEMORY,
+            adapters.CONTEXT_LADDER_MEMORY,
         ):
             mocked.reset_mock()
             adapters.owner_install(
@@ -59,6 +60,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
             adapters.PUBLIC_BETA_BRAIN,
             adapters.PUBLIC_BETA_AGENT_BRAIN,
             adapters.INVISIBLE_INTELLIGENCE_BRAIN,
+            adapters.CONTEXT_LADDER_BRAIN,
         ):
             mocked.reset_mock()
             adapters.owner_setup(
@@ -128,6 +130,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
         cases = [
             ("ai-verse-gateway", adapters.PUBLIC_BETA_GATEWAY, "install"),
             ("ai-verse-gateway", adapters.INVISIBLE_INTELLIGENCE_GATEWAY, "install"),
+            ("ai-verse-gateway", adapters.CONTEXT_LADDER_GATEWAY, "install"),
             ("ai-verse-automations", adapters.PUBLIC_BETA_AUTOMATIONS, "install"),
             ("ai-verse-automations", adapters.INVISIBLE_INTELLIGENCE_AUTOMATIONS, "install"),
             ("ai-verse-multiple-bots", adapters.PUBLIC_BETA_BOTS, "install"),
@@ -150,6 +153,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
         for gateway_revision, brain_revision in (
             (adapters.PUBLIC_BETA_GATEWAY, adapters.PUBLIC_BETA_AGENT_BRAIN),
             (adapters.INVISIBLE_INTELLIGENCE_GATEWAY, adapters.INVISIBLE_INTELLIGENCE_BRAIN),
+            (adapters.CONTEXT_LADDER_GATEWAY, adapters.CONTEXT_LADDER_BRAIN),
         ):
             self.state.write({
                 "components": {
@@ -191,6 +195,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
             adapters.PUBLIC_BETA_OS,
             adapters.PUBLIC_BETA_AGENT_OS,
             adapters.INVISIBLE_INTELLIGENCE_OS,
+            adapters.CONTEXT_LADDER_OS,
         ):
             mocked.reset_mock()
             adapters.owner_setup(
