@@ -1,0 +1,304 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aiverse.local/contracts/release-preservation-result.schema.json",
+  "title": "AI-Verse Whole-Release Preservation Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_release_set",
+    "target_release_set",
+    "target_distribution_revision",
+    "supported_platforms",
+    "safe_for_update",
+    "platform_acceptance",
+    "clean_install",
+    "upgrade",
+    "restart_recovery",
+    "state_preservation",
+    "authority_preservation",
+    "migration",
+    "rollback",
+    "negative_tests",
+    "evidence",
+    "semantics"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "ai-verse.release-preservation/v1"
+    },
+    "source_release_set": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "target_release_set": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_distribution_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "supported_platforms": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "linux",
+          "macos",
+          "windows"
+        ]
+      }
+    },
+    "safe_for_update": {
+      "type": "boolean"
+    },
+    "clean_install": {
+      "$ref": "#/$defs/outcome"
+    },
+    "upgrade": {
+      "$ref": "#/$defs/outcome"
+    },
+    "restart_recovery": {
+      "$ref": "#/$defs/outcome"
+    },
+    "state_preservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "brain",
+        "memory",
+        "data",
+        "skills",
+        "bots",
+        "token",
+        "workspace",
+        "user_files"
+      ],
+      "properties": {
+        "brain": {
+          "$ref": "#/$defs/domain_outcome"
+        },
+        "memory": {
+          "$ref": "#/$defs/domain_outcome"
+        },
+        "data": {
+          "$ref": "#/$defs/domain_outcome"
+        },
+        "skills": {
+          "$ref": "#/$defs/domain_outcome"
+        },
+        "bots": {
+          "$ref": "#/$defs/domain_outcome"
+        },
+        "token": {
+          "$ref": "#/$defs/domain_outcome"
+        },
+        "workspace": {
+          "$ref": "#/$defs/domain_outcome"
+        },
+        "user_files": {
+          "$ref": "#/$defs/domain_outcome"
+        }
+      }
+    },
+    "authority_preservation": {
+      "$ref": "#/$defs/outcome"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "owner_evidence"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "none",
+            "required-complete",
+            "blocked",
+            "not-tested"
+          ]
+        },
+        "owner_evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence_item"
+          }
+        }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "software_rollback"
+      ],
+      "properties": {
+        "software_rollback": {
+          "enum": [
+            "pass",
+            "blocked",
+            "not-tested",
+            "not-applicable"
+          ]
+        }
+      }
+    },
+    "negative_tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unsupported_migration",
+        "user_file_collision",
+        "disabled_component",
+        "permission_floor",
+        "brain_ownership",
+        "partial_failure",
+        "wrong_release_sha"
+      ],
+      "properties": {
+        "unsupported_migration": {
+          "$ref": "#/$defs/outcome"
+        },
+        "user_file_collision": {
+          "$ref": "#/$defs/outcome"
+        },
+        "disabled_component": {
+          "$ref": "#/$defs/outcome"
+        },
+        "permission_floor": {
+          "$ref": "#/$defs/outcome"
+        },
+        "brain_ownership": {
+          "$ref": "#/$defs/outcome"
+        },
+        "partial_failure": {
+          "$ref": "#/$defs/outcome"
+        },
+        "wrong_release_sha": {
+          "$ref": "#/$defs/outcome"
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/evidence_item"
+      }
+    },
+    "semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acceptance_evidence_only",
+        "duplicates_canonical_state"
+      ],
+      "properties": {
+        "acceptance_evidence_only": {
+          "const": true
+        },
+        "duplicates_canonical_state": {
+          "const": false
+        }
+      }
+    },
+    "platform_acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "properties": {
+        "linux": {
+          "$ref": "#/$defs/platform_outcome"
+        },
+        "macos": {
+          "$ref": "#/$defs/platform_outcome"
+        },
+        "windows": {
+          "$ref": "#/$defs/platform_outcome"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "outcome": {
+      "enum": [
+        "pass",
+        "fail",
+        "blocked",
+        "not-tested",
+        "not-applicable"
+      ]
+    },
+    "domain_outcome": {
+      "enum": [
+        "pass",
+        "fail",
+        "not-applicable"
+      ]
+    },
+    "evidence_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "status",
+        "revision"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "blocked"
+          ]
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "run_id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "job_id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "platform_outcome": {
+      "enum": [
+        "pass",
+        "fail",
+        "not-tested",
+        "not-applicable"
+      ]
+    }
+  }
+}

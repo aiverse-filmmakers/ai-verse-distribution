@@ -34,6 +34,7 @@ class ManifestDriftTests(unittest.TestCase):
             "core-public-beta-2026-09-13": ROOT / "release-sets" / "core-public-beta-2026-09-13.json",
             "agent-public-beta-2026-09-14": ROOT / "release-sets" / "agent-public-beta-2026-09-14.json",
             "agent-invisible-intelligence-rc1-2026-09-14": ROOT / "release-sets" / "agent-invisible-intelligence-rc1-2026-09-14.json",
+            "agent-context-ladder-rc1-2026-09-15": ROOT / "release-sets" / "agent-context-ladder-rc1-2026-09-15.json",
             "full-public-beta-pending": ROOT / "release-sets" / "full-public-beta-pending.json",
         }
         for release_id, path in mapping.items():

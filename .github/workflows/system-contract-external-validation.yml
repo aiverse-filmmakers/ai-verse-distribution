@@ -1,0 +1,52 @@
+name: System Contract External Validation
+
+on:
+  pull_request:
+    paths:
+      - ".qualification/system-contract-58bbcefe953e03e556bd361e106ddbd76535ab8c/**"
+      - ".github/workflows/system-contract-external-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-contract-tests:
+    name: Canonical System contracts / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Verify immutable snapshot origin
+        working-directory: .qualification/system-contract-58bbcefe953e03e556bd361e106ddbd76535ab8c
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("ORIGIN.json").read_text(encoding="utf-8"))
+          assert data["canonical_repository"] == "aiverse-filmmakers/AI-Verse-System"
+          assert data["canonical_revision"] == "58bbcefe953e03e556bd361e106ddbd76535ab8c"
+          assert data["canonical_workflow"] == ".github/workflows/contract-validation.yml"
+          print("Immutable canonical System contract snapshot: PASS")
+          PY
+
+      - name: Validate example descriptor
+        working-directory: .qualification/system-contract-58bbcefe953e03e556bd361e106ddbd76535ab8c
+        run: python scripts/validate_component_release_descriptor.py contracts/examples/component-release-descriptor.valid.json
+
+      - name: Validate whole-release preservation example
+        working-directory: .qualification/system-contract-58bbcefe953e03e556bd361e106ddbd76535ab8c
+        run: python scripts/validate_release_preservation_result.py contracts/examples/release-preservation-result.valid.json
+
+      - name: Run exact canonical contract tests
+        working-directory: .qualification/system-contract-58bbcefe953e03e556bd361e106ddbd76535ab8c
+        run: python -m unittest discover -s tests -p "test_*.py"

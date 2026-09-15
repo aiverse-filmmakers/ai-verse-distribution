@@ -82,6 +82,52 @@ class CatalogTests(unittest.TestCase):
         self.assertNotIn(candidate_id, old["update_from"])
         self.assertNotIn(candidate_id, old["rollback_to"])
 
+    def test_context_ladder_agent_candidate_is_explicit_only(self):
+        default_release = self.catalog.resolve("agent")
+        self.assertEqual(default_release.id, "agent-public-beta-2026-09-14")
+        self.assertEqual(
+            self.catalog.release_data["channels"]["agent"],
+            "agent-public-beta-2026-09-14",
+        )
+
+        candidate = self.catalog.resolve(
+            "agent",
+            "agent-context-ladder-rc1-2026-09-15",
+        )
+        self.assertEqual(candidate.id, "agent-context-ladder-rc1-2026-09-15")
+        self.assertEqual(
+            {component.id: component.revision for component in candidate.components},
+            {
+                "ai-verse-os": "924a21a3dc1094d0fb6cc422f55fdfc714634e4d",
+                "ai-verse-brain": "6f986e8d06c7f9c069fbf05aa92ae7b7a1af9bf4",
+                "ai-verse-memory": "406b14fb4398eb1b16dd5f30e50520e8c3540972",
+                "ai-verse-skills": "71264af6b2b9a575812fe18858d75a54ea2ff545",
+                "ai-verse-data": "8edde7dca5afa34e300130cc6b8ee2b4170ad40f",
+                "ai-verse-gateway": "46c15ee58b028dd7fb8b310327ea705ef618805e",
+                "ai-verse-automations": "caaed83b98026dd955640fc015d181529b91a1c6",
+                "ai-verse-multiple-bots": "c600e2bc014351a61e1c0e2673fc63f5d5fa54ec",
+                "ai-verse-token": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
+            },
+        )
+        self.assertFalse(candidate.raw["promotion"]["default_channel"])
+        self.assertFalse(candidate.raw["promotion"]["automatic_update"])
+        self.assertFalse(candidate.raw["promotion"]["cross_release_transition_admitted"])
+
+    def test_context_ladder_candidate_cross_release_transitions_fail_closed(self):
+        candidate_id = "agent-context-ladder-rc1-2026-09-15"
+        old_id = "agent-public-beta-2026-09-14"
+        invisible_id = "agent-invisible-intelligence-rc1-2026-09-14"
+        candidate = self.catalog.compatibility_for(candidate_id)
+        old = self.catalog.compatibility_for(old_id)
+        invisible = self.catalog.compatibility_for(invisible_id)
+        self.assertEqual(candidate["update_from"], [candidate_id])
+        self.assertEqual(candidate["rollback_to"], [candidate_id])
+        for other_id, other in ((old_id, old), (invisible_id, invisible)):
+            self.assertNotIn(other_id, candidate["update_from"])
+            self.assertNotIn(other_id, candidate["rollback_to"])
+            self.assertNotIn(candidate_id, other["update_from"])
+            self.assertNotIn(candidate_id, other["rollback_to"])
+
     def test_custom_is_bounded_by_compatible_release_set(self):
         release = self.catalog.resolve(
             "custom",

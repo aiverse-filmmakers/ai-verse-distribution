@@ -1,0 +1,74 @@
+{
+  "schema_version": "ai-verse.component-release/v1",
+  "component_id": "ai-verse-example",
+  "version": "0.1.0-beta.1",
+  "revision": "0123456789abcdef0123456789abcdef01234567",
+  "release_status": "candidate",
+  "package": {
+    "repository": "aiverse-filmmakers/AI-Verse-Example",
+    "source_type": "git",
+    "package_name": null,
+    "integrity": null
+  },
+  "supported_platforms": ["linux", "macos", "windows"],
+  "runtime_requirements": {
+    "python": ">=3.11",
+    "node": null,
+    "other": []
+  },
+  "lifecycle": {
+    "install": true,
+    "setup": true,
+    "status": true,
+    "doctor": true,
+    "enable": true,
+    "disable": true,
+    "update": true,
+    "uninstall": true
+  },
+  "state": {
+    "canonical_state_owned": true,
+    "preserve_on_update": true,
+    "preserve_on_uninstall": true,
+    "preserve_unknown_user_files": true,
+    "state_format": "example-v1"
+  },
+  "migration": {
+    "compatibility": "compatible",
+    "from_versions": ["0.1.0-beta.0"],
+    "requires_explicit_migration": false,
+    "owner_controlled": true,
+    "checkpoint_policy": "not-required"
+  },
+  "authority": {
+    "grants_permissions": false,
+    "changes_direction_owner": false,
+    "changes_scope": false,
+    "enables_disabled_component": false,
+    "exposes_remote_listener": false
+  },
+  "evidence": {
+    "ci": [
+      {
+        "kind": "component-ci",
+        "status": "pass",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "run_id": "1234",
+        "url": "https://example.invalid/ci/1234"
+      }
+    ],
+    "acceptance": [
+      {
+        "kind": "component-release-acceptance",
+        "status": "pass",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "run_id": "1235",
+        "url": "https://example.invalid/acceptance/1235"
+      }
+    ]
+  },
+  "semantics": {
+    "release_metadata_only": true,
+    "live_health_truth": false
+  }
+}
