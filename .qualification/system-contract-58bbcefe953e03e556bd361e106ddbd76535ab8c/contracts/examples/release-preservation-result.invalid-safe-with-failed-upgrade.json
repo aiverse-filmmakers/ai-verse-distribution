@@ -1,0 +1,59 @@
+{
+  "schema_version": "ai-verse.release-preservation/v1",
+  "source_release_set": "agent-public-beta-1",
+  "target_release_set": "agent-public-beta-2",
+  "target_distribution_revision": "1234567890abcdef1234567890abcdef12345678",
+  "supported_platforms": [
+    "linux"
+  ],
+  "safe_for_update": true,
+  "clean_install": "pass",
+  "upgrade": "fail",
+  "restart_recovery": "pass",
+  "state_preservation": {
+    "brain": "pass",
+    "memory": "pass",
+    "data": "pass",
+    "skills": "pass",
+    "bots": "pass",
+    "token": "pass",
+    "workspace": "pass",
+    "user_files": "pass"
+  },
+  "authority_preservation": "pass",
+  "migration": {
+    "status": "none",
+    "owner_evidence": []
+  },
+  "rollback": {
+    "software_rollback": "pass"
+  },
+  "negative_tests": {
+    "unsupported_migration": "pass",
+    "user_file_collision": "pass",
+    "disabled_component": "pass",
+    "permission_floor": "pass",
+    "brain_ownership": "pass",
+    "partial_failure": "pass",
+    "wrong_release_sha": "pass"
+  },
+  "evidence": [
+    {
+      "kind": "whole-release-acceptance",
+      "status": "pass",
+      "revision": "1234567890abcdef1234567890abcdef12345678",
+      "run_id": "500",
+      "job_id": null,
+      "url": null
+    }
+  ],
+  "semantics": {
+    "acceptance_evidence_only": true,
+    "duplicates_canonical_state": false
+  },
+  "platform_acceptance": {
+    "linux": "pass",
+    "macos": "not-applicable",
+    "windows": "not-applicable"
+  }
+}
