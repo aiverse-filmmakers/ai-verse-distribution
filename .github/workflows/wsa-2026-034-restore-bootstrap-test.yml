@@ -1,0 +1,34 @@
+name: WSA-2026-034 Bootstrap Test Restore
+
+on:
+  push:
+    branches:
+      - repair/wsa-2026-034-lifecycle-receipt-concurrency
+    paths:
+      - ".github/workflows/wsa-2026-034-restore-bootstrap-test.yml"
+      - "scripts/wsa_2026_034_restore_bootstrap_test.py"
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/wsa-2026-034-lifecycle-receipt-concurrency
+          fetch-depth: 0
+      - name: Restore exact pre-adaptation bootstrap test
+        run: git checkout 6684bdfc65ac85f0e5c730171a38cadc92a8dfaf -- tests/test_bootstrap.py
+      - name: Apply bounded fake-state lifecycle interface
+        run: python scripts/wsa_2026_034_restore_bootstrap_test.py
+      - name: Commit repaired test adaptation
+        shell: bash
+        run: |
+          git config user.name "AI-VERSE"
+          git config user.email "hello@bogdanpascal.com"
+          git add tests/test_bootstrap.py
+          git diff --cached --exit-code && { echo "No bounded bootstrap test change produced"; exit 1; }
+          git commit -m "Adapt bootstrap test state to lifecycle transactions"
+          git push origin HEAD:repair/wsa-2026-034-lifecycle-receipt-concurrency
