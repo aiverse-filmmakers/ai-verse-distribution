@@ -1,0 +1,32 @@
+name: WSA-2026-034 Recovery Refinement
+
+on:
+  push:
+    branches:
+      - repair/wsa-2026-034-lifecycle-receipt-concurrency
+    paths:
+      - ".github/workflows/wsa-2026-034-recovery-refine.yml"
+      - "scripts/wsa_2026_034_recovery_refine.py"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/wsa-2026-034-lifecycle-receipt-concurrency
+          fetch-depth: 0
+      - name: Apply recovery refinement
+        run: python scripts/wsa_2026_034_recovery_refine.py
+      - name: Commit recovery refinement
+        shell: bash
+        run: |
+          git config user.name "AI-VERSE"
+          git config user.email "hello@bogdanpascal.com"
+          git add src/aiverse_distribution/orchestrator.py
+          git diff --cached --exit-code && { echo "No recovery refinement produced"; exit 1; }
+          git commit -m "Make lifecycle crash recovery resume exact setup step"
+          git push origin HEAD:repair/wsa-2026-034-lifecycle-receipt-concurrency
