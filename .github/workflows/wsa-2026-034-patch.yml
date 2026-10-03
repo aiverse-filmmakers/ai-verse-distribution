@@ -1,0 +1,32 @@
+name: WSA-2026-034 Product Patch
+
+on:
+  push:
+    branches:
+      - repair/wsa-2026-034-lifecycle-receipt-concurrency
+    paths:
+      - ".github/workflows/wsa-2026-034-patch.yml"
+      - "scripts/wsa_2026_034_patch.py"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/wsa-2026-034-lifecycle-receipt-concurrency
+          fetch-depth: 0
+      - name: Apply bounded lifecycle transaction patch
+        run: python scripts/wsa_2026_034_patch.py
+      - name: Commit product patch
+        shell: bash
+        run: |
+          git config user.name "AI-VERSE"
+          git config user.email "hello@bogdanpascal.com"
+          git add src/aiverse_distribution/orchestrator.py src/aiverse_distribution/cli.py
+          git diff --cached --exit-code && { echo "No WSA-2026-034 product patch produced"; exit 1; }
+          git commit -m "Serialize Distribution lifecycle receipt authority"
+          git push origin HEAD:repair/wsa-2026-034-lifecycle-receipt-concurrency
