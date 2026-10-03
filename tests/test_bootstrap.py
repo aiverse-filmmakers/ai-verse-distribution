@@ -4,6 +4,7 @@ import json
 import os
 import tempfile
 import unittest
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -19,16 +20,69 @@ class FakeState:
         self.value = value
         self.writes = []
         self.home = Path(home or tempfile.gettempdir())
+        self.pending = None
+        self.generation = 0 if value is not None else -1
 
     def load(self):
-        return self.value
+        if self.value is None:
+            return None
+        if not self.pending:
+            return self.value
+        visible = dict(self.value)
+        visible["_pending_lifecycle"] = dict(self.pending)
+        return visible
 
     def venv_dir(self, revision):
         return self.home / "venvs" / "ai-verse-brain" / revision
 
-    def write(self, value, archive_previous=False):
-        self.value = value
-        self.writes.append((value, archive_previous))
+    @contextmanager
+    def lifecycle_transaction(self, timeout=30.0):
+        del timeout
+        yield self
+
+    def begin_effect(self, operation_key, *, metadata=None):
+        marker = {
+            "token": "fake-effect-token",
+            "operation_key": operation_key,
+            "base_generation": self.generation,
+            "metadata": dict(metadata or {}),
+        }
+        if self.pending and (
+            self.pending["operation_key"] != marker["operation_key"]
+            or self.pending["metadata"] != marker["metadata"]
+        ):
+            raise RuntimeError("fake state already has a different pending lifecycle effect")
+        self.pending = marker
+        return dict(marker)
+
+    def write(
+        self,
+        value,
+        archive_previous=False,
+        *,
+        expected_generation=None,
+        allow_pending_token=None,
+    ):
+        del expected_generation, allow_pending_token
+        persisted = dict(value)
+        persisted.pop("_pending_lifecycle", None)
+        self.generation += 1
+        persisted["_receipt_generation"] = self.generation
+        self.value = persisted
+        self.writes.append((persisted, archive_previous))
+        return persisted
+
+    def commit_effect(self, value, marker, *, archive_previous=False):
+        if not self.pending or self.pending["token"] != marker["token"]:
+            raise RuntimeError("fake lifecycle effect ownership changed")
+        persisted = self.write(
+            value,
+            archive_previous=archive_previous,
+            expected_generation=marker["base_generation"],
+            allow_pending_token=marker["token"],
+        )
+        self.pending = None
+        return persisted
 
 
 class FakeCatalog:
