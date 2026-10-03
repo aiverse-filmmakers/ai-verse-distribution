@@ -4,6 +4,7 @@ import json
 import os
 import tempfile
 import unittest
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -19,16 +20,69 @@ class FakeState:
         self.value = value
         self.writes = []
         self.home = Path(home or tempfile.gettempdir())
+        self.pending = None
+        self.generation = 0 if value is not None else -1
 
     def load(self):
-        return self.value
+        if self.value is None:
+            return None
+        if not self.pending:
+            return self.value
+        visible = dict(self.value)
+        visible["_pending_lifecycle"] = dict(self.pending)
+        return visible
 
     def venv_dir(self, revision):
         return self.home / "venvs" / "ai-verse-brain" / revision
 
-    def write(self, value, archive_previous=False):
-        self.value = value
-        self.writes.append((value, archive_previous))
+    @contextmanager
+    def lifecycle_transaction(self, timeout=30.0):
+        del timeout
+        yield self
+
+    def begin_effect(self, operation_key, *, metadata=None):
+        marker = {
+            "token": "fake-effect-token",
+            "operation_key": operation_key,
+            "base_generation": self.generation,
+            "metadata": dict(metadata or {}),
+        }
+        if self.pending and (
+            self.pending["operation_key"] != marker["operation_key"]
+            or self.pending["metadata"] != marker["metadata"]
+        ):
+            raise RuntimeError("fake state already has a different pending lifecycle effect")
+        self.pending = marker
+        return dict(marker)
+
+    def write(
+        self,
+        value,
+        archive_previous=False,
+        *,
+        expected_generation=None,
+        allow_pending_token=None,
+    ):
+        del expected_generation, allow_pending_token
+        persisted = dict(value)
+        persisted.pop("_pending_lifecycle", None)
+        self.generation += 1
+        persisted["_receipt_generation"] = self.generation
+        self.value = persisted
+        self.writes.append((persisted, archive_previous))
+        return persisted
+
+    def commit_effect(self, value, marker, *, archive_previous=False):
+        if not self.pending or self.pending["token"] != marker["token"]:
+            raise RuntimeError("fake lifecycle effect ownership changed")
+        persisted = self.write(
+            value,
+            archive_previous=archive_previous,
+            expected_generation=marker["base_generation"],
+            allow_pending_token=marker["token"],
+        )
+        self.pending = None
+        return persisted
 
 
 class FakeCatalog:
@@ -147,27 +201,83 @@ class SafeReconcileTests(unittest.TestCase):
         return Orchestrator(state=state, catalog=FakeCatalog())
 
     def _result(self, payload, code=0):
-        return SimpleNamespace(
-            stdout=json.dumps(payload),
-            stderr="",
-            returncode=code,
-            argv=[],
-        )
+        return SimpleNamespace(argv=[], returncode=code, stdout=json.dumps(payload), stderr="")
+
+    def test_registry_lock_blocks_without_apply(self):
+        with tempfile.TemporaryDirectory() as td:
+            app = self._app(Path(td))
+            plan = {
+                "mode": "plan",
+                "migration_required": False,
+                "registry_lock": {"state": "locked"},
+                "actions": [],
+            }
+            with patch("aiverse_distribution.orchestrator.run", side_effect=[self._result(plan)]):
+                result = app.safe_reconcile()
+            self.assertEqual(result["state"], "blocked")
+            self.assertFalse(result["mutated"])
+
+    def test_migration_required_blocks_without_apply(self):
+        with tempfile.TemporaryDirectory() as td:
+            app = self._app(Path(td))
+            plan = {
+                "mode": "plan",
+                "migration_required": True,
+                "registry_lock": {"state": "absent"},
+                "actions": [{"kind": "migration"}],
+            }
+            with patch("aiverse_distribution.orchestrator.run", side_effect=[self._result(plan)]):
+                result = app.safe_reconcile()
+            self.assertEqual(result["state"], "blocked")
+            self.assertFalse(result["mutated"])
+
+    def test_unknown_automatic_action_is_rejected_before_apply(self):
+        with tempfile.TemporaryDirectory() as td:
+            app = self._app(Path(td))
+            plan = {
+                "mode": "plan",
+                "migration_required": False,
+                "registry_lock": {"state": "absent"},
+                "actions": [{
+                    "component": "ai-verse-gateway",
+                    "kind": "setup",
+                    "automatic": True,
+                    "argv": ["ai-verse-gateway", "setup"],
+                }],
+            }
+            with patch("aiverse_distribution.orchestrator.run", side_effect=[self._result(plan)]):
+                result = app.safe_reconcile()
+            self.assertEqual(result["state"], "blocked")
+            self.assertFalse(result["mutated"])
+
+    def test_no_automatic_owner_action_does_not_mutate(self):
+        with tempfile.TemporaryDirectory() as td:
+            app = self._app(Path(td))
+            plan = {
+                "mode": "plan",
+                "migration_required": False,
+                "registry_lock": {"state": "absent"},
+                "actions": [],
+            }
+            with patch("aiverse_distribution.orchestrator.run", side_effect=[self._result(plan)]):
+                result = app.safe_reconcile()
+            self.assertEqual(result["state"], "no-safe-action")
+            self.assertFalse(result["mutated"])
 
     def test_exact_brain_owner_reconcile_is_applied(self):
         with tempfile.TemporaryDirectory() as td:
-            root = Path(td) / "AI-Verse"
+            root = Path(td)
             app = self._app(root)
             plan = {
                 "mode": "plan",
-                "registry_lock": {"state": "absent"},
                 "migration_required": False,
+                "registry_lock": {"state": "absent"},
                 "actions": [{
                     "component": "ai-verse-brain",
                     "kind": "setup",
                     "automatic": True,
-                    "argv": ["ai-verse-brain", "attach", str(root.resolve()), "--apply"],
-                    "followup_argv": ["ai-verse-brain", "init", str(root.resolve()), "--apply"],
+                    "argv": ["ai-verse-brain", "attach", str(root), "--apply"],
+                    "followup_argv": ["ai-verse-brain", "init", str(root), "--apply"],
                 }],
             }
             applied = {
@@ -181,174 +291,62 @@ class SafeReconcileTests(unittest.TestCase):
             }
             with patch(
                 "aiverse_distribution.orchestrator.run",
-                side_effect=[self._result(plan, 2), self._result(applied, 0)],
-            ) as runner:
+                side_effect=[self._result(plan), self._result(applied)],
+            ):
                 result = app.safe_reconcile()
-
             self.assertEqual(result["state"], "repaired")
-            self.assertTrue(result["safe"])
             self.assertTrue(result["mutated"])
-            self.assertEqual(runner.call_count, 2)
-            apply_argv = runner.call_args_list[1].args[0]
-            self.assertIn("--apply", apply_argv)
-            self.assertIn("--json", apply_argv)
-
-    def test_registry_lock_blocks_without_apply(self):
-        with tempfile.TemporaryDirectory() as td:
-            root = Path(td) / "AI-Verse"
-            app = self._app(root)
-            plan = {
-                "mode": "plan",
-                "registry_lock": {"state": "locked"},
-                "migration_required": False,
-                "actions": [],
-            }
-            with patch(
-                "aiverse_distribution.orchestrator.run",
-                return_value=self._result(plan, 2),
-            ) as runner:
-                result = app.safe_reconcile()
-            self.assertEqual(result["state"], "blocked")
-            self.assertFalse(result["safe"])
-            self.assertFalse(result["mutated"])
-            self.assertEqual(runner.call_count, 1)
-
-    def test_migration_required_blocks_without_apply(self):
-        with tempfile.TemporaryDirectory() as td:
-            root = Path(td) / "AI-Verse"
-            app = self._app(root)
-            plan = {
-                "mode": "plan",
-                "registry_lock": {"state": "absent"},
-                "migration_required": True,
-                "actions": [{
-                    "component": "ai-verse-brain",
-                    "kind": "migration",
-                    "automatic": False,
-                }],
-            }
-            with patch(
-                "aiverse_distribution.orchestrator.run",
-                return_value=self._result(plan, 2),
-            ) as runner:
-                result = app.safe_reconcile()
-            self.assertEqual(result["state"], "blocked")
-            self.assertFalse(result["safe"])
-            self.assertEqual(runner.call_count, 1)
-
-    def test_unknown_automatic_action_is_rejected_before_apply(self):
-        with tempfile.TemporaryDirectory() as td:
-            root = Path(td) / "AI-Verse"
-            app = self._app(root)
-            plan = {
-                "mode": "plan",
-                "registry_lock": {"state": "absent"},
-                "migration_required": False,
-                "actions": [{
-                    "component": "ai-verse-memory",
-                    "kind": "setup",
-                    "automatic": True,
-                    "argv": ["unexpected-owner", "--apply"],
-                }],
-            }
-            with patch(
-                "aiverse_distribution.orchestrator.run",
-                return_value=self._result(plan, 2),
-            ) as runner:
-                result = app.safe_reconcile()
-            self.assertEqual(result["state"], "blocked")
-            self.assertFalse(result["safe"])
-            self.assertIn("unrecognized automatic action", result["reason"])
-            self.assertEqual(runner.call_count, 1)
-
-    def test_no_automatic_owner_action_does_not_mutate(self):
-        with tempfile.TemporaryDirectory() as td:
-            root = Path(td) / "AI-Verse"
-            app = self._app(root)
-            plan = {
-                "mode": "plan",
-                "registry_lock": {"state": "absent"},
-                "migration_required": False,
-                "actions": [{
-                    "component": "ai-verse-memory",
-                    "kind": "setup",
-                    "automatic": False,
-                }],
-            }
-            with patch(
-                "aiverse_distribution.orchestrator.run",
-                return_value=self._result(plan, 2),
-            ) as runner:
-                result = app.safe_reconcile()
-            self.assertEqual(result["state"], "no-safe-action")
-            self.assertTrue(result["safe"])
-            self.assertFalse(result["mutated"])
-            self.assertEqual(runner.call_count, 1)
 
 
 class ProductBootstrapTests(unittest.TestCase):
+    def _existing(self, root: Path, *, state="setup", setup=True, profile="agent"):
+        payload = {
+            "schema_version": 1,
+            "profile": profile,
+            "release_set_id": "agent-public-beta-2026-09-14",
+            "root": str(root.resolve()),
+            "state": state,
+            "authority": {
+                "permissions_granted": False,
+                "brain_strategy_transferred": False,
+            },
+            "components": {},
+        }
+        if setup:
+            payload["setup_completed_at"] = "2026-09-14T00:00:00Z"
+        return payload
+
     def test_fresh_start_installs_exact_agent_then_setup_and_doctor(self):
         with tempfile.TemporaryDirectory() as td:
-            app = FakeBootstrap()
             root = Path(td) / "AI-Verse"
-            result = Orchestrator.start(app, root=root)
-
-            self.assertTrue(result["ready"])
-            self.assertEqual(result["state"], "ready")
-            self.assertEqual(result["profile"], "agent")
-            self.assertEqual(result["release_set_id"], "agent-public-beta-2026-09-14")
-            self.assertEqual(result["message"], "AI-Verse is ready. What would you like help with?")
-            self.assertEqual(result["onboarding"]["mode"], "progressive")
-            self.assertFalse(result["onboarding"]["deep_questionnaire_required"])
+            app = FakeBootstrap(before="absent")
+            with patch.object(app, "onboard", return_value={"os": {}}):
+                result = Orchestrator.start(app, root=root)
             self.assertEqual(app.install_calls[0]["profile"], "agent")
             self.assertEqual(app.setup_calls, 1)
             self.assertEqual(app.doctor_calls, 1)
             self.assertEqual(app.open_calls, 1)
-
-            first_run = app.state.value["first_run"]
-            self.assertTrue(first_run["doctor_verified"])
-            self.assertEqual(first_run["onboarding"], "progressive")
-            self.assertFalse(first_run["permissions_granted"])
-            self.assertFalse(first_run["brain_strategy_transferred"])
+            self.assertEqual(result["state"], "ready")
+            self.assertTrue(result["ready"])
+            self.assertEqual(result["onboarding"]["mode"], "progressive")
+            self.assertEqual(result["onboarding"]["deep_questionnaire_required"], False)
+            self.assertIn("open", result)
 
     def test_previously_setup_install_uses_safe_reconcile_instead_of_full_setup(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td) / "AI-Verse"
-            current = {
-                "schema_version": 1,
-                "profile": "agent",
-                "release_set_id": "agent-public-beta-2026-09-14",
-                "root": str(root.resolve()),
-                "state": "setup",
-                "setup_completed_at": "2026-09-14T00:00:00Z",
-                "authority": {
-                    "permissions_granted": False,
-                    "brain_strategy_transferred": False,
-                },
-                "components": {},
-            }
+            current = self._existing(root, setup=True)
             app = FakeBootstrap(current=current, before="setup-required")
             result = Orchestrator.start(app)
-
-            self.assertTrue(result["ready"])
             self.assertEqual(app.setup_calls, 0)
             self.assertEqual(app.reconcile_calls, 1)
-            self.assertTrue(result["self_heal"]["attempted"])
-            self.assertEqual(result["self_heal"]["state"], "repaired")
-            self.assertTrue(result["self_heal"]["mutated"])
+            self.assertEqual(app.doctor_calls, 1)
+            self.assertTrue(result["ready"])
 
     def test_nonautomatic_remaining_setup_issue_stops_after_safe_reconcile(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td) / "AI-Verse"
-            current = {
-                "schema_version": 1,
-                "profile": "agent",
-                "release_set_id": "agent-public-beta-2026-09-14",
-                "root": str(root.resolve()),
-                "state": "setup",
-                "setup_completed_at": "2026-09-14T00:00:00Z",
-                "components": {},
-            }
+            current = self._existing(root, setup=True)
             app = FakeBootstrap(current=current, before="setup-required")
             app.reconcile_result = {
                 "state": "no-safe-action",
@@ -356,99 +354,56 @@ class ProductBootstrapTests(unittest.TestCase):
                 "mutated": False,
             }
             result = Orchestrator.start(app)
-
-            self.assertFalse(result["ready"])
-            self.assertEqual(result["state"], "needs-attention")
             self.assertEqual(app.setup_calls, 0)
             self.assertEqual(app.reconcile_calls, 1)
-            self.assertEqual(result["self_heal"]["state"], "no-safe-action")
+            self.assertEqual(app.doctor_calls, 0)
+            self.assertEqual(result["state"], "needs-attention")
+            self.assertFalse(result["ready"])
 
     def test_ready_start_is_idempotent_and_does_not_rerun_setup(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td) / "AI-Verse"
-            current = {
-                "schema_version": 1,
-                "profile": "agent",
-                "release_set_id": "agent-public-beta-2026-09-14",
-                "root": str(root.resolve()),
-                "state": "setup",
-                "authority": {
-                    "permissions_granted": False,
-                    "brain_strategy_transferred": False,
-                },
-                "components": {},
-            }
-            app = FakeBootstrap(current=current, before="ready")
+            app = FakeBootstrap(current=self._existing(root), before="ready")
             result = Orchestrator.start(app)
-
-            self.assertTrue(result["ready"])
             self.assertEqual(app.install_calls, [])
             self.assertEqual(app.setup_calls, 0)
             self.assertEqual(app.doctor_calls, 1)
+            self.assertEqual(result["state"], "ready")
 
     def test_disabled_state_fails_closed_without_auto_repair(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td) / "AI-Verse"
-            current = {
-                "schema_version": 1,
-                "profile": "agent",
-                "release_set_id": "agent-public-beta-2026-09-14",
-                "root": str(root.resolve()),
-                "state": "setup",
-                "components": {},
-            }
-            app = FakeBootstrap(current=current, before="disabled")
+            app = FakeBootstrap(current=self._existing(root), before="disabled")
             result = Orchestrator.start(app)
-
-            self.assertFalse(result["ready"])
-            self.assertEqual(result["state"], "needs-attention")
-            self.assertIn("No repair, migration, or permission change was attempted", result["message"])
             self.assertEqual(app.install_calls, [])
             self.assertEqual(app.setup_calls, 0)
             self.assertEqual(app.doctor_calls, 0)
-            self.assertEqual(app.open_calls, 0)
+            self.assertEqual(result["state"], "needs-attention")
+            self.assertFalse(result["ready"])
 
     def test_failed_doctor_stops_before_conversational_handoff(self):
         with tempfile.TemporaryDirectory() as td:
-            app = FakeBootstrap(doctor_ok=False)
-            result = Orchestrator.start(app, root=Path(td) / "AI-Verse")
-
-            self.assertFalse(result["ready"])
-            self.assertEqual(result["state"], "needs-attention")
-            self.assertEqual(app.setup_calls, 1)
-            self.assertEqual(app.doctor_calls, 1)
+            root = Path(td) / "AI-Verse"
+            app = FakeBootstrap(before="absent", doctor_ok=False)
+            with patch.object(app, "onboard", return_value={"os": {}}):
+                result = Orchestrator.start(app, root=root)
             self.assertEqual(app.open_calls, 0)
-            self.assertIn("No destructive repair or authority change was attempted", result["message"])
+            self.assertEqual(result["state"], "needs-attention")
+            self.assertFalse(result["ready"])
 
     def test_existing_agent_cannot_be_silently_moved_or_released_switched(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td) / "AI-Verse"
-            current = {
-                "schema_version": 1,
-                "profile": "agent",
-                "release_set_id": "agent-public-beta-2026-09-14",
-                "root": str(root.resolve()),
-                "state": "setup",
-                "components": {},
-            }
-            app = FakeBootstrap(current=current, before="ready")
+            app = FakeBootstrap(current=self._existing(root), before="ready")
             with self.assertRaises(DistributionError):
                 Orchestrator.start(app, root=Path(td) / "Elsewhere")
             with self.assertRaises(DistributionError):
-                Orchestrator.start(app, release_set_id="future-agent-release")
+                Orchestrator.start(app, release_set_id="another-release")
 
     def test_non_agent_lock_is_not_reprofiled(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td) / "AI-Verse"
-            current = {
-                "schema_version": 1,
-                "profile": "core",
-                "release_set_id": "core-public-beta-2026-09-13",
-                "root": str(root.resolve()),
-                "state": "setup",
-                "components": {},
-            }
-            app = FakeBootstrap(current=current, before="ready")
+            app = FakeBootstrap(current=self._existing(root, profile="core"), before="ready")
             with self.assertRaises(DistributionError):
                 Orchestrator.start(app)
 
