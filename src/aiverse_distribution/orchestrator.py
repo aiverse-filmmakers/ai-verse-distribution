@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import sys
+from functools import wraps
 from importlib import resources
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
@@ -58,6 +59,15 @@ def _safe_result(result: Any) -> Dict[str, Any]:
         "stdout": _safe_output(getattr(result, "stdout", "") or ""),
         "stderr": _safe_output(getattr(result, "stderr", "") or ""),
     }
+
+
+def _serialized_lifecycle(method):
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self.state.lifecycle_transaction():
+            return method(self, *args, **kwargs)
+
+    return wrapped
 
 
 class Orchestrator:
@@ -603,6 +613,7 @@ class Orchestrator:
             receipt["owner_install_result"] = _safe_result(owner)
         return receipt
 
+    @_serialized_lifecycle
     def install(
         self,
         *,
@@ -661,14 +672,18 @@ class Orchestrator:
                 source = Path(existing.get("source", "")).expanduser().resolve()
                 self._verify_exact_source(component, source)
                 continue
+            effect = self.state.begin_effect(
+                f"install:{release.id}:{component.id}:{component.revision}",
+                metadata={"component": component.id, "revision": component.revision},
+            )
             receipt = self._install_component(component, root, release)
             lock["components"][component.id] = receipt
             lock["state"] = "installing"
-            self.state.write(lock, archive_previous=False)
+            lock = self.state.commit_effect(lock, effect, archive_previous=False)
 
         lock["state"] = "installed"
         lock["installed_at"] = now_iso()
-        self.state.write(lock, archive_previous=False)
+        lock = self.state.write(lock, archive_previous=False)
         return lock
 
     def _context(self, component_id: str) -> tuple[Dict[str, Any], ReleaseSet, ComponentRef, Path, Path]:
@@ -701,6 +716,7 @@ class Orchestrator:
             return [component.id for component in release.components if component.id in selected]
         return [component.id for component in release.components]
 
+    @_serialized_lifecycle
     def setup(
         self,
         component_id: Optional[str] = None,
@@ -727,6 +743,10 @@ class Orchestrator:
 
         for cid in wanted:
             lock, _, component, root, source = self._context(cid)
+            effect = self.state.begin_effect(
+                f"setup:{release.id}:{cid}:{component.revision}",
+                metadata={"component": cid, "revision": component.revision},
+            )
             commands = owner_setup(
                 cid,
                 root=root,
@@ -737,7 +757,7 @@ class Orchestrator:
             results[cid] = [_safe_result(x) for x in commands]
             lock["components"][cid]["setup_completed_at"] = now_iso()
             lock["components"][cid]["last_setup_result"] = "success"
-            self.state.write(lock, archive_previous=False)
+            lock = self.state.commit_effect(lock, effect, archive_previous=False)
 
         if selected_workspaces:
             data_host = root / "scripts" / "data-host.mjs"
@@ -747,6 +767,10 @@ class Orchestrator:
                 )
             workspace_results = []
             for workspace_id in selected_workspaces:
+                effect = self.state.begin_effect(
+                    f"setup-workspace:{release.id}:{workspace_id}",
+                    metadata={"workspace": workspace_id},
+                )
                 request = {
                     "protocol": "ai-verse-os-data-host/1.0",
                     "request_id": f"distribution-setup-{workspace_id}",
@@ -769,12 +793,17 @@ class Orchestrator:
                         f"Data workspace initialization failed for {workspace_id}: {response}"
                     )
                 workspace_results.append({"workspace": workspace_id, "response": response})
+                lock = self.state.commit_effect(lock, effect, archive_previous=False)
             results["ai-verse-data-workspaces"] = workspace_results
 
         if component_id is None:
             host_adapter = root / "scripts" / "ai_verse_host_adapter.py"
             if host_adapter.is_file():
                 target = root / ".aiverse" / "brain-host.json"
+                effect = self.state.begin_effect(
+                    f"setup-system-host:{release.id}",
+                    metadata={"target": str(target)},
+                )
                 result = run([
                     sys.executable,
                     str(host_adapter),
@@ -784,6 +813,7 @@ class Orchestrator:
                     str(target),
                 ])
                 results["system-host"] = [_safe_result(result)]
+                lock = self.state.commit_effect(lock, effect, archive_previous=False)
 
             lock = self.state.load() or lock
             lock["state"] = "setup"
@@ -792,6 +822,7 @@ class Orchestrator:
 
         return {"release_set_id": release.id, "root": str(root), "results": results}
 
+    @_serialized_lifecycle
     def safe_reconcile(self) -> Dict[str, Any]:
         """Apply only the exact released OS deterministic automatic reconcile action."""
         lock = self.state.load()
@@ -946,6 +977,10 @@ class Orchestrator:
                 "plan": sanitize(plan),
             }
 
+        effect = self.state.begin_effect(
+            f"safe-reconcile:{lock['release_set_id']}:brain-attachment",
+            metadata={"component": "ai-verse-brain"},
+        )
         apply_result = run(
             [
                 "node",
@@ -1003,6 +1038,8 @@ class Orchestrator:
                 "result": sanitize(applied),
             }
 
+        lock = self.state.load() or lock
+        lock = self.state.commit_effect(lock, effect, archive_previous=False)
         return {
             "state": "repaired" if executed else "no-safe-action",
             "safe": True,
@@ -1015,6 +1052,7 @@ class Orchestrator:
             "result": sanitize(applied),
         }
 
+    @_serialized_lifecycle
     def start(
         self,
         *,
@@ -1328,6 +1366,19 @@ class Orchestrator:
         lock = self.state.load()
         if not lock:
             return {"state": "absent", "components": {}}
+        pending = lock.get("_pending_lifecycle")
+        if pending:
+            return {
+                "state": "recovery-required",
+                "release_set_id": lock.get("release_set_id"),
+                "profile": lock.get("profile"),
+                "root": lock.get("root"),
+                "components": {},
+                "recovery": {
+                    "operation_key": pending.get("operation_key"),
+                    "started_at": pending.get("started_at"),
+                },
+            }
         release = self.catalog.get_release(lock["release_set_id"], require_released=True)
         ids = [component_id] if component_id else self._profile_component_ids(lock, release)
         report: Dict[str, Any] = {}
@@ -1393,6 +1444,20 @@ class Orchestrator:
         lock = self.state.load()
         if not lock:
             return {"ok": False, "state": "absent", "depth": ["structural"]}
+        pending = lock.get("_pending_lifecycle")
+        if pending:
+            return {
+                "ok": False,
+                "state": "recovery-required",
+                "release_set_id": lock.get("release_set_id"),
+                "root": lock.get("root"),
+                "depth": ["structural", "lifecycle-recovery"],
+                "components": {},
+                "recovery": {
+                    "operation_key": pending.get("operation_key"),
+                    "started_at": pending.get("started_at"),
+                },
+            }
         release = self.catalog.get_release(lock["release_set_id"], require_released=True)
         ids = [component_id] if component_id else self._profile_component_ids(lock, release)
         results: Dict[str, Any] = {}
@@ -1448,6 +1513,7 @@ class Orchestrator:
             "system": system,
         }
 
+    @_serialized_lifecycle
     def component_action(
         self,
         component_id: str,
@@ -1476,16 +1542,24 @@ class Orchestrator:
                     )
             root = Path(lock["root"]).expanduser().resolve()
             previous = lock.get("components", {}).get(component_id)
+            effect = self.state.begin_effect(
+                f"component:install:{component_id}:{component.revision}",
+                metadata={"component": component_id, "revision": component.revision},
+            )
             receipt = self._install_component(component, root, release)
             if previous and not previous.get("uninstalled_at"):
                 receipt["setup_completed_at"] = previous.get("setup_completed_at")
                 if previous.get("last_setup_result"):
                     receipt["last_setup_result"] = previous["last_setup_result"]
             lock["components"][component_id] = receipt
-            self.state.write(lock, archive_previous=False)
+            lock = self.state.commit_effect(lock, effect, archive_previous=False)
             return {"component": component_id, "action": action, "changed": True}
 
         lock, release, component, root, source = self._context(component_id)
+        effect = self.state.begin_effect(
+            f"component:{action}:{component_id}:{component.revision}",
+            metadata={"component": component_id, "revision": component.revision, "action": action},
+        )
         if action in {"enable", "disable"}:
             result = owner_enablement(
                 component_id, action, root=root, source=source, revision=component.revision, state=self.state
@@ -1495,15 +1569,15 @@ class Orchestrator:
                 component_id, root=root, source=source, revision=component.revision, state=self.state
             )
             lock["components"][component_id]["uninstalled_at"] = now_iso()
-            self.state.write(lock, archive_previous=False)
         elif action == "update":
             result = owner_update(
                 component_id, root=root, source=source, revision=component.revision, state=self.state
             )
-            if result is None:
-                return {"component": component_id, "action": action, "changed": False, "note": "already pinned"}
         else:
             raise DistributionError(f"unknown component action: {action}")
+        lock = self.state.commit_effect(lock, effect, archive_previous=False)
+        if action == "update" and result is None:
+            return {"component": component_id, "action": action, "changed": False, "note": "already pinned"}
         return {"component": component_id, "action": action, "result": _safe_result(result)}
 
     def _resolve_target_release(
@@ -1547,6 +1621,7 @@ class Orchestrator:
             "permission_grants": False,
         }
 
+    @_serialized_lifecycle
     def apply_update(
         self,
         target_release_set: Optional[str] = None,
@@ -1633,6 +1708,11 @@ class Orchestrator:
                     continue
                 prepared[component.id] = self._stage_component(component, root, target)
 
+            effect = self.state.begin_effect(
+                f"release-transition:{transition_kind}:{lock['release_set_id']}:{target.id}",
+                metadata={"from": lock["release_set_id"], "to": target.id, "kind": transition_kind},
+            )
+
             if os_changed and new_os:
                 dirty = run([
                     "git", "-C", str(root), "status", "--porcelain", "--untracked-files=no"
@@ -1690,13 +1770,14 @@ class Orchestrator:
                 new_lock["setup_completed_at"] = now_iso()
             else:
                 new_lock.pop("setup_completed_at", None)
-            self.state.write(new_lock, archive_previous=True)
+            new_lock = self.state.commit_effect(new_lock, effect, archive_previous=True)
             return {**plan, "applied": True, "changed": True}
         except Exception:
             if os_changed and old_os:
                 run(["git", "-C", str(root), "checkout", "--detach", old_os.revision], check=False)
             raise
 
+    @_serialized_lifecycle
     def rollback(self, release_set_id: str, apply: bool = False) -> Dict[str, Any]:
         lock = self.state.load()
         if not lock:
