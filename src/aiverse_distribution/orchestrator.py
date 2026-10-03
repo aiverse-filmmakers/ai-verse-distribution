@@ -24,7 +24,7 @@ from .adapters import (
 from .release_catalog import Catalog, ComponentRef, DistributionError, ReleaseSet
 from .process import run, version_line, which
 from .redaction import sanitize, sanitize_text
-from .state import StateStore, now_iso
+from .state import LifecycleRecoveryRequired, StateStore, now_iso
 
 
 def _version_tuple(text: str) -> tuple[int, ...]:
@@ -727,6 +727,17 @@ class Orchestrator:
             raise DistributionError("AI-Verse is not installed through Distribution")
         release = self.catalog.get_release(lock["release_set_id"], require_released=True)
         wanted = [component_id] if component_id else self._profile_component_ids(lock, release)
+        pending_operation = (lock.get("_pending_lifecycle") or {}).get("operation_key")
+        recovery_waiting = bool(pending_operation)
+
+        def should_run_recovery_step(operation_key: str) -> bool:
+            nonlocal recovery_waiting
+            if not recovery_waiting:
+                return True
+            if operation_key == pending_operation:
+                recovery_waiting = False
+                return True
+            return False
         if component_id is None and "ai-verse-os" in wanted:
             # Component owners must establish their own attachment/runtime state
             # before OS performs its composed setup/readiness reconciliation.
@@ -743,8 +754,11 @@ class Orchestrator:
 
         for cid in wanted:
             lock, _, component, root, source = self._context(cid)
+            operation_key = f"setup:{release.id}:{cid}:{component.revision}"
+            if not should_run_recovery_step(operation_key):
+                continue
             effect = self.state.begin_effect(
-                f"setup:{release.id}:{cid}:{component.revision}",
+                operation_key,
                 metadata={"component": cid, "revision": component.revision},
             )
             commands = owner_setup(
@@ -767,8 +781,11 @@ class Orchestrator:
                 )
             workspace_results = []
             for workspace_id in selected_workspaces:
+                operation_key = f"setup-workspace:{release.id}:{workspace_id}"
+                if not should_run_recovery_step(operation_key):
+                    continue
                 effect = self.state.begin_effect(
-                    f"setup-workspace:{release.id}:{workspace_id}",
+                    operation_key,
                     metadata={"workspace": workspace_id},
                 )
                 request = {
@@ -800,26 +817,32 @@ class Orchestrator:
             host_adapter = root / "scripts" / "ai_verse_host_adapter.py"
             if host_adapter.is_file():
                 target = root / ".aiverse" / "brain-host.json"
-                effect = self.state.begin_effect(
-                    f"setup-system-host:{release.id}",
-                    metadata={"target": str(target)},
-                )
-                result = run([
-                    sys.executable,
-                    str(host_adapter),
-                    "--root",
-                    str(root),
-                    "--write-config",
-                    str(target),
-                ])
-                results["system-host"] = [_safe_result(result)]
-                lock = self.state.commit_effect(lock, effect, archive_previous=False)
+                operation_key = f"setup-system-host:{release.id}"
+                if should_run_recovery_step(operation_key):
+                    effect = self.state.begin_effect(
+                        operation_key,
+                        metadata={"target": str(target)},
+                    )
+                    result = run([
+                        sys.executable,
+                        str(host_adapter),
+                        "--root",
+                        str(root),
+                        "--write-config",
+                        str(target),
+                    ])
+                    results["system-host"] = [_safe_result(result)]
+                    lock = self.state.commit_effect(lock, effect, archive_previous=False)
 
             lock = self.state.load() or lock
             lock["state"] = "setup"
             lock["setup_completed_at"] = now_iso()
             self.state.write(lock, archive_previous=False)
 
+        if recovery_waiting:
+            raise LifecycleRecoveryRequired(
+                f"pending lifecycle operation {pending_operation!r} is not part of this setup retry"
+            )
         return {"release_set_id": release.id, "root": str(root), "results": results}
 
     @_serialized_lifecycle
@@ -1554,6 +1577,9 @@ class Orchestrator:
             lock["components"][component_id] = receipt
             lock = self.state.commit_effect(lock, effect, archive_previous=False)
             return {"component": component_id, "action": action, "changed": True}
+
+        if action not in {"enable", "disable", "uninstall", "update"}:
+            raise DistributionError(f"unknown component action: {action}")
 
         lock, release, component, root, source = self._context(component_id)
         effect = self.state.begin_effect(
