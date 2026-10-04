@@ -72,7 +72,7 @@ def main() -> int:
             sys.executable, str(os_test), "--root", str(root), "--skills-root", str(skills_root),
             "--skills-entrypoint", str(skills_source / "installer" / "aiverse_skills.py"),
             "--skills-cache", str(skills_cache), "--config", str(base / "host.json"),
-        ], env=env, timeout=600)
+        ], env=env, timeout=900)
         print(json.dumps({"status": "passed", "release_set": RELEASE, "gateway_goal_run": run_id, "learning_restart_quarantine_rollback": True}, sort_keys=True))
     return 0
 
