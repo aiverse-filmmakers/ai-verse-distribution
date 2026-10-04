@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "ai-verse-distribution"
 version = "0.1.0b1"
 description = "Canonical one-product installer and compatible release-set orchestrator for AI-Verse"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 readme = "README.md"
 dependencies = []
 

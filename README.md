@@ -33,7 +33,7 @@ Distribution coordinates owner-controlled component lifecycle. It does not absor
 
 Requirements for the released Agent beta set:
 
-- Python 3.9+
+- Python 3.11+
 - Node.js 22+
 - npm 10.x for the frozen Data companion dependency lock
 - Git
@@ -64,7 +64,7 @@ Distribution does not currently invent a background service manager. A successfu
 
 Requirements for the released Core beta set:
 
-- Python 3.9+
+- Python 3.11+
 - Node.js 22+
 - Git
 - macOS, Linux, or Windows
