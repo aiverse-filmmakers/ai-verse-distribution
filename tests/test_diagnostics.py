@@ -1,6 +1,7 @@
+import json
 import unittest
 
-from aiverse_distribution.redaction import sanitize
+from aiverse_distribution.redaction import sanitize, sanitize_text
 
 
 class DiagnosticsTests(unittest.TestCase):
@@ -23,6 +24,16 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertNotIn("super-secret-value", rendered)
         self.assertNotIn("another-value", rendered)
         self.assertIn("<redacted>", rendered)
+
+    def test_json_encoded_error_text_is_redacted_recursively(self):
+        text = '{"message":"child failed","details":{"access_token":"json-secret"}}'
+        sanitized = sanitize_text(text)
+        self.assertNotIn("json-secret", sanitized)
+        self.assertIn("<redacted>", sanitized)
+        self.assertEqual(
+            sanitize(json.loads(sanitized))["details"]["access_token"],
+            "<redacted>",
+        )
 
 
 if __name__ == "__main__":
