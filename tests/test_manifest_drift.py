@@ -58,6 +58,13 @@ class ManifestDriftTests(unittest.TestCase):
         )
         self.assertEqual(catalog.resolve("agent").status, "released")
 
+    def test_release_docs_do_not_claim_agent_is_blocked(self):
+        architecture = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
+        roadmap = (ROOT / "docs" / "ROADMAP.md").read_text(encoding="utf-8")
+        self.assertNotIn("Agent is modeled but blocked", architecture)
+        self.assertNotIn("merge the release branch after", roadmap)
+        self.assertIn("Agent is released", architecture)
+
 
 if __name__ == "__main__":
     unittest.main()

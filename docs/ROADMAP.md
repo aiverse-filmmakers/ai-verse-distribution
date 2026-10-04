@@ -1,7 +1,7 @@
 # AI-Verse Distribution Roadmap
 
 **Status:** Core and Agent Distribution accepted; Agent public beta released  
-**Updated:** 2026-09-14
+**Updated:** 2026-10-05
 
 ## Phase 0: Reset and contract
 
@@ -85,9 +85,10 @@ The complete immutable Agent public beta is released as `agent-public-beta-2026-
 - [x] Ubuntu Agent gate green;
 - [x] macOS Agent gate green;
 - [x] Windows Agent gate green;
-- [x] freeze exact Agent acceptance evidence;\n- [ ] merge the release branch after the final evidence-only exact-head rerun.
+- [x] freeze exact Agent acceptance evidence;
+- [x] merge the Agent release branch after the final evidence-only exact-head rerun.
 
-Qualification passed on Distribution head `a4f9ee17b65cddef8d7547115cca34738a41b3fe`: Distribution CI run `34852469436`, Core clean-machine run `34852470941`, and Agent clean-machine run `34852469415`, including Ubuntu, macOS, and Windows. The evidence-only final branch head must rerun the same matrices before merge. Full-profile work remains out of scope.
+The immutable Agent release and its later explicit-install candidates have passed the required cross-platform qualification gates. The current release catalog remains the authority for exact refs and status; the Full profile remains blocked by unreleased Connections, Dashboard and Apps.
 
 ## Phase 6: Full profile
 

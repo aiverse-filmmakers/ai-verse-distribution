@@ -149,7 +149,7 @@ Profiles are software selections only.
 
 Core is currently admitted and installable.
 
-Agent is modeled but blocked until all required owner artifacts are public-beta ready.
+Agent is released as the immutable `agent-public-beta-2026-09-14` set; later accepted Agent candidates are explicit-install releases.
 
 Full remains blocked by unreleased downstream components.
 
