@@ -26,7 +26,9 @@ class ProcessTests(unittest.TestCase):
             "sys.exit(7)"
         )
         with self.assertRaises(ProcessError) as caught:
-            run(\n                [sys.executable, "-c", code, "--api-key", "argv-secret", "--password=password-secret"]\n            )
+            run(
+                [sys.executable, "-c", code, "--api-key", "argv-secret", "--password=password-secret"]
+            )
 
         error = caught.exception
         rendered = str(error)
