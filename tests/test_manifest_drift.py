@@ -49,6 +49,15 @@ class ManifestDriftTests(unittest.TestCase):
         self.assertEqual(catalog.resolve("core").id, "core-public-beta-2026-09-13")
         self.assertEqual(catalog.resolve("agent").id, "agent-public-beta-2026-09-14")
 
+    def test_full_blockers_match_canonical_release_set(self):
+        catalog = Catalog()
+        full = catalog.get_release("full-public-beta-pending", require_released=False)
+        self.assertEqual(
+            full.blockers,
+            ("AI-Verse Connections, Dashboard, and Apps do not yet have one admitted compatible Full release set",),
+        )
+        self.assertEqual(catalog.resolve("agent").status, "released")
+
 
 if __name__ == "__main__":
     unittest.main()
