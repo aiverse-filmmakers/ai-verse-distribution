@@ -37,7 +37,8 @@ class StatusErrorRedactionTests(unittest.TestCase):
             },
         }
         state = type("State", (), {"load": lambda self: lock})()
-        catalog = type("Catalog", (), {"get_release": lambda self, *args, **kwargs: object()})()
+        release = type("Release", (), {"id": "test-release"})()
+        catalog = type("Catalog", (), {"get_release": lambda self, *args, **kwargs: release})()
         return Orchestrator(state=state, catalog=catalog)
 
     def test_status_exception_is_sanitized_for_direct_consumers(self):
