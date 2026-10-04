@@ -49,6 +49,7 @@ def main() -> int:
         # Reuse the Distribution acceptance's authenticated Goal/Gateway proof on this same root.
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import agent_acceptance as acceptance  # type: ignore
+        acceptance.write_acceptance_workspace(root)
         gateway_source = acceptance.gateway_owner_setup(install, root)
         run_id, gateway_process = acceptance.prove_gateway_goal(install, root, gateway_source)
         acceptance.stop_process(gateway_process)
