@@ -2,7 +2,7 @@ from __future__ import annotations
 import json, os, subprocess, tempfile, threading, time, urllib.request, urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from agent_acceptance import run_cli, http_json, wait_http, stop_process, create_goal, DEFAULT_AGENT_RELEASE, AGENT_RELEASE
+from agent_acceptance import run_cli, http_json, wait_http, stop_process, create_goal, write_acceptance_workspace, DEFAULT_AGENT_RELEASE, AGENT_RELEASE
 
 TOKEN='distribution-runtime-acceptance-token-2026'; SECRET='test-upstream-secret'; PORT=18887
 class Mock(BaseHTTPRequestHandler):
@@ -29,6 +29,7 @@ def main():
     gateway_port=PORT
     setup=['node',str(source/'bin/aiverse-gateway.mjs'),'setup','--system-root',str(root),'--runtime','openai-compatible','--goal-owner-config',str(Path(os.environ['AIVERSE_DISTRIBUTION_HOME'])/'adapters/gateway-goal-owner.json'),'--base-url',f'http://127.0.0.1:{mock.server_port}','--model','mock-model','--api-key-env','MODEL_API_KEY','--token',TOKEN,'--port',str(gateway_port),'--json']
     out=subprocess.run(setup,text=True,capture_output=True,check=True); payload=json.loads(out.stdout); assert payload.get('runtime')=='openai-compatible'; assert payload.get('external_credentials_stored') is False
+    write_acceptance_workspace(root)
     goal=create_goal(install,root)
     proc=subprocess.Popen(['node',str(source/'bin/aiverse-gateway.mjs'),'serve','--host','127.0.0.1','--port',str(gateway_port)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True); wait_http(f'http://127.0.0.1:{gateway_port}/health',token=TOKEN,process=proc)
     def call(content,tools=None,timeout=10):
@@ -46,7 +47,8 @@ def main():
     try: call('FAIL')
     except RuntimeError as e: assert '502' in str(e)
     else: raise AssertionError('upstream failure was not surfaced')
-    stop_process(proc); goal=create_goal(install,root)
+    stop_process(proc); write_acceptance_workspace(root)
+    goal=create_goal(install,root)
     proc=subprocess.Popen(['node',str(source/'bin/aiverse-gateway.mjs'),'serve','--host','127.0.0.1','--port',str(gateway_port)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True); wait_http(f'http://127.0.0.1:{gateway_port}/health',token=TOKEN,process=proc); again=call('after restart'); assert again['choices'][0]['message']['content']=='mock runtime response'
     serialized='\n'.join(p.read_text(errors='ignore') for p in (home/'.aiverse').rglob('*') if p.is_file()); assert SECRET not in serialized
     stop_process(proc); mock.shutdown(); print(json.dumps({'ok':True,'runtime':'openai-compatible','restart_preserved':True,'tool_calls':True,'failure_mapping':True,'secret_not_persisted':True}))
