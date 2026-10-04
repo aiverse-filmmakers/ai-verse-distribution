@@ -69,6 +69,10 @@ class CatalogTests(unittest.TestCase):
         self.assertFalse(candidate.raw["promotion"]["default_channel"])
         self.assertFalse(candidate.raw["promotion"]["automatic_update"])
         self.assertFalse(candidate.raw["promotion"]["cross_release_transition_admitted"])
+        self.assertEqual(
+            candidate.raw["evidence"]["distribution_acceptance"]["status"],
+            "qualification-passed",
+        )
 
     def test_invisible_candidate_cross_release_transitions_fail_closed(self):
         candidate_id = "agent-invisible-intelligence-rc1-2026-09-14"
