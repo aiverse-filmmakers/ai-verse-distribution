@@ -37,14 +37,45 @@ def sanitize_text(value: str) -> str:
     return redacted
 
 
+_SENSITIVE_ARGUMENT = re.compile(
+    r"(secret|token|password|credential|authorization|cookie|api[_-]?key|access[_-]?key)",
+    re.I,
+)
+
+
+def sanitize_argv(argv: Any) -> Any:
+    if not isinstance(argv, (list, tuple)):
+        return sanitize(argv)
+    result = []
+    redact_next = False
+    for item in argv:
+        text = str(item)
+        if redact_next:
+            result.append("<redacted>")
+            redact_next = False
+            continue
+        option, separator, argument = text.partition("=")
+        if separator and _SENSITIVE_ARGUMENT.search(option):
+            result.append(f"{option}={ '<redacted>' if argument else '' }")
+            continue
+        result.append(sanitize_text(text))
+        if text.startswith("-") and _SENSITIVE_ARGUMENT.search(text) and not separator:
+            redact_next = True
+    return result
+
+
 def sanitize(value: Any, key: str = "") -> Any:
     if _SENSITIVE_KEY.search(key):
         return "<redacted>"
     if isinstance(value, dict):
         return {k: sanitize(v, str(k)) for k, v in value.items()}
     if isinstance(value, list):
+        if key.lower() in {"argv", "command"}:
+            return sanitize_argv(value)
         return [sanitize(v) for v in value]
     if isinstance(value, tuple):
+        if key.lower() in {"argv", "command"}:
+            return sanitize_argv(value)
         return [sanitize(v) for v in value]
     if isinstance(value, str):
         return sanitize_text(value)
