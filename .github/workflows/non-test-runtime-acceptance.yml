@@ -19,6 +19,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: bash
         run: echo 'GIT_CONFIG_COUNT=1' >> "$GITHUB_ENV"; echo 'GIT_CONFIG_KEY_0=core.longpaths' >> "$GITHUB_ENV"; echo 'GIT_CONFIG_VALUE_0=true' >> "$GITHUB_ENV"
+      - run: python -m pip install -e .
       - run: python tests/acceptance/non_test_runtime_acceptance.py
         env:
           AI_VERSE_ACCEPTANCE_RELEASE_SET: agent-public-beta-2026-09-14
