@@ -44,6 +44,7 @@ def main() -> int:
         skills_source = Path(install["components"]["ai-verse-skills"]["source"])
         brain_source = Path(install["components"]["ai-verse-brain"]["source"])
         env["PYTHONPATH"] = str(brain_source / "src") + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+        brain_python = dist_home / "venvs" / "ai-verse-brain" / install["components"]["ai-verse-brain"]["revision"] / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
         skills_root = base / "skills-root"
         skills_cache = base / "skills-cache"
         checked([sys.executable, str(skills_source / "installer" / "aiverse_skills.py"), "--root", str(skills_root), "--cache", str(skills_cache), "install", "--profile", "creator"], env=env)
@@ -62,7 +63,7 @@ def main() -> int:
         if not os_test.is_file():
             raise AssertionError(f"OS learning acceptance missing from exact candidate: {os_test}")
         checked([
-            sys.executable, str(os_test), "--root", str(root), "--skills-root", str(skills_root),
+            str(brain_python), str(os_test), "--root", str(root), "--skills-root", str(skills_root),
             "--skills-entrypoint", str(skills_source / "installer" / "aiverse_skills.py"),
             "--skills-cache", str(skills_cache), "--config", str(base / "host.json"),
         ], env=env)
