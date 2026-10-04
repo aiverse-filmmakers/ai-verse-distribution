@@ -554,7 +554,15 @@
       ],
       "evidence": {
         "video_editor": {"skills_ref": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8", "member_capability": "video-editor"},
-        "distribution_acceptance": {"status": "qualification-pending"}
+        "distribution_acceptance": {
+          "status": "qualification-passed",
+          "qualification_head": "84a706d8fcb2d7881cf459af2d364e7057a0bd8a",
+          "candidate_run": 37185675385,
+          "candidate_jobs": {"ubuntu": 111386953142, "macos": 111386953259, "windows": 111386953256},
+          "merged_ref": "c3055f8db13d744416032ac61ad65cf8344aef48",
+          "merged_ci_run": 37186142306,
+          "merged_ci_jobs": {"ubuntu-3.11": 111388335582, "macos-3.11": 111388335652, "windows-3.11": 111388335656, "ubuntu-3.12": 111388335710, "windows-3.12": 111388335773, "macos-3.12": 111388336414}
+        }
       },
       "authority": {"grants_permissions": false, "transfers_brain_strategy": false, "initializes_all_workspaces": false, "exposes_gateway_remotely": false}
     },

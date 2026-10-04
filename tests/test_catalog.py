@@ -142,7 +142,7 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(candidate.raw["evidence"]["video_editor"]["member_capability"], "video-editor")
         self.assertFalse(candidate.raw["promotion"]["default_channel"])
         self.assertFalse(candidate.raw["promotion"]["automatic_update"])
-        self.assertEqual(candidate.raw["evidence"]["distribution_acceptance"]["status"], "qualification-pending")
+        self.assertEqual(candidate.raw["evidence"]["distribution_acceptance"]["status"], "qualification-passed")
 
     def test_custom_is_bounded_by_compatible_release_set(self):
         release = self.catalog.resolve(
