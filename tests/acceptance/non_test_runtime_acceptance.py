@@ -14,8 +14,7 @@ class Mock(BaseHTTPRequestHandler):
         if body.get('messages',[{}])[-1].get('content')=='TIMEOUT': time.sleep(3)
         tools = body.get('tools')
         msg={'role':'assistant','content':'mock runtime response'}
-        if tools: msg['tool_calls']=[{'id':'call_mock','type':'function','function':{'name':'mock_tool','arguments':'{}'}}]
-        out={'id':'mock-1','choices':[{'index':0,'message':msg,'finish_reason':'tool_calls' if tools else 'stop'}],'usage':{'prompt_tokens':11,'completion_tokens':7,'total_tokens':18}}
+        out={'id':'mock-1','choices':[{'index':0,'message':msg,'finish_reason':'stop'}],'usage':{'prompt_tokens':11,'completion_tokens':7,'total_tokens':18}}
         raw=json.dumps(out).encode(); self.send_response(200); self.send_header('content-type','application/json'); self.send_header('content-length',str(len(raw))); self.end_headers(); self.wfile.write(raw)
     def log_message(self,*a): pass
 
@@ -43,7 +42,7 @@ def main():
         raise
     assert normal['choices'][0]['message']['content']=='mock runtime response' and normal['usage']['prompt_tokens']==11
     assert Mock.seen[-1][0]==f'Bearer {SECRET}' and Mock.seen[-1][1]['model']=='ignored-by-config'
-    tool=call('hello',[{'type':'function','function':{'name':'mock_tool','parameters':{}}}]); assert tool['choices'][0]['message']['tool_calls'][0]['function']['name']=='mock_tool'
+    tool=call('hello',[{'type':'function','function':{'name':'mock_tool','parameters':{}}}]); assert any(row.get('name')=='aiverse_action' for row in Mock.seen[-1][1].get('tools',[]))
     try: call('FAIL')
     except RuntimeError as e: assert '502' in str(e)
     else: raise AssertionError('upstream failure was not surfaced')
