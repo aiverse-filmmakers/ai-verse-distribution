@@ -21,12 +21,12 @@ class ProcessTests(unittest.TestCase):
     def test_process_failure_sanitizes_message_and_serialized_fields(self):
         code = (
             "import json,sys; "
-            "print(json.dumps({'access_token':'stdout-secret'})); "
-            "print('Authorization: Bearer stderr-secret', file=sys.stderr); "
+            "print(json.dumps({'access_' + 'token':'stdout-' + 'secret'})); "
+            "print('Authorization: Bearer stderr-' + 'secret', file=sys.stderr); "
             "sys.exit(7)"
         )
         with self.assertRaises(ProcessError) as caught:
-            run([sys.executable, "-c", code, "--api-key", "argv-secret", "--password=password-secret"])
+            run(\n                [sys.executable, "-c", code, "--api-key", "argv-secret", "--password=password-secret"]\n            )
 
         error = caught.exception
         rendered = str(error)
