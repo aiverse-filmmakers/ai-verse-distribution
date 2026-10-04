@@ -34,6 +34,7 @@ def main() -> int:
         # checkout on Windows before Distribution materializes the release set.
         if os.name == "nt":
             env.update({"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.longpaths", "GIT_CONFIG_VALUE_0": "true"})
+        os.environ.update(env)
         cli = [sys.executable, "-m", "aiverse_distribution.cli"]
         started = json.loads(checked(cli + ["start", "--root", str(root), "--release-set", RELEASE, "--json"], env=env).stdout)
         if started.get("state") != "ready":
