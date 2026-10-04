@@ -42,6 +42,8 @@ def main() -> int:
         install = json.loads((dist_home / "locks" / "current.json").read_text(encoding="utf-8"))
         gateway_source = Path(install["components"]["ai-verse-gateway"]["source"])
         skills_source = Path(install["components"]["ai-verse-skills"]["source"])
+        brain_source = Path(install["components"]["ai-verse-brain"]["source"])
+        env["PYTHONPATH"] = str(brain_source / "src") + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
         skills_root = base / "skills-root"
         skills_cache = base / "skills-cache"
         checked([sys.executable, str(skills_source / "installer" / "aiverse_skills.py"), "--root", str(skills_root), "--cache", str(skills_cache), "install", "--profile", "creator"], env=env)
