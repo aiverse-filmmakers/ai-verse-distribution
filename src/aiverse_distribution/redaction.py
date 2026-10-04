@@ -56,7 +56,7 @@ def sanitize_argv(argv: Any) -> Any:
             continue
         option, separator, argument = text.partition("=")
         if separator and _SENSITIVE_ARGUMENT.search(option):
-            result.append(f"{option}={ '<redacted>' if argument else '' }")
+            result.append(option + "=" + ("<redacted>" if argument else ""))
             continue
         result.append(sanitize_text(text))
         if text.startswith("-") and _SENSITIVE_ARGUMENT.search(text) and not separator:
