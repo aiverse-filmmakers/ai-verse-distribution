@@ -33,7 +33,7 @@ def main() -> int:
         # The exact candidate contains long Skills paths. Enable Git long-path
         # checkout on Windows before Distribution materializes the release set.
         if os.name == "nt":
-            subprocess.run(["git", "config", "--global", "core.longpaths", "true"], check=True)
+            env.update({"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.longpaths", "GIT_CONFIG_VALUE_0": "true"})
         cli = [sys.executable, "-m", "aiverse_distribution.cli"]
         started = json.loads(checked(cli + ["start", "--root", str(root), "--release-set", RELEASE, "--json"], env=env).stdout)
         if started.get("state") != "ready":
