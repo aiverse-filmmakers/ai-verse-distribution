@@ -110,6 +110,12 @@ class Catalog:
                 raise CatalogValidationError(f"{rid}: compatibility profile does not match release profile")
             if compatibility.get("status") != status:
                 raise CatalogValidationError(f"{rid}: compatibility status does not match release status")
+            release_blockers = raw.get("blockers", [])
+            compatibility_blockers = compatibility.get("blockers", [])
+            if status == "blocked" and compatibility_blockers != release_blockers:
+                raise CatalogValidationError(
+                    f"{rid}: compatibility blockers must match the canonical release-set blockers"
+                )
 
             components = raw.get("components", [])
             if status == "released" and not components:
