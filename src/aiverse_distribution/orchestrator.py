@@ -1438,7 +1438,7 @@ class Orchestrator:
                 report[cid] = {
                     "state": "unhealthy",
                     "revision": receipt.get("revision"),
-                    "error": str(exc),
+                    "error": sanitize_text(str(exc)),
                 }
 
         states = [x["state"] for x in report.values()]
@@ -1510,7 +1510,7 @@ class Orchestrator:
                 results[cid] = entry
                 ok = ok and entry["ok"]
             except Exception as exc:
-                results[cid] = {"ok": False, "error": str(exc)}
+                results[cid] = {"ok": False, "error": sanitize_text(str(exc))}
                 ok = False
 
         system = None
