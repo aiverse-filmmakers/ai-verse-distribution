@@ -47,8 +47,7 @@ def main() -> int:
         gateway_source = Path(install["components"]["ai-verse-gateway"]["source"])
         skills_source = Path(install["components"]["ai-verse-skills"]["source"])
         brain_source = Path(install["components"]["ai-verse-brain"]["source"])
-        env["PYTHONPATH"] = str(brain_source / "src") + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
-        brain_python = dist_home / "venvs" / "ai-verse-brain" / install["components"]["ai-verse-brain"]["revision"] / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+        env["PYTHONPATH"] = str(brain_source / "engine") + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
         skills_root = base / "skills-root"
         skills_cache = base / "skills-cache"
         checked([sys.executable, str(skills_source / "installer" / "aiverse_skills.py"), "--root", str(skills_root), "--cache", str(skills_cache), "install", "--profile", "creator"], env=env)
@@ -70,7 +69,7 @@ def main() -> int:
             raise AssertionError(f"OS learning acceptance missing from exact candidate: {os_test}")
         print("stage=host_learning", flush=True)
         checked([
-            str(brain_python), str(os_test), "--root", str(root), "--skills-root", str(skills_root),
+            sys.executable, str(os_test), "--root", str(root), "--skills-root", str(skills_root),
             "--skills-entrypoint", str(skills_source / "installer" / "aiverse_skills.py"),
             "--skills-cache", str(skills_cache), "--config", str(base / "host.json"),
         ], env=env, timeout=300)
