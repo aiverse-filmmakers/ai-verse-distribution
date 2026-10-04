@@ -23,6 +23,40 @@ class SafeResultTests(unittest.TestCase):
         self.assertIn("<redacted>", safe["stdout"])
 
 
+class StatusErrorRedactionTests(unittest.TestCase):
+    def _app(self):
+        lock = {
+            "release_set_id": "test-release",
+            "profile": "custom",
+            "root": "/tmp/AI-Verse",
+            "components": {
+                "ai-verse-os": {
+                    "revision": "test-revision",
+                    "setup_completed_at": "2026-10-04T00:00:00Z",
+                }
+            },
+        }
+        state = type("State", (), {"load": lambda self: lock})()
+        catalog = type("Catalog", (), {"get_release": lambda self, *args, **kwargs: object()})()
+        return Orchestrator(state=state, catalog=catalog)
+
+    def test_status_exception_is_sanitized_for_direct_consumers(self):
+        app = self._app()
+        with patch.object(app, "_context", side_effect=RuntimeError("owner failed api_key=status-secret")):
+            report = app.status("ai-verse-os")
+        error = report["components"]["ai-verse-os"]["error"]
+        self.assertNotIn("status-secret", error)
+        self.assertIn("<redacted>", error)
+
+    def test_doctor_exception_is_sanitized_for_direct_consumers(self):
+        app = self._app()
+        with patch.object(app, "_context", side_effect=RuntimeError("owner failed Bearer doctor-secret")):
+            report = app.doctor("ai-verse-os")
+        error = report["components"]["ai-verse-os"]["error"]
+        self.assertNotIn("doctor-secret", error)
+        self.assertIn("<redacted>", error)
+
+
 class OrchestratorPlanningTests(unittest.TestCase):
     def test_custom_update_plan_keeps_selected_subset(self):
         with tempfile.TemporaryDirectory() as td:
