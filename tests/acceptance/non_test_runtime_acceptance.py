@@ -27,7 +27,7 @@ def main():
     install=json.loads((Path(os.environ['AIVERSE_DISTRIBUTION_HOME'])/'locks/current.json').read_text()); source=Path(install['components']['ai-verse-gateway']['source'])
     mock=ThreadingHTTPServer(('127.0.0.1',0),Mock); threading.Thread(target=mock.serve_forever,daemon=True).start()
     gateway_port=PORT
-    setup=['node',str(source/'bin/aiverse-gateway.mjs'),'setup','--system-root',str(root),'--runtime','openai-compatible','--base-url',f'http://127.0.0.1:{mock.server_port}','--model','mock-model','--api-key-env','MODEL_API_KEY','--token',TOKEN,'--port',str(gateway_port),'--json']
+    setup=['node',str(source/'bin/aiverse-gateway.mjs'),'setup','--system-root',str(root),'--runtime','openai-compatible','--goal-owner-config',str(Path(os.environ['AIVERSE_DISTRIBUTION_HOME'])/'adapters/gateway-goal-owner.json'),'--base-url',f'http://127.0.0.1:{mock.server_port}','--model','mock-model','--api-key-env','MODEL_API_KEY','--token',TOKEN,'--port',str(gateway_port),'--json']
     out=subprocess.run(setup,text=True,capture_output=True,check=True); payload=json.loads(out.stdout); assert payload.get('runtime')=='openai-compatible'; assert payload.get('external_credentials_stored') is False
     proc=subprocess.Popen(['node',str(source/'bin/aiverse-gateway.mjs'),'serve','--host','127.0.0.1','--port',str(gateway_port)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True); wait_http(f'http://127.0.0.1:{gateway_port}/health',token=TOKEN,process=proc)
     def call(content,tools=None,timeout=10):
