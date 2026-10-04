@@ -53,12 +53,16 @@ def main() -> int:
             "source": {"kind": "prior-assistant-context", "label": "Aurora history", "text": source},
             "plan": {
                 "workspaces": [{
-                    "id": workspace_id,
-                    "name": "Aurora Migration",
-                    "type": "client-project",
-                    "purpose": "Organize the historical Aurora project context.",
-                    "domains": ["client", "delivery"],
-                    "canonical_sources": ["prior-assistant-context"],
+                    "workspace": {
+                        "id": workspace_id,
+                        "name": "Aurora Migration",
+                        "type": "client-project",
+                        "purpose": "Organize the historical Aurora project context.",
+                        "domains": ["client", "delivery"],
+                        "canonical_sources": ["prior-assistant-context"],
+                    },
+                    "evidence": {"substantial_scope": True, "boundary_clear": True, "reason": "Clear client project history."},
+                    "authority": {"permission_expansion": False, "privacy_ambiguous": False, "new_connection": False, "new_credential": False},
                 }],
                 "memories": [{
                     "scope": "operator",
@@ -78,8 +82,6 @@ def main() -> int:
                 "data": [{
                     "scope": f"workspace:{workspace_id}",
                     "candidate": {
-                        "candidate_id": "aurora-client-record",
-                        "scope": f"workspace:{workspace_id}",
                         "suggested_owner": "data",
                         "summary": "A repeated client delivery preference.",
                         "confidence": 0.95,
@@ -90,8 +92,6 @@ def main() -> int:
                         "privacy_ambiguous": False,
                         "permission_expansion": False,
                         "destructive": False,
-                        "evidence_refs": ["aurora-source-1", "aurora-source-2"],
-                        "created_at": "2026-10-04T00:00:00Z",
                         "structure": {
                             "space": {"spaceId": "client", "name": "Client", "authority": "local_canonical", "description": "Client records"},
                             "schema": {"spaceId": "client", "entity": "preference", "name": "Preference", "description": "Client preferences", "fields": {"key": {"type": "string"}, "value": {"type": "string"}}, "allowUnknownFields": False},
@@ -106,11 +106,13 @@ def main() -> int:
         migration = root / "scripts" / "migration-import.py"
         if not migration.is_file():
             raise AssertionError(f"real OS migration owner is missing: {migration}")
-        first = run(str(migration), "--root", str(root), input_text=json.dumps(payload))
+        first_wrapper = run(str(migration), "--root", str(root), input_text=json.dumps(payload))
+        first = first_wrapper.get("result", {})
         receipt = first.get("result", {}).get("migration_import", {})
         if first.get("status") != "succeeded" or not receipt:
             raise AssertionError(f"composed migration did not succeed: {first}")
-        second = run(str(migration), "--root", str(root), input_text=json.dumps(payload))
+        second_wrapper = run(str(migration), "--root", str(root), input_text=json.dumps(payload))
+        second = second_wrapper.get("result", {})
         replay = second.get("result", {}).get("migration_import", {})
         if not replay.get("replayed") or second.get("effect_occurred") is not False:
             raise AssertionError(f"migration replay was not idempotent: {second}")
