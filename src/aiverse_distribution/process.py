@@ -7,15 +7,22 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Mapping, Optional, Sequence
 
+from .redaction import sanitize, sanitize_text
+
 
 class ProcessError(RuntimeError):
     def __init__(self, argv: Sequence[str], code: int, stdout: str, stderr: str):
-        self.argv = list(argv)
+        # A failed child command is an untrusted diagnostic source. Store only
+        # minimized values on the exception so every consumer, including its
+        # string representation, receives the same safe form.
+        self.argv = [str(item) for item in sanitize(list(argv))]
         self.returncode = code
-        self.stdout = stdout
-        self.stderr = stderr
-        detail = (stderr or stdout).strip()
-        super().__init__(f"command failed ({code}): {' '.join(argv)}{': ' + detail if detail else ''}")
+        self.stdout = sanitize_text(stdout or "")
+        self.stderr = sanitize_text(stderr or "")
+        detail = (self.stderr or self.stdout).strip()
+        command = " ".join(self.argv)
+        message = f"command failed ({code}): {command}{': ' + detail if detail else ''}"
+        super().__init__(sanitize_text(message))
 
 
 @dataclass
@@ -26,12 +33,12 @@ class CommandResult:
     stderr: str
 
     def as_dict(self) -> dict:
-        return {
+        return sanitize({
             "argv": self.argv,
             "returncode": self.returncode,
             "stdout": self.stdout,
             "stderr": self.stderr,
-        }
+        })
 
 
 def run(
