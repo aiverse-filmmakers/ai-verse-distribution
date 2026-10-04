@@ -6,8 +6,9 @@ from unittest.mock import patch
 from pathlib import Path
 from types import SimpleNamespace
 
-from aiverse_distribution.cli import _choose_custom_components, _temporary_brain_answers, main
+from aiverse_distribution.cli import _choose_custom_components, _emit, _temporary_brain_answers, main
 from aiverse_distribution.release_catalog import Catalog, DistributionError
+from aiverse_distribution.process import ProcessError
 
 
 class _FakeState:
@@ -61,6 +62,42 @@ class ProductStartCliTests(unittest.TestCase):
         self.assertIn("state: ready", rendered)
         self.assertIn("AI-Verse is ready. What would you like help with?", rendered)
         self.assertNotIn("component", rendered.lower())
+
+    def test_child_process_failure_is_redacted_at_cli_boundary(self):
+        failure = ProcessError(
+            ["provider", "--api-key=argv-secret"],
+            9,
+            '{"password":"stdout-secret"}',
+            "Authorization: Bearer stderr-secret",
+        )
+        fake = SimpleNamespace(start=lambda **kwargs: (_ for _ in ()).throw(failure))
+        stdout = io.StringIO()
+        with patch("aiverse_distribution.cli.Orchestrator", return_value=fake), patch(
+            "aiverse_distribution.cli.sys.stdout", stdout
+        ):
+            code = main(["start", "--json"])
+        self.assertEqual(code, 2)
+        rendered = stdout.getvalue()
+        for secret in ("argv-secret", "stdout-secret", "stderr-secret"):
+            self.assertNotIn(secret, rendered)
+        payload = json.loads(rendered)
+        self.assertIn("<redacted>", payload["message"])
+        self.assertIn("<redacted>", payload["stdout"])
+        self.assertIn("<redacted>", payload["stderr"])
+
+    def test_final_output_boundary_sanitizes_nested_payloads(self):
+        payload = {
+            "message": "owner failed: api_key=message-secret",
+            "diagnostics": {"stderr": '{"refresh_token":"json-secret"}'},
+        }
+        for as_json in (False, True):
+            stdout = io.StringIO()
+            with patch("aiverse_distribution.cli.sys.stdout", stdout):
+                _emit(payload, as_json=as_json)
+            rendered = stdout.getvalue()
+            self.assertNotIn("message-secret", rendered)
+            self.assertNotIn("json-secret", rendered)
+            self.assertIn("<redacted>", rendered)
 
     def test_start_returns_nonzero_when_safe_bootstrap_stops(self):
         payload = {
