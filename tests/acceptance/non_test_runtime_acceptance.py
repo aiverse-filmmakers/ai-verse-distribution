@@ -35,7 +35,12 @@ def main():
         body={'model':'ignored-by-config','messages':[{'role':'user','content':content}], 'metadata':{'workspace_id':'alpha','goal_id':goal['goal_id'],'budget':{'max_tokens':2048,'max_actions':8}}, 'timeout_ms':60000};
         if tools: body['tools']=tools
         return http_json('POST',f'http://127.0.0.1:{gateway_port}/v1/chat/completions',body,token=TOKEN,timeout=timeout)
-    normal=call('hello'); assert normal['choices'][0]['message']['content']=='mock runtime response' and normal['usage']['prompt_tokens']==11
+    try:
+        normal=call('hello')
+    except Exception:
+        runs=Path(os.environ['HOME'])/'.aiverse/gateway/state/runs'; print('GATEWAY_DIAGNOSTIC', [p.read_text(errors='ignore') for p in runs.glob('*.json')])
+        raise
+    assert normal['choices'][0]['message']['content']=='mock runtime response' and normal['usage']['prompt_tokens']==11
     assert Mock.seen[-1][0]==f'Bearer {SECRET}' and Mock.seen[-1][1]['model']=='ignored-by-config'
     tool=call('hello',[{'type':'function','function':{'name':'mock_tool','parameters':{}}}]); assert tool['choices'][0]['message']['tool_calls'][0]['function']['name']=='mock_tool'
     try: call('FAIL')
