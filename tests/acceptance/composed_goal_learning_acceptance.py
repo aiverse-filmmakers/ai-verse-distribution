@@ -39,6 +39,7 @@ def main() -> int:
             env.update({"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.longpaths", "GIT_CONFIG_VALUE_0": "true"})
         os.environ.update(env)
         cli = [sys.executable, "-m", "aiverse_distribution.cli"]
+        print("stage=start", flush=True)
         started = json.loads(checked(cli + ["start", "--root", str(root), "--release-set", RELEASE, "--json"], env=env).stdout)
         if started.get("state") != "ready":
             raise AssertionError(f"Agent candidate did not become ready: {started}")
@@ -56,7 +57,9 @@ def main() -> int:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import agent_acceptance as acceptance  # type: ignore
         acceptance.write_acceptance_workspace(root)
+        print("stage=gateway_setup", flush=True)
         gateway_source = acceptance.gateway_owner_setup(install, root)
+        print("stage=gateway_goal", flush=True)
         run_id, gateway_process = acceptance.prove_gateway_goal(install, root, gateway_source)
         acceptance.stop_process(gateway_process)
         if not run_id:
@@ -65,6 +68,7 @@ def main() -> int:
         os_test = root / "scripts" / "test-ai-verse-host-adapter.py"
         if not os_test.is_file():
             raise AssertionError(f"OS learning acceptance missing from exact candidate: {os_test}")
+        print("stage=host_learning", flush=True)
         checked([
             str(brain_python), str(os_test), "--root", str(root), "--skills-root", str(skills_root),
             "--skills-entrypoint", str(skills_source / "installer" / "aiverse_skills.py"),
