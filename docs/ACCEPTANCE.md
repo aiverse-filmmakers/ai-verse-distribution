@@ -118,7 +118,7 @@ Agent qualification passed on Distribution head `a4f9ee17b65cddef8d7547115cca347
 `.github/workflows/ci.yml` runs the Distribution package tests across:
 
 - Ubuntu, macOS, Windows;
-- Python 3.9 and 3.12.
+- Python 3.11 and 3.12.
 
 Unit coverage includes:
 
