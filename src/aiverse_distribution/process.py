@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Mapping, Optional, Sequence
 
-from .redaction import sanitize, sanitize_text
+from .redaction import sanitize, sanitize_argv, sanitize_text
 
 
 class ProcessError(RuntimeError):
@@ -15,7 +15,7 @@ class ProcessError(RuntimeError):
         # A failed child command is an untrusted diagnostic source. Store only
         # minimized values on the exception so every consumer, including its
         # string representation, receives the same safe form.
-        self.argv = [str(item) for item in sanitize(list(argv))]
+        self.argv = [str(item) for item in sanitize_argv(list(argv))]
         self.returncode = code
         self.stdout = sanitize_text(stdout or "")
         self.stderr = sanitize_text(stderr or "")
