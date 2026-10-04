@@ -26,11 +26,11 @@ class ProcessTests(unittest.TestCase):
             "sys.exit(7)"
         )
         with self.assertRaises(ProcessError) as caught:
-            run([sys.executable, "-c", code, "--api-key=argv-secret"])
+            run([sys.executable, "-c", code, "--api-key", "argv-secret", "--password=password-secret"])
 
         error = caught.exception
         rendered = str(error)
-        for secret in ("stdout-secret", "stderr-secret", "argv-secret"):
+        for secret in ("stdout-secret", "stderr-secret", "argv-secret", "password-secret"):
             self.assertNotIn(secret, rendered)
             self.assertNotIn(secret, error.stdout)
             self.assertNotIn(secret, error.stderr)
@@ -39,7 +39,7 @@ class ProcessTests(unittest.TestCase):
 
     def test_command_result_dict_is_a_safe_serialization_boundary(self):
         result = CommandResult(
-            ["provider", "--token=argv-secret"],
+            ["provider", "--token", "argv-secret"],
             1,
             '{"password":"stdout-secret"}',
             "Bearer stderr-secret",
