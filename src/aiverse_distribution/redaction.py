@@ -12,7 +12,7 @@ _SENSITIVE_KEY = re.compile(
 _SENSITIVE_TEXT = [
     re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+"),
     re.compile(
-        r"(?i)(api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|secret|authorization)"
+        r"(?i)(api[_-]?key|access[_-]?(?:token|key)|refresh[_-]?token|private[_-]?key|token|password|secret|authorization)"
         r"\s*[:=]\s*([^\s,;]+)"
     ),
 ]
