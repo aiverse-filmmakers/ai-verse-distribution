@@ -30,6 +30,10 @@ def main() -> int:
         isolated_home.mkdir()
         env = dict(os.environ)
         env.update({"AIVERSE_DISTRIBUTION_HOME": str(dist_home), "HOME": str(isolated_home), "USERPROFILE": str(isolated_home)})
+        # The exact candidate contains long Skills paths. Enable Git long-path
+        # checkout on Windows before Distribution materializes the release set.
+        if os.name == "nt":
+            subprocess.run(["git", "config", "--global", "core.longpaths", "true"], check=True)
         cli = [sys.executable, "-m", "aiverse_distribution.cli"]
         started = json.loads(checked(cli + ["start", "--root", str(root), "--release-set", RELEASE, "--json"], env=env).stdout)
         if started.get("state") != "ready":
