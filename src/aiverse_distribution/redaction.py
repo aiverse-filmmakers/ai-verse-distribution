@@ -12,9 +12,17 @@ _SENSITIVE_KEY = re.compile(
 _SENSITIVE_TEXT = [
     re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+"),
     re.compile(
-        r"(?i)\b(api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|secret|authorization)"
+        r"(?i)(api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|secret|authorization)"
         r"\s*[:=]\s*([^\s,;]+)"
     ),
+]
+_OPAQUE_SECRETS = [
+    re.compile(r"(?i)\b(?:github_pat_|gh[pousr]_)[A-Za-z0-9_]{20,}\b"),
+    re.compile(r"(?i)\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b"),
+    re.compile(r"\bAIza[0-9A-Za-z_-]{30,}\b"),
+    re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{10,}\b"),
+    re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b"),
+    re.compile(r"(?i)\b(?:https?|ssh)://[^\s/:@]+:[^\s/@]+@"),
 ]
 
 
@@ -34,6 +42,8 @@ def sanitize_text(value: str) -> str:
         lambda match: f"{match.group(1)}=<redacted>",
         redacted,
     )
+    for pattern in _OPAQUE_SECRETS:
+        redacted = pattern.sub("<redacted>", redacted)
     return redacted
 
 
