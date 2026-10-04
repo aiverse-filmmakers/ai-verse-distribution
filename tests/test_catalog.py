@@ -132,6 +132,18 @@ class CatalogTests(unittest.TestCase):
             self.assertNotIn(candidate_id, other["update_from"])
             self.assertNotIn(candidate_id, other["rollback_to"])
 
+    def test_video_editor_candidate_pins_current_skills_and_is_explicit_only(self):
+        candidate = self.catalog.resolve("agent", "agent-video-editor-rc1-2026-10-04")
+        self.assertEqual(candidate.id, "agent-video-editor-rc1-2026-10-04")
+        self.assertEqual(
+            next(x.revision for x in candidate.components if x.id == "ai-verse-skills"),
+            "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+        )
+        self.assertEqual(candidate.raw["evidence"]["video_editor"]["member_capability"], "video-editor")
+        self.assertFalse(candidate.raw["promotion"]["default_channel"])
+        self.assertFalse(candidate.raw["promotion"]["automatic_update"])
+        self.assertEqual(candidate.raw["evidence"]["distribution_acceptance"]["status"], "qualification-pending")
+
     def test_custom_is_bounded_by_compatible_release_set(self):
         release = self.catalog.resolve(
             "custom",
