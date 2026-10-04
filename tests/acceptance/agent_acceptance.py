@@ -27,9 +27,9 @@ from profile_acceptance import (
 
 DEFAULT_AGENT_RELEASE = "agent-public-beta-2026-09-14"
 AGENT_RELEASE = os.environ.get("AI_VERSE_ACCEPTANCE_RELEASE_SET", DEFAULT_AGENT_RELEASE)
-GATEWAY_PORT = 18787
-BOTS_PORT = 18788
-GATEWAY_TOKEN = "distribution-agent-acceptance-token-2026"
+GATEWAY_PORT = int(os.environ.get("AIVERSE_GATEWAY_PORT", "18787"))
+BOTS_PORT = int(os.environ.get("AIVERSE_BOTS_PORT", "18788"))
+GATEWAY_TOKEN = os.environ.get("AIVERSE_GATEWAY_TOKEN", "distribution-agent-acceptance-token-2026")
 DEFAULT_EXPECTED_REFS = {
     "ai-verse-os": "d961ef8e2422d6f713d6519cf5a48916c600d63a",
     "ai-verse-brain": "619dd17daac9c1bd7eaf4381a5889e56ab05ec59",
@@ -468,7 +468,8 @@ def assert_authority_lock(install: dict[str, Any]) -> None:
 
 
 def main() -> int:
-    base = Path(os.environ.get("RUNNER_TEMP") or tempfile.mkdtemp(prefix="aiverse-agent-acceptance-"))
+    base = Path(os.environ.get("AIVERSE_ACCEPTANCE_ROOT") or os.environ.get("RUNNER_TEMP") or tempfile.mkdtemp(prefix="aiverse-agent-acceptance-"))
+    base.mkdir(parents=True, exist_ok=True)
     os.environ["AIVERSE_DISTRIBUTION_HOME"] = str(base / "distribution-agent")
     isolated_home = base / "home-agent"
     isolated_home.mkdir(parents=True, exist_ok=True)
