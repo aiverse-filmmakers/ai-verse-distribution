@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from typing import Any
 
@@ -18,6 +19,15 @@ _SENSITIVE_TEXT = [
 
 
 def sanitize_text(value: str) -> str:
+    if not isinstance(value, str):
+        value = str(value)
+    try:
+        structured = json.loads(value)
+    except (json.JSONDecodeError, TypeError):
+        structured = None
+    if isinstance(structured, (dict, list)):
+        return json.dumps(sanitize(structured), sort_keys=True)
+
     redacted = value
     redacted = _SENSITIVE_TEXT[0].sub("Bearer <redacted>", redacted)
     redacted = _SENSITIVE_TEXT[1].sub(
