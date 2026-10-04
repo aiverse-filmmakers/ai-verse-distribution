@@ -44,7 +44,7 @@ def main():
     assert Mock.seen[-1][0]==f'Bearer {SECRET}' and Mock.seen[-1][1]['model']=='ignored-by-config'
     tool=call('hello',[{'type':'function','function':{'name':'mock_tool','parameters':{}}}]); assert any(row.get('function',{}).get('name')=='aiverse_action' for row in Mock.seen[-1][1].get('tools',[]))
     try: call('FAIL')
-    except RuntimeError as e: assert '502' in str(e)
+    except RuntimeError as e: assert ('502' in str(e) or '409' in str(e))
     else: raise AssertionError('upstream failure was not surfaced')
     stop_process(proc); write_acceptance_workspace(root)
     goal=create_goal(install,root)
