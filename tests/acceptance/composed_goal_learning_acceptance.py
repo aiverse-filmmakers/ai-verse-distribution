@@ -14,8 +14,11 @@ import tempfile
 RELEASE = "agent-video-editor-rc1-2026-10-04"
 
 
-def checked(command: list[str], *, env: dict[str, str], cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(command, env=env, cwd=cwd, text=True, capture_output=True, check=False)
+def checked(command: list[str], *, env: dict[str, str], cwd: Path | None = None, timeout: int | None = None) -> subprocess.CompletedProcess[str]:
+    try:
+        result = subprocess.run(command, env=env, cwd=cwd, text=True, capture_output=True, check=False, timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        raise AssertionError(f"command timed out after {timeout}s: {command}\nstdout:\n{exc.stdout}\nstderr:\n{exc.stderr}") from exc
     if result.returncode != 0:
         raise AssertionError(f"command failed ({result.returncode}): {command}\n{result.stdout}\n{result.stderr}")
     return result
@@ -66,7 +69,7 @@ def main() -> int:
             str(brain_python), str(os_test), "--root", str(root), "--skills-root", str(skills_root),
             "--skills-entrypoint", str(skills_source / "installer" / "aiverse_skills.py"),
             "--skills-cache", str(skills_cache), "--config", str(base / "host.json"),
-        ], env=env)
+        ], env=env, timeout=300)
         print(json.dumps({"status": "passed", "release_set": RELEASE, "gateway_goal_run": run_id, "learning_restart_quarantine_rollback": True}, sort_keys=True))
     return 0
 
