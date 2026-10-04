@@ -13,10 +13,13 @@ from .release_catalog import DistributionError, ReleaseBlockedError
 from .diagnostics import create_support_bundle
 from .orchestrator import Orchestrator
 from .process import ProcessError
-from .redaction import sanitize_text
+from .redaction import sanitize, sanitize_text
 
 
 def _emit(payload: Any, as_json: bool = False) -> None:
+    # This is the final user-visible boundary for command/provider errors and
+    # nested diagnostic values, regardless of which path assembled the payload.
+    payload = sanitize(payload)
     if as_json:
         print(json.dumps(payload, indent=2, sort_keys=True, default=str))
         return
