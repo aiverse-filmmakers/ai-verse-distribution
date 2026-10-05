@@ -180,6 +180,17 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--version", action="store_true", help="show Distribution version")
     sub = p.add_subparsers(dest="command")
 
+    q = sub.add_parser("project-plan", help="check member project layout without writing files")
+    q.add_argument("--project", type=Path, default=Path.cwd())
+    q.add_argument("--stack", type=Path, help="optional separate tool-stack folder")
+    q.add_argument("--json", action="store_true")
+
+    q = sub.add_parser("project-tools", help="check prerequisites; optionally prepare private Node/npm")
+    q.add_argument("--project", type=Path, default=Path.cwd())
+    q.add_argument("--stack", type=Path)
+    q.add_argument("--prepare-node", action="store_true", help="download verified private Node/npm when needed")
+    q.add_argument("--json", action="store_true")
+
     q = sub.add_parser("start", help="one-action first run using the exact released Agent profile")
     q.add_argument("--release-set", help="advanced exact released Agent set override")
     q.add_argument("--root", type=Path, help="installation root; defaults to ~/AI-Verse for a fresh install")
@@ -259,8 +270,28 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         parser.print_help()
         return 0
 
-    app = Orchestrator()
     try:
+        if args.command == "project-plan":
+            from .project_layout import ProjectLayout
+            payload = ProjectLayout.resolve(args.project, args.stack).inspect()
+            if args.json:
+                _emit(payload, True)
+            else:
+                print(f"OS project: {payload['project']}")
+                print(f"Tool stack: {payload['stack']}")
+                print(payload["message"])
+            return 0
+
+        if args.command == "project-tools":
+            from .project_bootstrap import prepare_tools
+            from .project_layout import ProjectLayout
+            layout = ProjectLayout.resolve(args.project, args.stack)
+            layout.inspect()
+            payload = prepare_tools(layout, download_node=args.prepare_node)
+            _emit(payload, args.json)
+            return 0 if not payload["missing"] else 1
+
+        app = Orchestrator()
         if args.command == "start":
             payload = app.start(
                 root=args.root,
