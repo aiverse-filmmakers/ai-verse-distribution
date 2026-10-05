@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -87,6 +88,29 @@ def _write_owned(layout: ProjectLayout, path: Path, text: str, receipt: dict) ->
     _write_json(layout.receipt, receipt)
 
 
+def _prepare_managed_npm_shim(layout: ProjectLayout, managed_node: dict | None, receipt: dict) -> Path | None:
+    """Expose the verified private npm CLI without relying on host npm shims.
+
+    Official Node archives provide npm through links in the runtime bin folder,
+    but hosted macOS images may still resolve their preinstalled npm first. A
+    bootstrap-owned POSIX shim invokes the exact verified node + npm-cli pair so
+    Distribution preflight and every later npm command see the qualified toolchain.
+    Windows already receives npm.cmd from the verified Node bundle and is left
+    unchanged here.
+    """
+    if not managed_node or os.name == "nt":
+        return None
+    node = Path(str(managed_node.get("node", ""))).expanduser().resolve()
+    npm_cli = Path(str(managed_node.get("npm_cli", ""))).expanduser().resolve()
+    if not node.is_file() or not npm_cli.is_file():
+        raise DistributionError("Verified private Node/npm toolchain is incomplete")
+    shim = layout.stack / "tools" / "command-shims" / "npm"
+    text = f"#!/bin/sh\nexec {shlex.quote(str(node))} {shlex.quote(str(npm_cli))} \"$@\"\n"
+    _write_owned(layout, shim, text, receipt)
+    shim.chmod(0o755)
+    return shim.parent
+
+
 def _child_json(python: Path, arguments: list[str], environment: dict) -> dict:
     result = run([str(python), "-I", "-B", "-m", "aiverse_distribution.cli", *arguments, "--json"], env=environment)
     try:
@@ -129,7 +153,11 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
                             "PIP_CACHE_DIR": str(layout.stack / "cache/pip")})
         managed_node = tools.get("managed_node")
         node_path = Path(managed_node["node"] if managed_node else tools["node"]["path"])
-        prefix = os.pathsep.join([str(node_path.parent), str(Path(tools["git"]["path"]).parent)])
+        npm_shim_dir = _prepare_managed_npm_shim(layout, managed_node, receipt)
+        prefix_parts = [str(node_path.parent), str(Path(tools["git"]["path"]).parent)]
+        if npm_shim_dir is not None:
+            prefix_parts.insert(0, str(npm_shim_dir))
+        prefix = os.pathsep.join(prefix_parts)
         if tools.get("git-lfs"):
             prefix = str(Path(tools["git-lfs"]["path"]).parent) + os.pathsep + prefix
         # Long-path and LFS settings are process-scoped. They never modify the
