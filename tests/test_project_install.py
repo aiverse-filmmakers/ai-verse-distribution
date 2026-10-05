@@ -9,6 +9,7 @@ from unittest.mock import patch
 from aiverse_distribution.project_bootstrap import claim
 from aiverse_distribution.project_install import (
     _child_json,
+    _prepare_managed_npm_shim,
     _write_owned,
     configure_lfs,
     configure_project_git,
@@ -34,6 +35,28 @@ class ProjectInstallTests(unittest.TestCase):
         self.assertEqual(environment["GIT_CONFIG_VALUE_0"], "existing-header")
         self.assertEqual(environment["GIT_CONFIG_KEY_1"], "core.longpaths")
         self.assertEqual(environment["GIT_CONFIG_VALUE_1"], "true")
+
+    def test_managed_posix_npm_shim_pins_exact_private_pair(self):
+        with tempfile.TemporaryDirectory() as folder:
+            layout = ProjectLayout.resolve(Path(folder) / "project")
+            with claim(layout):
+                receipt = json.loads(layout.receipt.read_text())
+                runtime = layout.stack / "tools" / "node runtime"
+                node = runtime / "bin" / "node"
+                npm_cli = runtime / "lib" / "node_modules" / "npm" / "bin" / "npm-cli.js"
+                node.parent.mkdir(parents=True)
+                npm_cli.parent.mkdir(parents=True)
+                node.write_text("node")
+                npm_cli.write_text("npm")
+                managed = {"node": str(node), "npm_cli": str(npm_cli)}
+                with patch("aiverse_distribution.project_install.os.name", "posix"):
+                    shim_dir = _prepare_managed_npm_shim(layout, managed, receipt)
+                shim = shim_dir / "npm"
+                text = shim.read_text()
+                self.assertIn(str(node), text)
+                self.assertIn(str(npm_cli), text)
+                self.assertTrue(shim.stat().st_mode & 0o111)
+                self.assertEqual(receipt["owned_files"][str(shim)], hashlib.sha256(text.encode()).hexdigest())
 
     def test_invalid_git_configuration_stops(self):
         with self.assertRaises(DistributionError):
