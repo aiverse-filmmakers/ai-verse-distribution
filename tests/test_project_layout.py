@@ -12,7 +12,7 @@ class ProjectLayoutTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.parent = Path(self.temp.name).resolve()
-        self.project = self.parent / "Member project | Știință"
+        self.project = self.parent / "Member project - Știință"
 
     def test_plan_keeps_os_at_project_root_and_does_not_write(self):
         layout = ProjectLayout.resolve(self.project)
