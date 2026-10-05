@@ -35,8 +35,10 @@ command installs Core or modifies the OS destination.
 Private Python acquisition is implemented for macOS/Linux arm64 and x64 and
 Windows x64. Use `--prepare-python` to obtain the pinned standalone Python
 3.11.17 build when no compatible Python is found. It includes SSL, venv, and
-package installation support. This code still requires a Python interpreter to
-start; the entry path for a machine with no Python remains to be implemented.
+package installation support. The POSIX and PowerShell entry scripts under
+`scripts/` can prepare a temporary checksum-pinned Python interpreter outside
+the project when no compatible Python exists. They pass control to the same
+project installer and remove first-stage temporary files afterward.
 
 Distribution Skills commands now honor `AI_VERSE_SKILLS_ROOT`, matching the OS
 custom-provider location setting. Complete project-local Skills discovery and
@@ -56,10 +58,17 @@ therefore stops before downloads or destination writes. An internal Python
 acceptance driver can exercise historical release mechanics with
 `qualification=True`; this is not a public CLI bypass or member release.
 
-Git acquisition, entry scripts for machines with no Python, repaired-release
-admission, actual host/memory invocation acceptance, and hosted Windows/Linux
-qualification remain incomplete. Preparation commands do not constitute release
-qualification.
+Git setup uses an existing OS package manager when `--install-system-git` is
+explicitly allowed: Homebrew or Apple's Command Line Tools on macOS,
+apt/dnf/pacman on Linux, and user-scoped winget on Windows. Git is the exception
+to private runtime installation. OS approval or installer completion may be
+required. Linux uses noninteractive sudo so the chat never waits for an
+invisible password prompt. Unsupported systems stop with an installation link.
+
+Repaired-release admission, actual host/memory invocation acceptance, and hosted
+Windows/Linux qualification remain incomplete. Preparation commands do not
+constitute release qualification. The project-bootstrap workflow exercises
+historical Core mechanics separately from member release admission.
 
 Node archives are pinned to official v22.23.3 checksums. Extraction rejects
 outbound paths, outbound links, special entries, and oversized archives. Reuse

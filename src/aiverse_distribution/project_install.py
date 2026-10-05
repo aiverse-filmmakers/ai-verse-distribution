@@ -67,7 +67,8 @@ def _child_json(python: Path, arguments: list[str], environment: dict) -> dict:
 
 
 def install_project(layout: ProjectLayout, source: Path, *, release_set: str | None = None,
-                    qualification: bool = False, catalog: Catalog | None = None) -> dict:
+                    qualification: bool = False, catalog: Catalog | None = None,
+                    install_system_git: bool = False) -> dict:
     """qualification is for isolated acceptance drivers, never a public CLI bypass."""
     layout.inspect()
     catalog = catalog or Catalog()
@@ -77,7 +78,7 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         raise DistributionError("Bootstrap needs a Distribution source checkout outside the OS project")
     if source == layout.project or layout.project in source.parents:
         raise DistributionError("Distribution source must not be placed inside the OS destination")
-    tools = prepare_tools(layout, download_node=True, download_python=True)
+    tools = prepare_tools(layout, download_node=True, download_python=True, install_system_git=install_system_git)
     if tools["missing"]:
         raise DistributionError("Required tools are still unavailable: " + ", ".join(tools["missing"]))
     with claim(layout):
@@ -95,7 +96,8 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
                             "PIP_CACHE_DIR": str(layout.stack / "cache/pip")})
         managed_node = tools.get("managed_node")
         node_path = Path(managed_node["node"] if managed_node else tools["node"]["path"])
-        environment["PATH"] = str(node_path.parent) + os.pathsep + environment.get("PATH", "")
+        prefix = os.pathsep.join([str(node_path.parent), str(Path(tools["git"]["path"]).parent)])
+        environment["PATH"] = prefix + os.pathsep + environment.get("PATH", "")
         base_python = Path(tools["python"]["path"])
         venv = layout.stack / "tools/distribution-venv"
         python = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
@@ -115,7 +117,7 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         launcher_text = (
             "# Generated AI-Verse project launcher.\nimport os, subprocess, sys\n"
             f"os.environ.update({overrides!r})\n"
-            f"os.environ['PATH'] = {str(node_path.parent)!r} + os.pathsep + os.environ.get('PATH', '')\n"
+            f"os.environ['PATH'] = {prefix!r} + os.pathsep + os.environ.get('PATH', '')\n"
             f"os.chdir({str(layout.project)!r})\n"
             "if sys.argv[1:2] == ['--exec']:\n"
             "    if len(sys.argv) < 3: raise SystemExit('Specify a project command after --exec')\n"

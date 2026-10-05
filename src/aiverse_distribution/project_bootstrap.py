@@ -57,7 +57,8 @@ def claim(layout: ProjectLayout):
             StateStore._release_kernel_lock(handle)
 
 
-def prepare_tools(layout: ProjectLayout, *, download_node: bool = False, download_python: bool = False) -> dict:
+def prepare_tools(layout: ProjectLayout, *, download_node: bool = False, download_python: bool = False,
+                  install_system_git: bool = False) -> dict:
     available = inventory()
     node = next((item for item in available["node"] if tuple(item["version"]) >= (22, 0, 0)), None)
     npm = next((item for item in available["npm"] if item["version"] and item["version"][0] == 10), None)
@@ -65,6 +66,14 @@ def prepare_tools(layout: ProjectLayout, *, download_node: bool = False, downloa
     git = next((item for item in available["git"] if item["version"]), None)
     report = {"root": str(layout.project), "stack": str(layout.stack), "available": available,
               "python": python, "git": git, "node": node, "npm": npm}
+    if git is None and install_system_git:
+        from .project_git import install_git
+        with claim(layout):
+            receipt = json.loads(layout.receipt.read_text(encoding="utf-8"))
+            _write_json(layout.receipt, {**receipt, "phase": "installing-system-git"})
+            git = install_git()
+            _write_json(layout.receipt, {**receipt, "phase": "git-prepared", "system_git": git})
+            report["git"] = git
     if download_python and python is None:
         with claim(layout):
             receipt = json.loads(layout.receipt.read_text(encoding="utf-8"))

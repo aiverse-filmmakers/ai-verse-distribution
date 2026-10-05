@@ -190,12 +190,14 @@ def _parser() -> argparse.ArgumentParser:
     q.add_argument("--stack", type=Path)
     q.add_argument("--prepare-node", action="store_true", help="download verified private Node/npm when needed")
     q.add_argument("--prepare-python", action="store_true", help="download verified private Python when needed")
+    q.add_argument("--install-system-git", action="store_true", help="allow Git installation with the OS package manager")
     q.add_argument("--json", action="store_true")
 
     q = sub.add_parser("project-init", help="prepare tools and install a qualified Core member project")
     q.add_argument("--project", type=Path, default=Path.cwd())
     q.add_argument("--stack", type=Path)
     q.add_argument("--distribution-source", type=Path, required=True)
+    q.add_argument("--install-system-git", action="store_true", help="allow Git installation with the OS package manager")
     q.add_argument("--release-set")
     q.add_argument("--json", action="store_true")
 
@@ -295,7 +297,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             from .project_layout import ProjectLayout
             layout = ProjectLayout.resolve(args.project, args.stack)
             layout.inspect()
-            payload = prepare_tools(layout, download_node=args.prepare_node, download_python=args.prepare_python)
+            payload = prepare_tools(layout, download_node=args.prepare_node, download_python=args.prepare_python,
+                                    install_system_git=args.install_system_git)
             _emit(payload, args.json)
             return 0 if not payload["missing"] else 1
 
@@ -303,7 +306,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             from .project_install import install_project
             from .project_layout import ProjectLayout
             payload = install_project(ProjectLayout.resolve(args.project, args.stack), args.distribution_source,
-                                      release_set=args.release_set)
+                                      release_set=args.release_set, install_system_git=args.install_system_git)
             _emit(payload, args.json)
             return 0
 
