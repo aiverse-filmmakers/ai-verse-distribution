@@ -37,7 +37,10 @@ class ProjectLayout:
 
     @property
     def distribution_home(self) -> Path:
-        return self.stack / "distribution-state"
+        # This is deliberately short. Git for Windows still encounters legacy
+        # path limits in internal pack/object paths on otherwise valid checkouts.
+        # Keep private state compact without changing the member-visible project root.
+        return self.stack / "d"
 
     def inspect(self) -> dict[str, Any]:
         """Validate layout without creating even an empty directory.
