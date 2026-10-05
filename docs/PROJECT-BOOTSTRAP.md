@@ -32,8 +32,18 @@ Node/npm acquisition are implemented. `aiverse project-tools --project <folder>
 private Node 22/npm 10 bundle if the available pair is incompatible. Neither
 command installs Core or modifies the OS destination.
 
-Python/Git acquisition, launchers, project-local Skills composition, and the
-complete installation entry point are not yet implemented. These preparation
+Private Python acquisition is implemented for macOS/Linux arm64 and x64 and
+Windows x64. Use `--prepare-python` to obtain the pinned standalone Python
+3.11.17 build when no compatible Python is found. It includes SSL, venv, and
+package installation support. This code still requires a Python interpreter to
+start; the entry path for a machine with no Python remains to be implemented.
+
+Distribution Skills commands now honor `AI_VERSE_SKILLS_ROOT`, matching the OS
+custom-provider location setting. Complete project-local Skills discovery and
+host invocation still require composed acceptance.
+
+Git acquisition, launchers, and the complete installation entry point are not
+yet implemented. These preparation
 commands do not constitute release qualification.
 
 Node archives are pinned to official v22.23.3 checksums. Extraction rejects
@@ -42,6 +52,12 @@ compares the installed tree to a fresh extraction of verified cached bytes
 before running it. Existing system programs are not replaced. This private
 bundle was exercised on macOS arm64 with Node 22.23.3 and npm 10.9.9; Linux and
 Windows platform paths still need hosted acceptance.
+
+Standalone Python archive URLs and SHA256 digests are pinned from the
+`astral-sh/python-build-standalone` release `20261003`, rather than assuming
+Python.org publishes relocatable interpreter archives. The macOS arm64 package
+passed real version and SSL/venv/ensurepip probes locally. Other platforms still
+need hosted acceptance.
 
 Required order for the complete entry point:
 

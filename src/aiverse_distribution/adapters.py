@@ -103,7 +103,9 @@ def _node() -> str:
 
 
 def _skills(source: Path, *args: str) -> List[str]:
-    return [sys.executable, str(source / "installer" / "aiverse_skills.py"), *args]
+    root = os.environ.get("AI_VERSE_SKILLS_ROOT")
+    options = ["--root", str(Path(root).expanduser().resolve())] if root else []
+    return [sys.executable, str(source / "installer" / "aiverse_skills.py"), *options, *args]
 
 
 

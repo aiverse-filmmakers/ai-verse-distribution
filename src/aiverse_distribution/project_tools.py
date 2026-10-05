@@ -16,6 +16,16 @@ from pathlib import Path, PurePosixPath
 from .release_catalog import DistributionError
 
 NODE_VERSION = "22.23.3"
+PYTHON_VERSION = "3.11.17"
+PYTHON_BUILD = "20261003"
+# GitHub release asset digests from astral-sh/python-build-standalone.
+PYTHON_ARTIFACTS = {
+    ("darwin", "arm64"): ("aarch64-apple-darwin", "3663b71c18364eccfbad74c4f21f9f6149e40b07329cd776287410cc1da5d612"),
+    ("darwin", "x64"): ("x86_64-apple-darwin", "4338dc0c2b954f20ca6437406db5b806626c69bae3cafeec43f1b7d57dd72a88"),
+    ("linux", "arm64"): ("aarch64-unknown-linux-gnu", "2238f0556d3a9777d42261b1e4d7b9834d56f111d3dd879a0647c27c824cc31d"),
+    ("linux", "x64"): ("x86_64-unknown-linux-gnu", "c624af93ad62a596806bbd2404e1fb80744a407ca7279854445ede16d93858b8"),
+    ("win", "x64"): ("x86_64-pc-windows-msvc", "0f7defa7a0ed99b61e0df0bba5027474711521f1307cc3830c2f456401beeed5"),
+}
 # Official https://nodejs.org/dist/v22.23.3/SHASUMS256.txt, reviewed 2026-10-05.
 NODE_HASHES = {
     ("darwin", "arm64"): "23b25245dcfb9af7262f8ff142e9e2e0af025368117329e7a7458a51e5922f53",
@@ -52,11 +62,16 @@ def inventory() -> dict:
     return result
 
 
-def node_artifact(system: str | None = None, machine: str | None = None) -> dict:
+def _platform_key(system: str | None = None, machine: str | None = None) -> tuple[str, str]:
     system = (system or platform.system()).lower()
     system = {"windows": "win"}.get(system, system)
     machine = (machine or platform.machine()).lower()
     machine = {"aarch64": "arm64", "amd64": "x64", "x86_64": "x64"}.get(machine, machine)
+    return system, machine
+
+
+def node_artifact(system: str | None = None, machine: str | None = None) -> dict:
+    system, machine = _platform_key(system, machine)
     digest = NODE_HASHES.get((system, machine))
     if not digest:
         raise DistributionError(f"Private Node toolchain is not yet supported on {system}/{machine}")
@@ -65,6 +80,17 @@ def node_artifact(system: str | None = None, machine: str | None = None) -> dict
     filename = f"{root}.{suffix}"
     return {"root": root, "filename": filename, "sha256": digest,
             "url": f"https://nodejs.org/dist/v{NODE_VERSION}/{filename}", "system": system}
+
+
+def python_artifact(system: str | None = None, machine: str | None = None) -> dict:
+    system, machine = _platform_key(system, machine)
+    entry = PYTHON_ARTIFACTS.get((system, machine))
+    if not entry:
+        raise DistributionError(f"Private Python is not yet supported on {system}/{machine}")
+    triple, digest = entry
+    filename = f"cpython-{PYTHON_VERSION}+{PYTHON_BUILD}-{triple}-install_only.tar.gz"
+    return {"root": "python", "filename": filename, "sha256": digest, "system": system,
+            "url": f"https://github.com/astral-sh/python-build-standalone/releases/download/{PYTHON_BUILD}/{filename.replace('+', '%2B')}"}
 
 
 def sha256(path: Path) -> str:
@@ -219,3 +245,33 @@ def runtime_manifest(root: Path) -> dict:
             else:
                 raise DistributionError("Private tool tree contains an unsupported special file")
     return result
+
+
+def prepare_private_python(stack: Path) -> dict:
+    """Acquire relocatable CPython with pip and venv; do not change global PATH."""
+    artifact = python_artifact()
+    destination = stack / "tools" / f"python-{PYTHON_VERSION}-{PYTHON_BUILD}"
+    relative_executable = "python.exe" if artifact["system"] == "win" else "bin/python3.11"
+    for folder in (stack / "tools", stack / "downloads", stack / "staging", destination):
+        if folder.is_symlink():
+            raise DistributionError("Private tool folders must not redirect through symlinks")
+    archive = download_verified(artifact, stack / "downloads")
+    staging_parent = stack / "staging"
+    staging_parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="python-", dir=staging_parent) as stage:
+        prepared = unpack_node(archive, Path(stage), artifact)
+        if destination.exists():
+            if runtime_manifest(destination) != runtime_manifest(prepared):
+                raise DistributionError("Private Python files differ from the verified release archive")
+        else:
+            candidate = prepared / relative_executable
+            if version(str(candidate)) != tuple(map(int, PYTHON_VERSION.split("."))):
+                raise DistributionError("Private Python runtime failed its version check")
+            # -B prevents importing probe modules from modifying the verified tree.
+            check = subprocess.run([str(candidate), "-B", "-c", "import ssl, venv, ensurepip; print('ready')"], capture_output=True, text=True, timeout=15, check=False)
+            if check.returncode or check.stdout.strip() != "ready":
+                raise DistributionError("Private Python lacks required SSL/venv/package installation support")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            os.rename(prepared, destination)
+    return {"path": str(destination / relative_executable), "version": list(map(int, PYTHON_VERSION.split("."))),
+            "archive_sha256": artifact["sha256"]}

@@ -198,7 +198,9 @@ class Orchestrator:
     def _prepare_skills(self, source: Path) -> None:
         # Package installation is authority-neutral. It creates/verifies the Skills-owned
         # immutable provider generation but does not grant host permission.
-        run([sys.executable, str(source / "installer" / "aiverse_skills.py"), "install"], cwd=source)
+        root = os.environ.get("AI_VERSE_SKILLS_ROOT")
+        options = ["--root", str(Path(root).expanduser().resolve())] if root else []
+        run([sys.executable, str(source / "installer" / "aiverse_skills.py"), *options, "install"], cwd=source)
 
     @staticmethod
     def _sha256_bytes(data: bytes) -> str:

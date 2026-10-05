@@ -189,6 +189,7 @@ def _parser() -> argparse.ArgumentParser:
     q.add_argument("--project", type=Path, default=Path.cwd())
     q.add_argument("--stack", type=Path)
     q.add_argument("--prepare-node", action="store_true", help="download verified private Node/npm when needed")
+    q.add_argument("--prepare-python", action="store_true", help="download verified private Python when needed")
     q.add_argument("--json", action="store_true")
 
     q = sub.add_parser("start", help="one-action first run using the exact released Agent profile")
@@ -287,7 +288,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             from .project_layout import ProjectLayout
             layout = ProjectLayout.resolve(args.project, args.stack)
             layout.inspect()
-            payload = prepare_tools(layout, download_node=args.prepare_node)
+            payload = prepare_tools(layout, download_node=args.prepare_node, download_python=args.prepare_python)
             _emit(payload, args.json)
             return 0 if not payload["missing"] else 1
 

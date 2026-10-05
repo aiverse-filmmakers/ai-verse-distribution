@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import patch
 
-from aiverse_distribution.project_tools import download_verified, node_artifact, unpack_node, version
+from aiverse_distribution.project_tools import download_verified, node_artifact, python_artifact, unpack_node, version
 from aiverse_distribution.release_catalog import DistributionError
 
 
@@ -45,6 +45,15 @@ class ProjectToolsTests(unittest.TestCase):
 
     def test_missing_executable_is_not_a_compatible_tool(self):
         self.assertEqual(version(str(self.root / "missing")), ())
+
+    def test_python_artifacts_are_pinned_by_platform(self):
+        for system, machine in (("Darwin", "arm64"), ("Darwin", "x86_64"), ("Linux", "arm64"), ("Linux", "x86_64"), ("Windows", "AMD64")):
+            artifact = python_artifact(system, machine)
+            self.assertIn("20261003/", artifact["url"])
+            self.assertIn("3.11.17", artifact["filename"])
+            self.assertEqual(len(artifact["sha256"]), 64)
+        with self.assertRaises(DistributionError):
+            python_artifact("Windows", "arm64")
 
     def test_node_v_prefix_is_recognized(self):
         with patch("subprocess.run", return_value=SimpleNamespace(returncode=0, stdout="v22.23.3\n", stderr="")):

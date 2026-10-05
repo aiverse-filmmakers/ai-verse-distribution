@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from .project_layout import ProjectLayout
-from .project_tools import inventory, prepare_private_node
+from .project_tools import inventory, prepare_private_node, prepare_private_python
 from .release_catalog import DistributionError
 from .state import StateStore
 
@@ -57,7 +57,7 @@ def claim(layout: ProjectLayout):
             StateStore._release_kernel_lock(handle)
 
 
-def prepare_tools(layout: ProjectLayout, *, download_node: bool = False) -> dict:
+def prepare_tools(layout: ProjectLayout, *, download_node: bool = False, download_python: bool = False) -> dict:
     available = inventory()
     node = next((item for item in available["node"] if tuple(item["version"]) >= (22, 0, 0)), None)
     npm = next((item for item in available["npm"] if item["version"] and item["version"][0] == 10), None)
@@ -65,6 +65,13 @@ def prepare_tools(layout: ProjectLayout, *, download_node: bool = False) -> dict
     git = next((item for item in available["git"] if item["version"]), None)
     report = {"root": str(layout.project), "stack": str(layout.stack), "available": available,
               "python": python, "git": git, "node": node, "npm": npm}
+    if download_python and python is None:
+        with claim(layout):
+            receipt = json.loads(layout.receipt.read_text(encoding="utf-8"))
+            _write_json(layout.receipt, {**receipt, "phase": "preparing-python"})
+            python = prepare_private_python(layout.stack)
+            _write_json(layout.receipt, {**receipt, "phase": "python-prepared", "managed_python": python})
+            report["python"] = python
     if download_node and (node is None or npm is None):
         with claim(layout):
             receipt = json.loads(layout.receipt.read_text(encoding="utf-8"))
