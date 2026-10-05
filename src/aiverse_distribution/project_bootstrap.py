@@ -26,6 +26,24 @@ def _write_json(path: Path, payload: dict) -> None:
         Path(pending).unlink(missing_ok=True)
 
 
+def _compatible_node_npm_pair(available: dict, node_min: tuple[int, ...]) -> tuple[dict | None, dict | None]:
+    """Return one admitted system Node/npm pair from the same executable directory.
+
+    Node and npm are intentionally paired instead of selected independently. A
+    machine can expose multiple installations through PATH; admitting Node from
+    one installation and npm from another would make later PATH reconstruction
+    execute a toolchain different from the one qualification inspected.
+    """
+    nodes = [item for item in available.get("node", []) if tuple(item.get("version") or ()) >= node_min]
+    npms = [item for item in available.get("npm", []) if item.get("version") and item["version"][0] == 10]
+    for node in nodes:
+        node_parent = Path(node["path"]).expanduser().resolve().parent
+        for npm in npms:
+            if Path(npm["path"]).expanduser().resolve().parent == node_parent:
+                return node, npm
+    return None, None
+
+
 @contextmanager
 def claim(layout: ProjectLayout):
     # The mutex is outside the stack itself: creating it cannot make an otherwise
@@ -60,8 +78,7 @@ def claim(layout: ProjectLayout):
 def prepare_tools(layout: ProjectLayout, *, download_node: bool = False, download_python: bool = False,
                   install_system_git: bool = False, node_min: tuple[int, ...] = (22, 0, 0), require_lfs: bool = False) -> dict:
     available = inventory()
-    node = next((item for item in available["node"] if tuple(item["version"]) >= node_min), None)
-    npm = next((item for item in available["npm"] if item["version"] and item["version"][0] == 10), None)
+    node, npm = _compatible_node_npm_pair(available, node_min)
     python = next((item for item in available["python"] if tuple(item["version"]) >= (3, 11, 0)), None)
     git = next((item for item in available["git"] if item["version"]), None)
     report = {"root": str(layout.project), "stack": str(layout.stack), "available": available,
