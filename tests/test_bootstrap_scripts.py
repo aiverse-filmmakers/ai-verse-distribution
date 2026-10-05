@@ -1,3 +1,5 @@
+import hashlib
+import json
 import unittest
 from pathlib import Path
 
@@ -15,3 +17,17 @@ class BootstrapScriptTests(unittest.TestCase):
             self.assertIn(triple, script)
             self.assertIn(PYTHON_VERSION, script)
             self.assertIn(PYTHON_BUILD, script)
+
+    def test_repaired_core_companion_lock_bytes_match_candidate_digest(self):
+        root = Path(__file__).resolve().parents[1]
+        candidate = json.loads(
+            (root / "qualification" / "repaired-core" / "candidate.json").read_text(encoding="utf-8")
+        )
+        data = next(component for component in candidate["components"] if component["id"] == "ai-verse-data")
+        reference = data["dependency_lock"]
+        manifest = root / "qualification" / "repaired-core" / "dependency_locks" / reference["manifest"]
+        actual = hashlib.sha256(manifest.read_bytes()).hexdigest()
+        self.assertEqual(reference["manifest_sha256"], actual)
+
+        attributes = (root / ".gitattributes").read_text(encoding="utf-8")
+        self.assertIn("qualification/repaired-core/dependency_locks/** text eol=lf", attributes)
