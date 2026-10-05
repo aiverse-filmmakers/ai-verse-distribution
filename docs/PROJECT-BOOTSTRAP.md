@@ -77,6 +77,17 @@ before running it. Existing system programs are not replaced. This private
 bundle was exercised on macOS arm64 with Node 22.23.3 and npm 10.9.9; Linux and
 Windows platform paths still need hosted acceptance.
 
+The repaired Skills source requires Git LFS during provider checkout on this
+machine. Candidate metadata explicitly requests it. Setup reuses a suitable
+existing helper or obtains a checksum-pinned private Git LFS 3.8.0 binary.
+LFS filtering is configured only for project child processes; no global
+`git lfs install` or user Git configuration change is performed. Future
+launchers reconstruct that process configuration without persisting inherited
+Git configuration values or credentials.
+
+Distribution child commands and generated launchers use isolated Python imports,
+so a developer checkout's PYTHONPATH cannot shadow the private installed package.
+
 Standalone Python archive URLs and SHA256 digests are pinned from the
 `astral-sh/python-build-standalone` release `20261003`, rather than assuming
 Python.org publishes relocatable interpreter archives. The macOS arm64 package

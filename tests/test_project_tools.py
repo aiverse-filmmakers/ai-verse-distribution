@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import patch
 
-from aiverse_distribution.project_tools import download_verified, node_artifact, python_artifact, unpack_node, version
+from aiverse_distribution.project_tools import download_verified, node_artifact, python_artifact, lfs_artifact, unpack_node, version
 from aiverse_distribution.release_catalog import DistributionError
 
 
@@ -54,6 +54,12 @@ class ProjectToolsTests(unittest.TestCase):
             self.assertEqual(len(artifact["sha256"]), 64)
         with self.assertRaises(DistributionError):
             python_artifact("Windows", "arm64")
+
+    def test_lfs_artifacts_are_checksum_pinned(self):
+        for system, machine in (("Darwin", "arm64"), ("Darwin", "x86_64"), ("Linux", "arm64"), ("Linux", "x86_64"), ("Windows", "AMD64")):
+            artifact = lfs_artifact(system, machine)
+            self.assertIn("/v3.8.0/", artifact["url"])
+            self.assertEqual(len(artifact["sha256"]), 64)
 
     def test_node_v_prefix_is_recognized(self):
         with patch("subprocess.run", return_value=SimpleNamespace(returncode=0, stdout="v22.23.3\n", stderr="")):

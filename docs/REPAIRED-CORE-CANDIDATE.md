@@ -30,3 +30,15 @@ Before admission:
 
 No installer may silently replace an admitted release with these moving branch
 inputs. Qualification must freeze exact source revisions first.
+
+`scripts/qualify-core-composition.py` now verifies ancestry for the explicit
+Core owner merge records in the canonical tracker (OS 3, Brain 2, Memory 3,
+Skills 3, Data 3), records exact source trees, and rebinds Data's existing
+dependency graph only after verifying unchanged dependency declarations.
+This checks those recorded commits; it does not independently repeat the audit.
+
+The generated input under `qualification/repaired-core/` remains blocked.
+The acceptance driver builds a separate temporary Distribution source/catalog
+fixture to exercise its exact revisions. Only that isolated test catalog admits
+fixture installation; the shipped catalog and member gate remain unchanged.
+Fixture install/setup/health/repeat/launcher checks are still pending.

@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "id": "core-member-bootstrap-candidate-2026-10-05",
+  "profile": "core",
+  "status": "blocked",
+  "created_at": "2026-10-05",
+  "blockers": [
+    "Exact composition and member bootstrap qualification pending"
+  ],
+  "runtime_requirements": {
+    "git_lfs": true
+  },
+  "components": [
+    {
+      "id": "ai-verse-os",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+      "revision": "e74a4e05b1f891e6f871f34a298bf10363a11d88",
+      "install_order": 10
+    },
+    {
+      "id": "ai-verse-brain",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+      "revision": "7c77b053df627e61b3d7f11d029500ab61095c9c",
+      "install_order": 20
+    },
+    {
+      "id": "ai-verse-memory",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+      "revision": "b0cae8cd8da38aa657fbc736c575177aa75e5ec7",
+      "install_order": 30
+    },
+    {
+      "id": "ai-verse-skills",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+      "revision": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+      "install_order": 40
+    },
+    {
+      "id": "ai-verse-data",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+      "revision": "6e8781ff1dcd96a35dfb27868bd60605361483d0",
+      "install_order": 50,
+      "dependency_lock": {
+        "scheme": "distribution-companion-npm-lock-v1",
+        "manifest": "ai-verse-data/6e8781ff1dcd96a35dfb27868bd60605361483d0/lock.json",
+        "manifest_sha256": "227b7a556c89d2b5088fadd946f3e16f570983b321dcea2b9e2810f4a951098b"
+      }
+    }
+  ],
+  "authority": {
+    "grants_permissions": false,
+    "transfers_brain_strategy": false,
+    "initializes_all_workspaces": false
+  },
+  "evidence": {
+    "audit_ancestry": {
+      "OS": {
+        "revision": "e74a4e05b1f891e6f871f34a298bf10363a11d88",
+        "tree": "c9612116a05d2ea1104ec1a10977b0863cc7fd14",
+        "recorded_repair_merges_present": [
+          "53c6806bf4c8205062096ab7d6247c732823df41",
+          "9effe3869a87fb2c11287ae4821f93620abcc055",
+          "e74a4e05b1f891e6f871f34a298bf10363a11d88"
+        ]
+      },
+      "Brain": {
+        "revision": "7c77b053df627e61b3d7f11d029500ab61095c9c",
+        "tree": "f85318ee7ad0aac339f09b474cbc338420974404",
+        "recorded_repair_merges_present": [
+          "39b3feb6ad03aa185a4ba6f5f24614e55c4b969f",
+          "7c77b053df627e61b3d7f11d029500ab61095c9c"
+        ]
+      },
+      "Memory": {
+        "revision": "b0cae8cd8da38aa657fbc736c575177aa75e5ec7",
+        "tree": "a86d7ae6ccded7cabd0032a0c4bb04b6c7171f33",
+        "recorded_repair_merges_present": [
+          "3f715bf43c8dc5f0ad8888e07d857b581482569e",
+          "b0cae8cd8da38aa657fbc736c575177aa75e5ec7",
+          "cbc6651d60d42c63015bc1b25b5cd8f0c49d5904"
+        ]
+      },
+      "Skills": {
+        "revision": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+        "tree": "de0c71883ed306b1a2b229313a1f18290f507e05",
+        "recorded_repair_merges_present": [
+          "4fc240593929ebce9d82632479384d1cd45980b7",
+          "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+          "fa455961c17691862bd86b7e0f658690e9ecb86d"
+        ]
+      },
+      "Data": {
+        "revision": "6e8781ff1dcd96a35dfb27868bd60605361483d0",
+        "tree": "1b46c3af341c89240b8b9b096e6234397a1a0292",
+        "recorded_repair_merges_present": [
+          "491e22084418f34b849c7d9e700a40973888dcf6",
+          "5cbf9908440ca7e11506991ba1dd7d3344f2b1fd",
+          "6e8781ff1dcd96a35dfb27868bd60605361483d0"
+        ]
+      }
+    },
+    "tracker_sha256": "14f11bca88224032c401a3c7e91c140d2ee9f4e2d790e01cda1ce23aef0e446a",
+    "member_bootstrap": {
+      "status": "pending",
+      "audit_repairs_included": false
+    }
+  }
+}

@@ -4,14 +4,32 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from aiverse_distribution.project_bootstrap import claim
-from aiverse_distribution.project_install import _write_owned, select_member_release
+from aiverse_distribution.project_install import _child_json, _write_owned, select_member_release, configure_lfs
 from aiverse_distribution.project_layout import ProjectLayout
 from aiverse_distribution.release_catalog import DistributionError
 
 
 class ProjectInstallTests(unittest.TestCase):
+    def test_lfs_process_configuration_preserves_existing_entries(self):
+        environment = {"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "http.extraheader", "GIT_CONFIG_VALUE_0": "existing-header"}
+        configure_lfs(environment)
+        self.assertEqual(environment["GIT_CONFIG_COUNT"], "3")
+        self.assertEqual(environment["GIT_CONFIG_VALUE_0"], "existing-header")
+        self.assertEqual(environment["GIT_CONFIG_KEY_1"], "filter.lfs.process")
+
+    def test_invalid_git_configuration_stops(self):
+        with self.assertRaises(DistributionError):
+            configure_lfs({"GIT_CONFIG_COUNT": "invalid"})
+
+    def test_owner_children_use_private_package_imports(self):
+        with patch("aiverse_distribution.project_install.run", return_value=SimpleNamespace(stdout='{"state":"ready"}')) as run:
+            result = _child_json(Path("private-python"), ["status"], {"PYTHONPATH": ""})
+        self.assertEqual(run.call_args.args[0][:4], ["private-python", "-I", "-B", "-m"])
+        self.assertEqual(result["state"], "ready")
+
     def test_unqualified_release_is_not_a_member_release(self):
         catalog = SimpleNamespace(resolve=lambda *args: SimpleNamespace(id="historical", raw={}))
         with self.assertRaises(DistributionError):

@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from .project_layout import ProjectLayout
-from .project_tools import inventory, prepare_private_node, prepare_private_python
+from .project_tools import inventory, prepare_private_node, prepare_private_python, prepare_private_lfs
 from .release_catalog import DistributionError
 from .state import StateStore
 
@@ -58,9 +58,9 @@ def claim(layout: ProjectLayout):
 
 
 def prepare_tools(layout: ProjectLayout, *, download_node: bool = False, download_python: bool = False,
-                  install_system_git: bool = False) -> dict:
+                  install_system_git: bool = False, node_min: tuple[int, ...] = (22, 0, 0), require_lfs: bool = False) -> dict:
     available = inventory()
-    node = next((item for item in available["node"] if tuple(item["version"]) >= (22, 0, 0)), None)
+    node = next((item for item in available["node"] if tuple(item["version"]) >= node_min), None)
     npm = next((item for item in available["npm"] if item["version"] and item["version"][0] == 10), None)
     python = next((item for item in available["python"] if tuple(item["version"]) >= (3, 11, 0)), None)
     git = next((item for item in available["git"] if item["version"]), None)
@@ -86,9 +86,20 @@ def prepare_tools(layout: ProjectLayout, *, download_node: bool = False, downloa
             receipt = json.loads(layout.receipt.read_text(encoding="utf-8"))
             _write_json(layout.receipt, {**receipt, "phase": "preparing-node"})
             managed = prepare_private_node(layout.stack)
+            if tuple(map(int, managed["node_version"].split("."))) < node_min:
+                raise DistributionError("Pinned private Node is older than the selected release requires; update and qualify the tool catalog")
             _write_json(layout.receipt, {**receipt, "phase": "node-prepared", "managed_node": managed})
             report["managed_node"] = managed
             node = npm = managed
+    if require_lfs:
+        lfs = next((item for item in available.get("git-lfs", []) if tuple(item["version"]) >= (3, 0, 0)), None)
+        if lfs is None:
+            with claim(layout):
+                receipt = json.loads(layout.receipt.read_text(encoding="utf-8"))
+                _write_json(layout.receipt, {**receipt, "phase": "preparing-git-lfs"})
+                lfs = prepare_private_lfs(layout.stack)
+                _write_json(layout.receipt, {**receipt, "phase": "git-lfs-prepared", "managed_git_lfs": lfs})
+        report["git-lfs"] = lfs
     report["missing"] = [name for name, item in (("python", python), ("git", git), ("node/npm10", node and npm)) if item is None]
     report["state"] = "tools-available" if not report["missing"] else "prerequisites-required"
     report["message"] = "Prerequisite check completed. Core has not been installed."

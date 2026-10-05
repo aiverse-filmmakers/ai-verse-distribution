@@ -19,6 +19,14 @@ from .release_catalog import DistributionError
 NODE_VERSION = "22.23.3"
 PYTHON_VERSION = "3.11.17"
 PYTHON_BUILD = "20261003"
+LFS_VERSION = "3.8.0"
+LFS_HASHES = {
+    ("darwin", "arm64"): "caff76a7d070d8160c89bc39b6e85d98f24135b6fed038a3b4de2590d25102d8",
+    ("darwin", "x64"): "f1c17aeca0b4eaab9ea606226477dbed3b84b56fe0811a9f967d2ea2b2393c53",
+    ("linux", "arm64"): "ac9c8efac980bb0505ead384d087e2acb6486fd8498691a2165fa174ec6118c2",
+    ("linux", "x64"): "e455e00f15d9b95661b8d53498ffb0c3367962cf1ec73c31ab7369516cd6ab8d",
+    ("win", "x64"): "b62e7b8ceddee635f691233d77de8eaa4b213e9209e0173811d8cfa77f7882c1",
+}
 # GitHub release asset digests from astral-sh/python-build-standalone.
 PYTHON_ARTIFACTS = {
     ("darwin", "arm64"): ("aarch64-apple-darwin", "3663b71c18364eccfbad74c4f21f9f6149e40b07329cd776287410cc1da5d612"),
@@ -52,7 +60,7 @@ def version(executable: str) -> tuple[int, ...]:
 
 def inventory() -> dict:
     result = {}
-    for name in ("python", "node", "npm", "git"):
+    for name in ("python", "node", "npm", "git", "git-lfs"):
         candidates = ("python3.13", "python3.12", "python3.11", "python3", "python") if name == "python" else (name,)
         found = []
         for candidate in candidates:
@@ -92,6 +100,19 @@ def python_artifact(system: str | None = None, machine: str | None = None) -> di
     filename = f"cpython-{PYTHON_VERSION}+{PYTHON_BUILD}-{triple}-install_only.tar.gz"
     return {"root": "python", "filename": filename, "sha256": digest, "system": system,
             "url": f"https://github.com/astral-sh/python-build-standalone/releases/download/{PYTHON_BUILD}/{filename.replace('+', '%2B')}"}
+
+
+def lfs_artifact(system: str | None = None, machine: str | None = None) -> dict:
+    system, machine = _platform_key(system, machine)
+    digest = LFS_HASHES.get((system, machine))
+    if digest is None:
+        raise DistributionError(f"Private Git LFS is not yet supported on {system}/{machine}")
+    upstream_system = "windows" if system == "win" else system
+    upstream_machine = "amd64" if machine == "x64" else machine
+    suffix = "tar.gz" if system == "linux" else "zip"
+    filename = f"git-lfs-{upstream_system}-{upstream_machine}-v{LFS_VERSION}.{suffix}"
+    return {"root": f"git-lfs-{LFS_VERSION}", "filename": filename, "sha256": digest, "system": system,
+            "url": f"https://github.com/git-lfs/git-lfs/releases/download/v{LFS_VERSION}/{filename}"}
 
 
 def sha256(path: Path) -> str:
@@ -158,6 +179,10 @@ def unpack_node(archive: Path, staging: Path, artifact: dict) -> Path:
                 if (member.external_attr >> 16) & 0o170000 == 0o120000:
                     raise DistributionError("ZIP prerequisite symlinks are not admitted")
             bundle.extractall(staging)
+            for member in members:
+                mode = (member.external_attr >> 16) & 0o777
+                if mode and not member.is_dir():
+                    staging.joinpath(*PurePosixPath(member.filename).parts).chmod(mode)
     else:
         with tarfile.open(archive, "r:gz") as bundle:
             members = bundle.getmembers()
@@ -277,4 +302,28 @@ def prepare_private_python(stack: Path) -> dict:
             destination.parent.mkdir(parents=True, exist_ok=True)
             os.rename(prepared, destination)
     return {"path": str(destination / relative_executable), "version": list(map(int, PYTHON_VERSION.split("."))),
+            "archive_sha256": artifact["sha256"]}
+
+
+def prepare_private_lfs(stack: Path) -> dict:
+    artifact = lfs_artifact()
+    destination = stack / "tools" / artifact["root"]
+    binary = "git-lfs.exe" if artifact["system"] == "win" else "git-lfs"
+    for folder in (stack / "tools", stack / "downloads", stack / "staging", destination):
+        if folder.is_symlink():
+            raise DistributionError("Private tool folders must not redirect through symlinks")
+    archive = download_verified(artifact, stack / "downloads")
+    staging = stack / "staging"
+    staging.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="git-lfs-", dir=staging) as stage:
+        prepared = unpack_node(archive, Path(stage), artifact)
+        if destination.exists():
+            if runtime_manifest(destination) != runtime_manifest(prepared):
+                raise DistributionError("Private Git LFS differs from its verified archive")
+        else:
+            if version(str(prepared / binary)) != tuple(map(int, LFS_VERSION.split("."))):
+                raise DistributionError("Private Git LFS failed its version check")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            os.rename(prepared, destination)
+    return {"path": str(destination / binary), "version": list(map(int, LFS_VERSION.split("."))),
             "archive_sha256": artifact["sha256"]}

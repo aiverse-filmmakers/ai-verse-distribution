@@ -47,7 +47,7 @@ class ProjectBootstrapTests(unittest.TestCase):
     def test_wrong_npm_gets_private_toolchain_and_progress_receipt(self):
         available = {key: [{"path": key, "version": ver}] for key, ver in
                      (("python", [3, 11, 15]), ("git", [2, 39, 5]), ("node", [24, 7, 0]), ("npm", [11, 6, 4]))}
-        with patch("aiverse_distribution.project_bootstrap.inventory", return_value=available), patch("aiverse_distribution.project_bootstrap.prepare_private_node", return_value={"node": "private-node"}):
+        with patch("aiverse_distribution.project_bootstrap.inventory", return_value=available), patch("aiverse_distribution.project_bootstrap.prepare_private_node", return_value={"node": "private-node", "node_version": "22.23.3"}):
             report = prepare_tools(self.layout, download_node=True)
         self.assertEqual(report["missing"], [])
         self.assertEqual(json.loads(self.layout.receipt.read_text())["phase"], "node-prepared")

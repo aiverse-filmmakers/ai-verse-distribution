@@ -43,8 +43,12 @@ jobs:
         run: ./scripts/bootstrap.ps1 --help
       - name: Historical Core installation mechanics
         run: python tests/acceptance/project_bootstrap_acceptance.py --source . --output bootstrap-report.json
+      - name: Exact repaired Core fixture qualification
+        run: python tests/acceptance/project_bootstrap_acceptance.py --source . --candidate qualification/repaired-core/candidate.json --output repaired-bootstrap-report.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: bootstrap-${{ runner.os }}
-          path: bootstrap-report.json
+          path: |
+            bootstrap-report.json
+            repaired-bootstrap-report.json

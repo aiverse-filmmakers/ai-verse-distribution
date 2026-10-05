@@ -13,6 +13,18 @@ from .project_layout import ProjectLayout
 from .release_catalog import Catalog, DistributionError
 
 
+def configure_lfs(environment) -> None:
+    count_text = environment.get("GIT_CONFIG_COUNT", "0")
+    if not count_text.isdigit() or int(count_text) > 100:
+        raise DistributionError("Cannot extend an invalid or oversized Git process configuration")
+    count = int(count_text)
+    for key, value in (("filter.lfs.process", "git-lfs filter-process"), ("filter.lfs.required", "true")):
+        environment[f"GIT_CONFIG_KEY_{count}"] = key
+        environment[f"GIT_CONFIG_VALUE_{count}"] = value
+        count += 1
+    environment["GIT_CONFIG_COUNT"] = str(count)
+
+
 def select_member_release(catalog: Catalog, release_set: str | None = None):
     release = catalog.resolve("core", release_set)
     gate = release.raw.get("evidence", {}).get("member_bootstrap", {})
@@ -59,7 +71,7 @@ def _write_owned(layout: ProjectLayout, path: Path, text: str, receipt: dict) ->
 
 
 def _child_json(python: Path, arguments: list[str], environment: dict) -> dict:
-    result = run([str(python), "-B", "-m", "aiverse_distribution.cli", *arguments, "--json"], env=environment)
+    result = run([str(python), "-I", "-B", "-m", "aiverse_distribution.cli", *arguments, "--json"], env=environment)
     try:
         return json.loads(result.stdout)
     except ValueError as exc:
@@ -78,7 +90,9 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         raise DistributionError("Bootstrap needs a Distribution source checkout outside the OS project")
     if source == layout.project or layout.project in source.parents:
         raise DistributionError("Distribution source must not be placed inside the OS destination")
-    tools = prepare_tools(layout, download_node=True, download_python=True, install_system_git=install_system_git)
+    node_min = tuple(map(int, str(catalog.compatibility_for(release.id).get("node_min", "22.0.0")).split(".")))
+    tools = prepare_tools(layout, download_node=True, download_python=True, install_system_git=install_system_git, node_min=node_min,
+                          require_lfs=release.raw.get("runtime_requirements", {}).get("git_lfs") is True)
     if tools["missing"]:
         raise DistributionError("Required tools are still unavailable: " + ", ".join(tools["missing"]))
     with claim(layout):
@@ -89,7 +103,9 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         receipt.update({"phase": "preparing-distribution", "release_set_id": release.id})
         _write_json(layout.receipt, receipt)
         environment = dict(os.environ)
-        environment.pop("PYTHONPATH", None)
+        # process.run merges inherited variables; an explicit empty value is
+        # required to clear a source-checkout PYTHONPATH in owner subprocesses.
+        environment["PYTHONPATH"] = ""
         environment.update({"AIVERSE_DISTRIBUTION_HOME": str(layout.distribution_home),
                             "AI_VERSE_SKILLS_ROOT": str(layout.stack / "skills"),
                             "PYTHONPYCACHEPREFIX": str(layout.stack / "cache/python"),
@@ -97,6 +113,11 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         managed_node = tools.get("managed_node")
         node_path = Path(managed_node["node"] if managed_node else tools["node"]["path"])
         prefix = os.pathsep.join([str(node_path.parent), str(Path(tools["git"]["path"]).parent)])
+        if tools.get("git-lfs"):
+            prefix = str(Path(tools["git-lfs"]["path"]).parent) + os.pathsep + prefix
+            # Enable the normal LFS filter for these child commands only. No
+            # global git lfs install or user Git configuration mutation occurs.
+            configure_lfs(environment)
         environment["PATH"] = prefix + os.pathsep + environment.get("PATH", "")
         base_python = Path(tools["python"]["path"])
         venv = layout.stack / "tools/distribution-venv"
@@ -113,11 +134,14 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         launcher = layout.stack / "run.py"
         # The installed package lives in the private venv, so later operation
         # does not depend on retaining the bootstrap source checkout.
-        overrides = {key: environment[key] for key in ("AIVERSE_DISTRIBUTION_HOME", "AI_VERSE_SKILLS_ROOT", "PYTHONPYCACHEPREFIX", "PIP_CACHE_DIR")}
+        overrides = {key: environment[key] for key in ("AIVERSE_DISTRIBUTION_HOME", "AI_VERSE_SKILLS_ROOT", "PYTHONPYCACHEPREFIX", "PIP_CACHE_DIR", "PYTHONPATH")}
+        lfs_code = "from aiverse_distribution.project_install import configure_lfs\nconfigure_lfs(os.environ)\n" if tools.get("git-lfs") else ""
         launcher_text = (
             "# Generated AI-Verse project launcher.\nimport os, subprocess, sys\n"
+            "if not sys.flags.isolated:\n    os.execv(sys.executable, [sys.executable, '-I', __file__, *sys.argv[1:]])\n"
             f"os.environ.update({overrides!r})\n"
             f"os.environ['PATH'] = {prefix!r} + os.pathsep + os.environ.get('PATH', '')\n"
+            + lfs_code +
             f"os.chdir({str(layout.project)!r})\n"
             "if sys.argv[1:2] == ['--exec']:\n"
             "    if len(sys.argv) < 3: raise SystemExit('Specify a project command after --exec')\n"
