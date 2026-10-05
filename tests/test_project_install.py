@@ -7,7 +7,13 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from aiverse_distribution.project_bootstrap import claim
-from aiverse_distribution.project_install import _child_json, _write_owned, select_member_release, configure_lfs
+from aiverse_distribution.project_install import (
+    _child_json,
+    _write_owned,
+    configure_lfs,
+    configure_project_git,
+    select_member_release,
+)
 from aiverse_distribution.project_layout import ProjectLayout
 from aiverse_distribution.release_catalog import DistributionError
 
@@ -19,6 +25,15 @@ class ProjectInstallTests(unittest.TestCase):
         self.assertEqual(environment["GIT_CONFIG_COUNT"], "3")
         self.assertEqual(environment["GIT_CONFIG_VALUE_0"], "existing-header")
         self.assertEqual(environment["GIT_CONFIG_KEY_1"], "filter.lfs.process")
+
+    def test_windows_project_git_configuration_is_process_scoped(self):
+        environment = {"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "http.extraheader", "GIT_CONFIG_VALUE_0": "existing-header"}
+        with patch("aiverse_distribution.project_install.os.name", "nt"):
+            configure_project_git(environment, require_lfs=False)
+        self.assertEqual(environment["GIT_CONFIG_COUNT"], "2")
+        self.assertEqual(environment["GIT_CONFIG_VALUE_0"], "existing-header")
+        self.assertEqual(environment["GIT_CONFIG_KEY_1"], "core.longpaths")
+        self.assertEqual(environment["GIT_CONFIG_VALUE_1"], "true")
 
     def test_invalid_git_configuration_stops(self):
         with self.assertRaises(DistributionError):
