@@ -13,16 +13,33 @@ from .project_layout import ProjectLayout
 from .release_catalog import Catalog, DistributionError
 
 
-def configure_lfs(environment) -> None:
+def _append_git_config(environment, entries) -> None:
     count_text = environment.get("GIT_CONFIG_COUNT", "0")
     if not count_text.isdigit() or int(count_text) > 100:
         raise DistributionError("Cannot extend an invalid or oversized Git process configuration")
     count = int(count_text)
-    for key, value in (("filter.lfs.process", "git-lfs filter-process"), ("filter.lfs.required", "true")):
+    for key, value in entries:
         environment[f"GIT_CONFIG_KEY_{count}"] = key
         environment[f"GIT_CONFIG_VALUE_{count}"] = value
         count += 1
     environment["GIT_CONFIG_COUNT"] = str(count)
+
+
+def configure_lfs(environment) -> None:
+    _append_git_config(
+        environment,
+        (("filter.lfs.process", "git-lfs filter-process"), ("filter.lfs.required", "true")),
+    )
+
+
+def configure_project_git(environment, *, require_lfs: bool = False) -> None:
+    """Apply private child-process Git settings without mutating user/global config."""
+    if os.name == "nt":
+        # Git for Windows can still enforce the legacy MAX_PATH boundary unless
+        # long-path handling is enabled. Scope this only to bootstrap children.
+        _append_git_config(environment, (("core.longpaths", "true"),))
+    if require_lfs:
+        configure_lfs(environment)
 
 
 def select_member_release(catalog: Catalog, release_set: str | None = None):
@@ -115,9 +132,9 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         prefix = os.pathsep.join([str(node_path.parent), str(Path(tools["git"]["path"]).parent)])
         if tools.get("git-lfs"):
             prefix = str(Path(tools["git-lfs"]["path"]).parent) + os.pathsep + prefix
-            # Enable the normal LFS filter for these child commands only. No
-            # global git lfs install or user Git configuration mutation occurs.
-            configure_lfs(environment)
+        # Long-path and LFS settings are process-scoped. They never modify the
+        # member's global Git configuration and are inherited by owner children.
+        configure_project_git(environment, require_lfs=bool(tools.get("git-lfs")))
         environment["PATH"] = prefix + os.pathsep + environment.get("PATH", "")
         base_python = Path(tools["python"]["path"])
         venv = layout.stack / "tools/distribution-venv"
@@ -135,13 +152,16 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         # The installed package lives in the private venv, so later operation
         # does not depend on retaining the bootstrap source checkout.
         overrides = {key: environment[key] for key in ("AIVERSE_DISTRIBUTION_HOME", "AI_VERSE_SKILLS_ROOT", "PYTHONPYCACHEPREFIX", "PIP_CACHE_DIR", "PYTHONPATH")}
-        lfs_code = "from aiverse_distribution.project_install import configure_lfs\nconfigure_lfs(os.environ)\n" if tools.get("git-lfs") else ""
+        git_config_code = (
+            "from aiverse_distribution.project_install import configure_project_git\n"
+            f"configure_project_git(os.environ, require_lfs={bool(tools.get('git-lfs'))!r})\n"
+        )
         launcher_text = (
             "# Generated AI-Verse project launcher.\nimport os, subprocess, sys\n"
             "if not sys.flags.isolated:\n    os.execv(sys.executable, [sys.executable, '-I', __file__, *sys.argv[1:]])\n"
             f"os.environ.update({overrides!r})\n"
             f"os.environ['PATH'] = {prefix!r} + os.pathsep + os.environ.get('PATH', '')\n"
-            + lfs_code +
+            + git_config_code +
             f"os.chdir({str(layout.project)!r})\n"
             "if sys.argv[1:2] == ['--exec']:\n"
             "    if len(sys.argv) < 3: raise SystemExit('Specify a project command after --exec')\n"
