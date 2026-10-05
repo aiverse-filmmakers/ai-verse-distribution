@@ -16,8 +16,13 @@ parent/
       tools/                 privately managed prerequisite programs
       downloads/             verified download cache
       staging/               disposable installer preparation
-      distribution-state/    Distribution sources, environments and receipts
+      d/                     compact Distribution sources, environments and receipts
 ```
+
+The private Distribution state directory is intentionally named `d` to preserve
+Windows path budget for Git's internal object/pack paths. Bootstrap child Git
+processes also enable `core.longpaths=true` through process-scoped Git config on
+Windows. This does not modify the member's global Git configuration.
 
 Use `aiverse project-plan --project <folder> --json` to check the layout without
 writing any files. A custom `--stack` must be outside the project. Existing
