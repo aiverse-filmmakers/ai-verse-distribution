@@ -99,8 +99,11 @@ def prove_memory_roundtrip(layout: ProjectLayout, first: dict, workspace_id: str
     engine = layout.project / "scripts" / "ai-verse-memory" / "memory.py"
     if not engine.is_file():
         raise RuntimeError("Installed Memory entrypoint is missing from the OS root")
-    marker = "distribution-project-bootstrap-memory-marker"
-    run_launcher(
+    # Keep the retrieval probe to one deterministic alphanumeric token. This
+    # acceptance proves cross-process persistence/recall, not SQLite tokenizer
+    # punctuation semantics, which can vary between hosted platform builds.
+    marker = "distributionbootstrapmemorymarker20261005"
+    remembered = run_launcher(
         first,
         first["python"], str(engine), "--root", str(layout.project), "remember",
         "--type", "experience", "--workspace", workspace_id, "--text", marker,
@@ -111,7 +114,11 @@ def prove_memory_roundtrip(layout: ProjectLayout, first: dict, workspace_id: str
         marker, "--workspace", workspace_id,
     )
     if marker not in recalled.stdout:
-        raise RuntimeError("Project launcher Memory recall did not return the qualification marker")
+        raise RuntimeError(
+            "Project launcher Memory recall did not return the qualification marker; "
+            f"remember_stdout={remembered.stdout!r} remember_stderr={remembered.stderr!r} "
+            f"recall_stdout={recalled.stdout!r} recall_stderr={recalled.stderr!r}"
+        )
     run_launcher(first, first["python"], str(engine), "--root", str(layout.project), "doctor")
     return marker
 
@@ -124,7 +131,10 @@ def prove_memory_preserved(layout: ProjectLayout, second: dict, workspace_id: st
         marker, "--workspace", workspace_id,
     )
     if marker not in recalled.stdout:
-        raise RuntimeError("Memory state was not preserved across repeated project setup")
+        raise RuntimeError(
+            "Memory state was not preserved across repeated project setup; "
+            f"recall_stdout={recalled.stdout!r} recall_stderr={recalled.stderr!r}"
+        )
 
 
 def main():
