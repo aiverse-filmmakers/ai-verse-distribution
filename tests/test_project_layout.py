@@ -19,8 +19,24 @@ class ProjectLayoutTests(unittest.TestCase):
         plan = layout.inspect()
         self.assertEqual(plan["root"], str(self.project))
         self.assertNotIn(self.project, layout.stack.parents)
+        self.assertEqual(layout.distribution_home, layout.stack / "d")
         self.assertFalse(self.project.exists())
         self.assertFalse(layout.stack.exists())
+
+    def test_private_distribution_state_path_stays_compact(self):
+        layout = ProjectLayout.resolve(self.project)
+        suffix = (
+            Path("sources")
+            / "core-member-bootstrap-candidate-2026-10-05"
+            / "ai-verse-brain"
+            / ".git"
+            / "objects"
+            / "pack"
+            / ("pack-" + "0" * 40 + ".keep")
+        )
+        compact = layout.distribution_home / suffix
+        legacy = layout.stack / "distribution-state" / suffix
+        self.assertLessEqual(len(str(compact)), len(str(legacy)) - 16)
 
     def test_stable_stack_and_separate_projects(self):
         first = ProjectLayout.resolve(self.project)
