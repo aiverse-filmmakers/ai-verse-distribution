@@ -146,7 +146,7 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         if existing and existing.get("source") != "ai-verse-distribution/project-bootstrap-v1":
             raise DistributionError("Preserving an existing extension with the bootstrap identity")
         registry["extensions"][key] = {**(existing or {}), "id": key, "supported": True,
-            "installed": True, "enabled": True, "version": "1", "source": "ai-verse-distribution/project-bootstrap-v1",
+            "installed": True, "enabled": (existing or {}).get("enabled", True), "version": "1", "source": "ai-verse-distribution/project-bootstrap-v1",
             "instructions": instructions.relative_to(layout.project).as_posix(), "adapters": []}
         _write_json(registry_path, registry)
         receipt["phase"] = "checking-core"
