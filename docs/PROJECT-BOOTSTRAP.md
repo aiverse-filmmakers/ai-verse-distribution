@@ -42,9 +42,24 @@ Distribution Skills commands now honor `AI_VERSE_SKILLS_ROOT`, matching the OS
 custom-provider location setting. Complete project-local Skills discovery and
 host invocation still require composed acceptance.
 
-Git acquisition, launchers, and the complete installation entry point are not
-yet implemented. These preparation
-commands do not constitute release qualification.
+`project-init --project <folder> --distribution-source <checkout>` now composes
+preparation, private Distribution environment installation, Core owner install,
+setup, and status/doctor checks. It preserves an unchanged generated launcher
+and adds local extension instructions using the existing OS registry hook.
+It does not change tracked OS instructions. The launcher supplies private
+Node and Skills paths on future calls, without depending on the source checkout.
+
+Member installation requires an admitted Core release whose evidence contains
+`member_bootstrap.status = accepted` and `audit_repairs_included = true`.
+No current historical Core manifest has this new gate. The public command
+therefore stops before downloads or destination writes. An internal Python
+acceptance driver can exercise historical release mechanics with
+`qualification=True`; this is not a public CLI bypass or member release.
+
+Git acquisition, entry scripts for machines with no Python, repaired-release
+admission, actual host/memory invocation acceptance, and hosted Windows/Linux
+qualification remain incomplete. Preparation commands do not constitute release
+qualification.
 
 Node archives are pinned to official v22.23.3 checksums. Extraction rejects
 outbound paths, outbound links, special entries, and oversized archives. Reuse
@@ -58,6 +73,12 @@ Standalone Python archive URLs and SHA256 digests are pinned from the
 Python.org publishes relocatable interpreter archives. The macOS arm64 package
 passed real version and SSL/venv/ensurepip probes locally. Other platforms still
 need hosted acceptance.
+
+Local composed mechanics acceptance on macOS arm64 installed all five historical
+Core components at the project root, completed owner setup/status/doctor, and
+invoked status through the persistent private launcher with state `ready`.
+This proves installation mechanics for that historical set, not inclusion of
+later audit fixes or complete Codex/Claude/Cursor behavior.
 
 Required order for the complete entry point:
 

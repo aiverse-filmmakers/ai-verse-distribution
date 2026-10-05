@@ -10,6 +10,7 @@ import subprocess
 import tarfile
 import tempfile
 import urllib.request
+import urllib.error
 import zipfile
 from pathlib import Path, PurePosixPath
 
@@ -125,6 +126,8 @@ def download_verified(artifact: dict, cache: Path) -> Path:
             raise DistributionError("Prerequisite checksum verification failed; no executable was installed")
         os.replace(pending, target)
         return target
+    except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+        raise DistributionError("Prerequisite download was interrupted. Retry preparation to continue; the OS destination was not changed.") from exc
     finally:
         Path(pending).unlink(missing_ok=True)
 

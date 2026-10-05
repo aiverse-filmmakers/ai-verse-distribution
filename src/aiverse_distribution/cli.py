@@ -192,6 +192,13 @@ def _parser() -> argparse.ArgumentParser:
     q.add_argument("--prepare-python", action="store_true", help="download verified private Python when needed")
     q.add_argument("--json", action="store_true")
 
+    q = sub.add_parser("project-init", help="prepare tools and install a qualified Core member project")
+    q.add_argument("--project", type=Path, default=Path.cwd())
+    q.add_argument("--stack", type=Path)
+    q.add_argument("--distribution-source", type=Path, required=True)
+    q.add_argument("--release-set")
+    q.add_argument("--json", action="store_true")
+
     q = sub.add_parser("start", help="one-action first run using the exact released Agent profile")
     q.add_argument("--release-set", help="advanced exact released Agent set override")
     q.add_argument("--root", type=Path, help="installation root; defaults to ~/AI-Verse for a fresh install")
@@ -291,6 +298,14 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             payload = prepare_tools(layout, download_node=args.prepare_node, download_python=args.prepare_python)
             _emit(payload, args.json)
             return 0 if not payload["missing"] else 1
+
+        if args.command == "project-init":
+            from .project_install import install_project
+            from .project_layout import ProjectLayout
+            payload = install_project(ProjectLayout.resolve(args.project, args.stack), args.distribution_source,
+                                      release_set=args.release_set)
+            _emit(payload, args.json)
+            return 0
 
         app = Orchestrator()
         if args.command == "start":
