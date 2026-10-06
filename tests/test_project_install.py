@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from aiverse_distribution.process import which
 from aiverse_distribution.project_bootstrap import claim
 from aiverse_distribution.project_install import (
     _child_json,
@@ -49,14 +50,28 @@ class ProjectInstallTests(unittest.TestCase):
                 node.write_text("node")
                 npm_cli.write_text("npm")
                 managed = {"node": str(node), "npm_cli": str(npm_cli)}
-                with patch("aiverse_distribution.project_install.os.name", "posix"):
-                    shim_dir = _prepare_managed_npm_shim(layout, managed, receipt)
+                shim_dir = _prepare_managed_npm_shim(layout, managed, receipt, platform_name="posix")
                 shim = shim_dir / "npm"
                 text = shim.read_text()
                 self.assertIn(str(node), text)
                 self.assertIn(str(npm_cli), text)
                 self.assertTrue(shim.stat().st_mode & 0o111)
                 self.assertEqual(receipt["owned_files"][str(shim)], hashlib.sha256(text.encode()).hexdigest())
+
+    def test_distribution_npm_override_bypasses_path_discovery(self):
+        with tempfile.TemporaryDirectory() as folder:
+            command = Path(folder) / "npm"
+            command.write_text("private npm")
+            with patch.dict("os.environ", {"AIVERSE_DISTRIBUTION_NPM": str(command)}, clear=False), \
+                    patch("aiverse_distribution.process.shutil.which", return_value="host-npm") as discovered:
+                self.assertEqual(which("npm"), str(command))
+            discovered.assert_not_called()
+
+    def test_invalid_distribution_npm_override_fails_closed(self):
+        with patch.dict("os.environ", {"AIVERSE_DISTRIBUTION_NPM": "/definitely/missing/npm"}, clear=False), \
+                patch("aiverse_distribution.process.shutil.which", return_value="host-npm") as discovered:
+            self.assertIsNone(which("npm"))
+        discovered.assert_not_called()
 
     def test_invalid_git_configuration_stops(self):
         with self.assertRaises(DistributionError):
