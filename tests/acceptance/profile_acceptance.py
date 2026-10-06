@@ -420,10 +420,20 @@ def main() -> int:
     if update.get("changed") is not False:
         raise RuntimeError(f"same-set update should be a no-op: {update}")
 
-    rollback = run_cli(
+    blocked_rollback = run_cli(
         "rollback",
         "--to",
         "core-public-beta-2026-09-13",
+        "--apply",
+        expect=2,
+    )
+    if blocked_rollback.get("error") != "DISTRIBUTION_ERROR":
+        raise RuntimeError(f"unadmitted backward Core rollback did not fail closed: {blocked_rollback}")
+
+    rollback = run_cli(
+        "rollback",
+        "--to",
+        install["release_set_id"],
         "--apply",
     )
     if rollback.get("changed") is not False or rollback.get("rollback") is not True:
@@ -469,6 +479,7 @@ def main() -> int:
             "ai-verse-data"
         ],
         "update_noop": True,
+        "backward_rollback_blocked": True,
         "rollback_noop": True,
         "open": True,
     }, indent=2))
