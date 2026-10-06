@@ -88,7 +88,13 @@ def _write_owned(layout: ProjectLayout, path: Path, text: str, receipt: dict) ->
     _write_json(layout.receipt, receipt)
 
 
-def _prepare_managed_npm_shim(layout: ProjectLayout, managed_node: dict | None, receipt: dict) -> Path | None:
+def _prepare_managed_npm_shim(
+    layout: ProjectLayout,
+    managed_node: dict | None,
+    receipt: dict,
+    *,
+    platform_name: str | None = None,
+) -> Path | None:
     """Expose the verified private npm CLI without relying on host npm shims.
 
     Official Node archives provide npm through links in the runtime bin folder,
@@ -96,9 +102,11 @@ def _prepare_managed_npm_shim(layout: ProjectLayout, managed_node: dict | None, 
     bootstrap-owned POSIX shim invokes the exact verified node + npm-cli pair so
     Distribution preflight and every later npm command see the qualified toolchain.
     Windows already receives npm.cmd from the verified Node bundle and is left
-    unchanged here.
+    unchanged here. ``platform_name`` exists only so the POSIX renderer can be
+    unit-tested on Windows without mutating Python's process-wide ``os.name``.
     """
-    if not managed_node or os.name == "nt":
+    platform_name = os.name if platform_name is None else platform_name
+    if not managed_node or platform_name == "nt":
         return None
     node = Path(str(managed_node.get("node", ""))).expanduser().resolve()
     npm_cli = Path(str(managed_node.get("npm_cli", ""))).expanduser().resolve()
@@ -157,6 +165,10 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         prefix_parts = [str(node_path.parent), str(Path(tools["git"]["path"]).parent)]
         if npm_shim_dir is not None:
             prefix_parts.insert(0, str(npm_shim_dir))
+            # PATH remains useful to owner subprocesses, but the Distribution
+            # runtime also receives an exact command path so host npm cannot win
+            # through platform-specific resolution behavior.
+            environment["AIVERSE_DISTRIBUTION_NPM"] = str(npm_shim_dir / "npm")
         prefix = os.pathsep.join(prefix_parts)
         if tools.get("git-lfs"):
             prefix = str(Path(tools["git-lfs"]["path"]).parent) + os.pathsep + prefix
@@ -164,6 +176,10 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         # member's global Git configuration and are inherited by owner children.
         configure_project_git(environment, require_lfs=bool(tools.get("git-lfs")))
         environment["PATH"] = prefix + os.pathsep + environment.get("PATH", "")
+        if npm_shim_dir is not None:
+            npm_probe = run([environment["AIVERSE_DISTRIBUTION_NPM"], "--version"], env=environment, check=False)
+            if npm_probe.returncode != 0 or not npm_probe.stdout.strip().startswith("10."):
+                raise DistributionError("Verified private npm command did not resolve to the required npm 10 toolchain")
         base_python = Path(tools["python"]["path"])
         venv = layout.stack / "tools/distribution-venv"
         python = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
@@ -179,7 +195,10 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         launcher = layout.stack / "run.py"
         # The installed package lives in the private venv, so later operation
         # does not depend on retaining the bootstrap source checkout.
-        overrides = {key: environment[key] for key in ("AIVERSE_DISTRIBUTION_HOME", "AI_VERSE_SKILLS_ROOT", "PYTHONPYCACHEPREFIX", "PIP_CACHE_DIR", "PYTHONPATH")}
+        override_keys = ["AIVERSE_DISTRIBUTION_HOME", "AI_VERSE_SKILLS_ROOT", "PYTHONPYCACHEPREFIX", "PIP_CACHE_DIR", "PYTHONPATH"]
+        if "AIVERSE_DISTRIBUTION_NPM" in environment:
+            override_keys.append("AIVERSE_DISTRIBUTION_NPM")
+        overrides = {key: environment[key] for key in override_keys}
         git_config_code = (
             "from aiverse_distribution.project_install import configure_project_git\n"
             f"configure_project_git(os.environ, require_lfs={bool(tools.get('git-lfs'))!r})\n"
