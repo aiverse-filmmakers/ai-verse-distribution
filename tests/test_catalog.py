@@ -9,13 +9,22 @@ class CatalogTests(unittest.TestCase):
 
     def test_core_is_exact_and_released(self):
         release = self.catalog.resolve("core")
-        self.assertEqual(release.id, "core-public-beta-2026-09-13")
+        self.assertEqual(release.id, "core-repaired-public-beta-2026-10-06")
         self.assertEqual(
-            [x.id for x in release.components],
-            ["ai-verse-os", "ai-verse-brain", "ai-verse-memory", "ai-verse-skills", "ai-verse-data"],
+            {component.id: component.revision for component in release.components},
+            {
+                "ai-verse-os": "e74a4e05b1f891e6f871f34a298bf10363a11d88",
+                "ai-verse-brain": "7c77b053df627e61b3d7f11d029500ab61095c9c",
+                "ai-verse-memory": "b0cae8cd8da38aa657fbc736c575177aa75e5ec7",
+                "ai-verse-skills": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+                "ai-verse-data": "6e8781ff1dcd96a35dfb27868bd60605361483d0",
+            },
         )
-        for component in release.components:
-            self.assertEqual(len(component.revision), 40)
+        self.assertEqual(self.catalog.release_data["channels"]["core"], release.id)
+        self.assertEqual(self.catalog.release_data["channels"]["beta"], release.id)
+        gate = release.raw["evidence"]["member_bootstrap"]
+        self.assertEqual(gate["status"], "accepted")
+        self.assertTrue(gate["audit_repairs_included"])
 
     def test_agent_is_exact_and_released(self):
         release = self.catalog.resolve("agent")
@@ -149,6 +158,7 @@ class CatalogTests(unittest.TestCase):
             "custom",
             components=["ai-verse-os", "ai-verse-memory"],
         )
+        self.assertEqual(release.id, "core-repaired-public-beta-2026-10-06")
         self.assertEqual([x.id for x in release.components], ["ai-verse-os", "ai-verse-memory"])
 
     def test_custom_closes_required_dependencies(self):

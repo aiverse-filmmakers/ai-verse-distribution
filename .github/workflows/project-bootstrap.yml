@@ -18,7 +18,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       PYTHONPATH: src
     steps:
@@ -45,6 +45,8 @@ jobs:
         run: python tests/acceptance/project_bootstrap_acceptance.py --source . --output bootstrap-report.json
       - name: Exact repaired Core fixture qualification
         run: python tests/acceptance/project_bootstrap_acceptance.py --source . --candidate qualification/repaired-core/candidate.json --output repaired-bootstrap-report.json
+      - name: Public admitted Core project bootstrap
+        run: python tests/acceptance/project_bootstrap_acceptance.py --source . --public --output public-bootstrap-report.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -52,3 +54,4 @@ jobs:
           path: |
             bootstrap-report.json
             repaired-bootstrap-report.json
+            public-bootstrap-report.json

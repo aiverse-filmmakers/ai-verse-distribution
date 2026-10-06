@@ -59,7 +59,27 @@ class Catalog:
         self.profiles = _load("profiles.json")
         self.compatibility = _load("compatibility.json")
         self.release_data = _load("release_sets.json")
+        self.core_lineage = _load("core_lineage.json")
+        self._apply_core_lineage()
         self._validate()
+
+    def _apply_core_lineage(self) -> None:
+        if self.core_lineage.get("schema_version") != 1:
+            raise CatalogValidationError("unsupported core-lineage schema")
+        releases = self.core_lineage.get("release_sets", [])
+        compatibility = self.core_lineage.get("compatibility", {})
+        if not isinstance(releases, list) or not isinstance(compatibility, dict):
+            raise CatalogValidationError("core-lineage release_sets and compatibility must be structured")
+        self.release_data["release_sets"].extend(releases)
+        self.compatibility["release_sets"].update(compatibility)
+        current = self.core_lineage.get("current_release")
+        if current:
+            # The forward Core ledger overlays the legacy catalog. Both the
+            # explicit Core channel and the historical beta default now resolve
+            # to the admitted current Core; older immutable releases remain
+            # available only by explicit release id.
+            self.release_data["channels"]["core"] = current
+            self.release_data["channels"]["beta"] = current
 
     def _validate(self) -> None:
         if self.profiles.get("schema_version") != 1:
@@ -186,6 +206,74 @@ class Catalog:
                     raise CatalogValidationError(
                         f"{release_id}: {field} references unknown release sets: {', '.join(unknown)}"
                     )
+        self._validate_core_lineage(ids)
+
+    def _validate_core_lineage(self, ids: set[str]) -> None:
+        lineage = self.core_lineage
+        current = lineage.get("current_release")
+        anchor = lineage.get("anchor_release")
+        protected = lineage.get("protected_components")
+        if not isinstance(current, str) or current not in ids:
+            raise CatalogValidationError("core-lineage current_release must name a known release")
+        if not isinstance(anchor, str) or anchor not in ids:
+            raise CatalogValidationError("core-lineage anchor_release must name a known release")
+        if (
+            not isinstance(protected, list)
+            or not protected
+            or any(not isinstance(item, str) or not item for item in protected)
+            or len(set(protected)) != len(protected)
+        ):
+            raise CatalogValidationError("core-lineage protected_components must be unique component ids")
+        lineage_releases = lineage.get("release_sets", [])
+        lineage_ids = {item.get("id") for item in lineage_releases if isinstance(item, dict)}
+        if current not in lineage_ids:
+            raise CatalogValidationError("core-lineage current_release must be stored in the forward-only ledger")
+
+        by_id = {raw["id"]: raw for raw in self.release_data["release_sets"]}
+        if by_id[anchor].get("profile") != "core":
+            raise CatalogValidationError("core-lineage anchor must be a Core release")
+        if by_id[current].get("profile") != "core" or by_id[current].get("status") != "released":
+            raise CatalogValidationError("core-lineage current release must be released Core")
+
+        for raw in lineage_releases:
+            rid = raw.get("id")
+            rule = raw.get("lineage")
+            if not isinstance(rule, dict) or rule.get("policy") != "same-or-descendant":
+                raise CatalogValidationError(f"{rid}: core lineage policy must be same-or-descendant")
+            parent = rule.get("parent")
+            if not isinstance(parent, str) or parent not in by_id:
+                raise CatalogValidationError(f"{rid}: core lineage parent must name a known release")
+            if by_id[parent].get("profile") != "core":
+                raise CatalogValidationError(f"{rid}: core lineage parent must be Core")
+            child_components = {item["id"]: item for item in raw.get("components", [])}
+            parent_components = {item["id"]: item for item in by_id[parent].get("components", [])}
+            for component_id in protected:
+                if component_id not in child_components or component_id not in parent_components:
+                    raise CatalogValidationError(
+                        f"{rid}: protected Core component {component_id} is missing from child or parent"
+                    )
+                if child_components[component_id]["repository"] != parent_components[component_id]["repository"]:
+                    raise CatalogValidationError(
+                        f"{rid}: protected Core component {component_id} changed repository"
+                    )
+            gate = raw.get("evidence", {}).get("member_bootstrap", {})
+            if raw.get("status") == "released" and (
+                gate.get("status") != "accepted" or gate.get("audit_repairs_included") is not True
+            ):
+                raise CatalogValidationError(
+                    f"{rid}: released forward Core requires accepted repaired member-bootstrap evidence"
+                )
+
+        seen: set[str] = set()
+        cursor = current
+        while cursor != anchor:
+            if cursor in seen:
+                raise CatalogValidationError("core-lineage contains a cycle")
+            seen.add(cursor)
+            raw = by_id.get(cursor)
+            if cursor not in lineage_ids or not isinstance(raw, dict):
+                raise CatalogValidationError("core-lineage chain left the forward-only ledger before its anchor")
+            cursor = raw["lineage"]["parent"]
 
     def release_sets(self) -> List[ReleaseSet]:
         return [self._release(raw) for raw in self.release_data["release_sets"]]

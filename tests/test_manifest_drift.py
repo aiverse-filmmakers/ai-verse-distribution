@@ -46,7 +46,7 @@ class ManifestDriftTests(unittest.TestCase):
 
     def test_catalog_still_validates_after_public_mirroring(self):
         catalog = Catalog()
-        self.assertEqual(catalog.resolve("core").id, "core-public-beta-2026-09-13")
+        self.assertEqual(catalog.resolve("core").id, "core-repaired-public-beta-2026-10-06")
         self.assertEqual(catalog.resolve("agent").id, "agent-public-beta-2026-09-14")
 
     def test_full_blockers_match_canonical_release_set(self):
