@@ -44,6 +44,21 @@ class ManifestDriftTests(unittest.TestCase):
             expected = {"schema_version": runtime["schema_version"], **by_id[release_id]}
             self.assertEqual(public, expected)
 
+    def test_current_forward_core_public_manifest_matches_lineage(self):
+        catalog = Catalog()
+        current = catalog.core_lineage["current_release"]
+        raw = next(
+            item for item in catalog.core_lineage["release_sets"]
+            if item["id"] == current
+        )
+        public = json.loads(
+            (ROOT / "release-sets" / f"{current}.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            public,
+            {"schema_version": catalog.core_lineage["schema_version"], **raw},
+        )
+
     def test_catalog_still_validates_after_public_mirroring(self):
         catalog = Catalog()
         self.assertEqual(catalog.resolve("core").id, "core-repaired-public-beta-2026-10-06")
