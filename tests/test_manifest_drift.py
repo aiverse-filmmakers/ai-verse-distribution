@@ -16,12 +16,17 @@ class ManifestDriftTests(unittest.TestCase):
         public = json.loads((ROOT / "profiles" / "profiles.json").read_text(encoding="utf-8"))
         self.assertEqual(public, runtime)
 
-    def test_root_compatibility_matches_runtime_catalog(self):
+    def test_root_compatibility_matches_effective_runtime_catalog(self):
         runtime = json.loads(
             (ROOT / "src" / "aiverse_distribution" / "catalog" / "compatibility.json").read_text(encoding="utf-8")
         )
+        lineage = json.loads(
+            (ROOT / "src" / "aiverse_distribution" / "catalog" / "core_lineage.json").read_text(encoding="utf-8")
+        )
+        effective = json.loads(json.dumps(runtime))
+        effective["release_sets"].update(lineage["compatibility"])
         public = json.loads((ROOT / "compatibility" / "matrix.json").read_text(encoding="utf-8"))
-        self.assertEqual(public, runtime)
+        self.assertEqual(public, effective)
 
     def test_root_release_manifests_match_runtime_catalog(self):
         runtime = json.loads(
