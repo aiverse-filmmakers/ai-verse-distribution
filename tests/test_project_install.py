@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -55,7 +56,11 @@ class ProjectInstallTests(unittest.TestCase):
                 text = shim.read_text()
                 self.assertIn(str(node), text)
                 self.assertIn(str(npm_cli), text)
-                self.assertTrue(shim.stat().st_mode & 0o111)
+                # Windows does not expose POSIX execute bits through stat().
+                # The same test on Linux/macOS proves chmod(0755) took effect;
+                # Windows still validates the exact shim content and ownership.
+                if os.name != "nt":
+                    self.assertTrue(shim.stat().st_mode & 0o111)
                 self.assertEqual(receipt["owned_files"][str(shim)], hashlib.sha256(text.encode()).hexdigest())
 
     def test_distribution_npm_override_bypasses_path_discovery(self):
