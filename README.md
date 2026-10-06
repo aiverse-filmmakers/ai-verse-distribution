@@ -65,8 +65,9 @@ Distribution does not currently invent a background service manager. A successfu
 Requirements for the released Core beta set:
 
 - Python 3.11+
-- Node.js 22+
-- Git
+- Node.js 22.23.3+
+- npm 10.x for the frozen Data companion dependency lock
+- Git and Git LFS
 - macOS, Linux, or Windows
 
 Install the Distribution CLI from this repository:
@@ -96,7 +97,9 @@ When a frozen historical component lacks its own package-manager lock, Distribut
 
 The current released Core set is:
 
-`core-public-beta-2026-09-13`
+`core-repaired-public-beta-2026-10-06`
+
+Its OS, Brain, Memory, Skills, and Data revisions form the protected forward Core baseline. Future Core releases may keep each protected revision or advance it to a Git descendant, but may not silently regress to an older or unrelated revision. The append-only ledger and Git ancestry checks are documented in `docs/CORE-LINEAGE.md`.
 
 The released Agent public beta is `agent-public-beta-2026-09-14`: Core + Gateway + Automations + Multiple Bots + Token at exact immutable revisions. Its composed clean-machine gate passed on Ubuntu, macOS, and Windows, with exact qualification evidence frozen in the release manifest.
 
@@ -247,10 +250,12 @@ Machine-readable definitions:
 
 - `profiles/profiles.json`
 - `compatibility/matrix.json`
-- `release-sets/core-public-beta-2026-09-13.json`
+- `release-sets/core-repaired-public-beta-2026-10-06.json` (current Core)
+- `release-sets/core-public-beta-2026-09-13.json` (historical lineage anchor)
 - `release-sets/core-first-member-beta.json` (historical first-member set)
 - `release-sets/agent-public-beta-2026-09-14.json`
 - `release-sets/full-public-beta-pending.json`
+- `src/aiverse_distribution/catalog/core_lineage.json` (append-only forward Core ledger)
 
 The CLI ships a validated copy of the release catalog under `src/aiverse_distribution/catalog/`.
 
@@ -319,6 +324,7 @@ Read:
 - `docs/ARCHITECTURE.md`
 - `docs/RELEASE-SET-CONTRACT.md`
 - `docs/ACCEPTANCE.md`
+- `docs/CORE-LINEAGE.md`
 - `docs/HISTORY.md`
 - `docs/ROADMAP.md`
 
