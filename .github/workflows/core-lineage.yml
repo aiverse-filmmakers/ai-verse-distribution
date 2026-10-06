@@ -1,0 +1,43 @@
+name: Core Lineage Guard
+
+on:
+  pull_request:
+    paths:
+      - 'src/aiverse_distribution/catalog/core_lineage.json'
+      - 'src/aiverse_distribution/catalog/release_sets.json'
+      - 'src/aiverse_distribution/release_catalog.py'
+      - 'scripts/verify-core-lineage.py'
+      - '.github/workflows/core-lineage.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/aiverse_distribution/catalog/core_lineage.json'
+      - 'src/aiverse_distribution/catalog/release_sets.json'
+      - 'src/aiverse_distribution/release_catalog.py'
+      - 'scripts/verify-core-lineage.py'
+      - '.github/workflows/core-lineage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lineage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Enforce append-only Core lineage
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_REF="origin/${{ github.base_ref }}"
+          else
+            BASE_REF="HEAD^"
+          fi
+          python scripts/verify-core-lineage.py --base-ref "$BASE_REF"

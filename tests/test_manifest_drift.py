@@ -16,12 +16,17 @@ class ManifestDriftTests(unittest.TestCase):
         public = json.loads((ROOT / "profiles" / "profiles.json").read_text(encoding="utf-8"))
         self.assertEqual(public, runtime)
 
-    def test_root_compatibility_matches_runtime_catalog(self):
+    def test_root_compatibility_matches_effective_runtime_catalog(self):
         runtime = json.loads(
             (ROOT / "src" / "aiverse_distribution" / "catalog" / "compatibility.json").read_text(encoding="utf-8")
         )
+        lineage = json.loads(
+            (ROOT / "src" / "aiverse_distribution" / "catalog" / "core_lineage.json").read_text(encoding="utf-8")
+        )
+        effective = json.loads(json.dumps(runtime))
+        effective["release_sets"].update(lineage["compatibility"])
         public = json.loads((ROOT / "compatibility" / "matrix.json").read_text(encoding="utf-8"))
-        self.assertEqual(public, runtime)
+        self.assertEqual(public, effective)
 
     def test_root_release_manifests_match_runtime_catalog(self):
         runtime = json.loads(
@@ -44,9 +49,24 @@ class ManifestDriftTests(unittest.TestCase):
             expected = {"schema_version": runtime["schema_version"], **by_id[release_id]}
             self.assertEqual(public, expected)
 
+    def test_current_forward_core_public_manifest_matches_lineage(self):
+        catalog = Catalog()
+        current = catalog.core_lineage["current_release"]
+        raw = next(
+            item for item in catalog.core_lineage["release_sets"]
+            if item["id"] == current
+        )
+        public = json.loads(
+            (ROOT / "release-sets" / f"{current}.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            public,
+            {"schema_version": catalog.core_lineage["schema_version"], **raw},
+        )
+
     def test_catalog_still_validates_after_public_mirroring(self):
         catalog = Catalog()
-        self.assertEqual(catalog.resolve("core").id, "core-public-beta-2026-09-13")
+        self.assertEqual(catalog.resolve("core").id, "core-repaired-public-beta-2026-10-06")
         self.assertEqual(catalog.resolve("agent").id, "agent-public-beta-2026-09-14")
 
     def test_full_blockers_match_canonical_release_set(self):

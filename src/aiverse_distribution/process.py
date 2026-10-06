@@ -72,6 +72,17 @@ def run(
 
 
 def which(name: str) -> Optional[str]:
+    # Project bootstrap may qualify an exact private npm toolchain. Prefer that
+    # immutable command over PATH discovery so a hosted image cannot substitute
+    # a different npm after preparation. The override is process-local and is
+    # only emitted by the project installer; normal Distribution use is unchanged.
+    if name == "npm":
+        override = os.environ.get("AIVERSE_DISTRIBUTION_NPM")
+        if override:
+            candidate = Path(override).expanduser()
+            if candidate.is_absolute() and candidate.is_file():
+                return str(candidate)
+            return None
     return shutil.which(name)
 
 
