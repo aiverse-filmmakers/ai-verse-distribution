@@ -1,7 +1,7 @@
 # AI-Verse Distribution Roadmap
 
-**Status:** Core and Agent Distribution accepted; Agent public beta released  
-**Updated:** 2026-10-05
+**Status:** Core and Agent Distribution accepted; repaired Core forward baseline admitted  
+**Updated:** 2026-10-06
 
 ## Phase 0: Reset and contract
 
@@ -57,7 +57,7 @@ aiverse support-bundle
 - [x] owner-preserved state rule;
 - [x] explicit no-Brain-handover/no-permission-grant facts.
 
-The catalog preserves the historical first-member Core set and the current public-beta Core set, but no cross-version transition is currently admitted between them. The first-member set is frozen reproducibility evidence, not an asserted upgrade source for the current public-beta product. The next Core set that declares a cross-version update or rollback edge must exercise that exact transition in CI before the edge is admitted.
+The catalog preserves the historical first-member Core and September public-beta Core sets. The current default Core is `core-repaired-public-beta-2026-10-06`. No cross-version transition is currently admitted between these sets. Historical sets are frozen reproducibility evidence, not asserted upgrade sources for the current product. Any future Core update or rollback edge must exercise that exact transition in CI before the edge is admitted.
 
 ## Phase 4: Core clean-machine acceptance
 
@@ -68,9 +68,28 @@ The catalog preserves the historical first-member Core set and the current publi
 - [x] install -> setup -> onboarding -> status -> doctor;
 - [x] Memory/Data disable-enable preservation cycle;
 - [x] same-set update;
-- [x] open/use handoff.
+- [x] open/use handoff;
+- [x] repaired five-component Core qualified through member-project bootstrap on Ubuntu, macOS and Windows;
+- [x] public admitted-Core bootstrap path added;
 
 Remote workflow results are release evidence only after GitHub Actions completes successfully on the implementation PR.
+
+## Phase 4.1: Forward Core lineage
+
+The current repaired Core establishes the forward baseline for the five protected Core components.
+
+- [x] immutable Core lineage ledger;
+- [x] OS / Brain / Memory / Skills / Data protected-component set;
+- [x] same-or-Git-descendant rule for every protected component;
+- [x] protected repository identity cannot change;
+- [x] published lineage entries are append-only and immutable;
+- [x] a new default Core must directly descend from the previous default Core;
+- [x] new components may be added without weakening the protected five;
+- [x] dedicated `Core Lineage Guard` workflow performs real repository ancestry checks;
+- [x] current repaired Core published as `release-sets/core-repaired-public-beta-2026-10-06.json`;
+- [x] cross-release update/rollback remains independently fail-closed.
+
+See `docs/CORE-LINEAGE.md`.
 
 ## Phase 5: Agent profile
 
@@ -109,4 +128,5 @@ A profile becomes released only when Distribution has:
 2. an admitted compatibility entry;
 3. trusted owner lifecycle adapters;
 4. clean-machine acceptance on the claimed platforms;
-5. truthful System documentation.
+5. truthful System documentation;
+6. for a forward Core release, successful protected-component lineage ancestry checks.
