@@ -205,7 +205,9 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         )
         launcher_text = (
             "# Generated AI-Verse project launcher.\nimport os, subprocess, sys\n"
-            "if not sys.flags.isolated:\n    os.execv(sys.executable, [sys.executable, '-I', __file__, *sys.argv[1:]])\n"
+            "if not sys.flags.isolated:\n"
+            "    if os.name == 'nt':\n        raise SystemExit(subprocess.call([sys.executable, '-I', __file__, *sys.argv[1:]]))\n"
+            "    os.execv(sys.executable, [sys.executable, '-I', __file__, *sys.argv[1:]])\n"
             f"os.environ.update({overrides!r})\n"
             f"os.environ['PATH'] = {prefix!r} + os.pathsep + os.environ.get('PATH', '')\n"
             + git_config_code +
