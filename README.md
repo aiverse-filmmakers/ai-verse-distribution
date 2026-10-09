@@ -20,19 +20,35 @@ Distribution handles those details automatically and only reports installation s
 
 ## What gets installed
 
-The current member Core release is:
-
-`core-purpose-context-public-beta-2026-10-09`
+Members install **AI-Verse Core**.
 
 Core contains:
 
-- AI-Verse OS
-- Brain
-- Memory
-- Skills
-- Data
+- **AI-Verse OS** — the operating layer, including the small set of OS-owned **System Capabilities** used for onboarding, workspace organization, migration, linking, auditing, improvement, and OS-native tools.
+- **Brain** — goals, strategy, intent, priorities, and direction ownership.
+- **Memory** — durable historical context and recall.
+- **Skills Library** (`AI-Verse-Skills`) — the separate reusable task/professional capability library, including the full admitted Skills profile.
+- **Data** — structured current operational truth.
 
-Distribution resolves the exact admitted immutable revisions automatically.
+### System Capabilities vs Skills Library
+
+These are intentionally separate ownership layers:
+
+```text
+AI-Verse OS
+└── System Capabilities
+    └── built-in behaviors for operating AI-Verse itself
+
+AI-Verse-Skills
+└── Skills Library
+    └── reusable task and professional expertise
+```
+
+Codex and Claude may expose capability packages through folders named `.agents/skills/` or `.claude/skills/`. Those folder names are runtime conventions; they do **not** mean the OS-owned System Capabilities and the AI-Verse-Skills library are the same store.
+
+The OS capability resolver can discover the appropriate provider while preserving ownership, scope, generation, and verification boundaries.
+
+Distribution resolves the exact admitted immutable component revisions automatically. Internal release IDs and qualification metadata remain available for diagnostics and evidence but are not part of the normal member-facing product vocabulary.
 
 The current Core is released for macOS, Linux, and Windows and carries accepted member-bootstrap, clean-machine, lineage, isolation, Data/Memory, runtime, restart/rebuild, and composed-system qualification evidence.
 
@@ -99,7 +115,7 @@ The installer fails closed when the project layout, release integrity, owner lif
 
 ## Profiles
 
-**Core** — OS + Brain + Memory + Skills + Data. This is the current recommended member project install.
+**Core** — OS + Brain + Memory + Skills Library + Data. This is the current recommended member project install.
 
 **Agent** — Core + Gateway + Automations + Multiple Bots + Token. Managed separately from the direct Codex/Claude member-project Core path.
 
