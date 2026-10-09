@@ -8,9 +8,48 @@
     "parent": "core-repaired-public-beta-2026-10-06",
     "policy": "same-or-descendant"
   },
-  "components": [],
+  "runtime_requirements": {
+    "git_lfs": true
+  },
+  "components": [
+    {
+      "id": "ai-verse-os",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+      "revision": "4f03849444b1d01ad81317bf0fece082d5a30e79",
+      "install_order": 10
+    },
+    {
+      "id": "ai-verse-brain",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+      "revision": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+      "install_order": 20
+    },
+    {
+      "id": "ai-verse-memory",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+      "revision": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+      "install_order": 30
+    },
+    {
+      "id": "ai-verse-skills",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+      "revision": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+      "install_order": 40
+    },
+    {
+      "id": "ai-verse-data",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+      "revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
+      "install_order": 50,
+      "dependency_lock": {
+        "scheme": "distribution-companion-npm-lock-v1",
+        "manifest": "ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/lock.json",
+        "manifest_sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
+      }
+    }
+  ],
   "blockers": [
-    "Purpose Context Core admission tasks 3-6 are not yet complete"
+    "Purpose Context Core admission tasks 4-6 are not yet complete"
   ],
   "authority": {
     "grants_permissions": false,
