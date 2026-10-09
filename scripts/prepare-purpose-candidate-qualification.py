@@ -114,17 +114,28 @@ def main() -> int:
     _stage_exact_owner_lifecycle(candidate)
 
     text = PROFILE_ACCEPTANCE.read_text(encoding="utf-8")
-    old = 'install = run_cli("install", "--profile", "core", "--root", str(root))'
-    new = (
+    install_old = 'install = run_cli("install", "--profile", "core", "--root", str(root))'
+    install_new = (
         'release_set = os.environ.get("AI_VERSE_ACCEPTANCE_RELEASE_SET")\n'
         '    install_args = ["install", "--profile", "core", "--root", str(root)]\n'
         '    if release_set:\n'
         '        install_args.extend(["--release-set", release_set])\n'
         '    install = run_cli(*install_args)'
     )
-    if old not in text:
+    if install_old not in text:
         raise RuntimeError("profile acceptance install call changed; refusing unsafe qualification patch")
-    text = text.replace(old, new, 1)
+    text = text.replace(install_old, install_new, 1)
+
+    update_old = 'update = run_cli("update", "--apply")'
+    update_new = (
+        'update_args = ["update", "--apply"]\n'
+        '    if release_set:\n'
+        '        update_args.extend(["--to", release_set])\n'
+        '    update = run_cli(*update_args)'
+    )
+    if update_old not in text:
+        raise RuntimeError("profile acceptance same-set update check changed; refusing unsafe qualification patch")
+    text = text.replace(update_old, update_new, 1)
     PROFILE_ACCEPTANCE.write_text(text, encoding="utf-8")
 
     print(candidate_id)
