@@ -124,7 +124,7 @@ class CatalogTests(unittest.TestCase):
         )
         self.assertFalse(candidate.raw["promotion"]["default_channel"])
         self.assertFalse(candidate.raw["promotion"]["automatic_update"])
-        self.assertEqual(candidate.raw["evidence"]["distribution_acceptance"]["status"], "qualification-passed")
+        self.assertEqual(candidate.raw["evidence"]["distribution_acceptance"]["status"], "accepted")
 
     def test_context_ladder_candidate_cross_release_transitions_fail_closed(self):
         candidate_id = "agent-context-ladder-rc1-2026-09-15"
