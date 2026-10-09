@@ -15,14 +15,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  exact-clean-restart-rebuild:
+  exact-composed-core-candidate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: actions/setup-node@v4
         with:
           node-version: '22.23.3'
-      - name: Prove clean restart/rebuild against exact frozen OS ref
+      - name: Pin tested npm major
+        run: npm install --global npm@10.9.2
+      - name: Prove composed Core acceptance against the exact frozen Purpose candidate
         shell: bash
-        run: bash qualification/purpose-context/test-clean-restart-rebuild.sh
+        run: bash qualification/purpose-context/test-composed-core-candidate.sh
