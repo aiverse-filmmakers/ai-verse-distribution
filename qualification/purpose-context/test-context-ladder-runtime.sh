@@ -102,7 +102,14 @@ p = json.load(open(sys.argv[1], encoding='utf-8'))
 assert p.get('state') == 'ready', p
 for component in ('ai-verse-memory','ai-verse-data','ai-verse-brain'):
     item = p['components'][component]
-    assert item.get('enabled') is True, (component, item)
+    assert item.get('state') == 'ready', (component, item)
+memory = p['components']['ai-verse-memory']
+owner = json.loads(memory.get('owner_stdout') or '{}')
+assert owner.get('installed') is True, owner
+assert owner.get('attached') is True, owner
+assert owner.get('enabled') is True, owner
+assert owner.get('setup_completed') is True, owner
+assert owner.get('state') == 'ready', owner
 PY
 
 python "$OS/scripts/ai_verse_host_adapter.py" --root "$OS" --write-config "$HOST_CONFIG"
