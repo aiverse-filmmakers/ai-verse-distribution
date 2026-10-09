@@ -1,121 +1,98 @@
 # Member project bootstrap
 
-The OS belongs at the project root. This lets the host discover the shipped
-`AGENTS.md`, `CLAUDE.md`, `.agents/skills/`, and `.claude/skills/` directly.
-Do not copy Distribution source or create its virtual environment in that root
-before OS installation: the owner installer requires an empty destination.
+**Status:** released member path  
+**Current Core:** `core-purpose-context-public-beta-2026-10-09`
 
-Planned layout:
+The member-facing contract is intentionally simple: a coding agent clones AI-Verse Distribution and follows `INSTALL.md` to install AI-Verse into the member's intended project folder.
 
-```text
-parent/
-  Member project/             OS root and member-owned workspace state
-  .ai-verse-tools/
-    <project-path-hash>/
-      project.json           bootstrap ownership and progress receipt
-      tools/                 privately managed prerequisite programs
-      downloads/             verified download cache
-      staging/               disposable installer preparation
-      d/                     compact Distribution sources, environments and receipts
+The member does not need to choose release IDs, component SHAs, branch policy, prerequisite locations, setup commands, or doctor commands. Distribution owns those implementation details.
+
+## What the bootstrap does
+
+The canonical entrypoints are:
+
+macOS/Linux:
+
+```bash
+./scripts/bootstrap.sh --project "<target-project>"
 ```
 
-The private Distribution state directory is intentionally named `d` to preserve
-Windows path budget for Git's internal object/pack paths. Bootstrap child Git
-processes also enable `core.longpaths=true` through process-scoped Git config on
-Windows. This does not modify the member's global Git configuration.
+Windows PowerShell:
 
-Use `aiverse project-plan --project <folder> --json` to check the layout without
-writing any files. A custom `--stack` must be outside the project. Existing
-member files are never implicitly adopted or replaced. A nonempty project can
-resume only with matching bootstrap and Distribution installation receipts;
-the normal owner revision/integrity checks still apply during execution.
+```powershell
+.\scripts\bootstrap.ps1 --project "<target-project>"
+```
 
-Implementation status: layout admission, prerequisite inventory, serialized
-tool-stack claims, resumable progress receipts, and checksum-pinned private
-Node/npm acquisition are implemented. `aiverse project-tools --project <folder>
---json` checks available tools without writing. Add `--prepare-node` to obtain a
-private Node 22/npm 10 bundle if the available pair is incompatible. Neither
-command installs Core or modifies the OS destination.
+The bootstrap composes the full member Core installation flow:
 
-Private Python acquisition is implemented for macOS/Linux arm64 and x64 and
-Windows x64. Use `--prepare-python` to obtain the pinned standalone Python
-3.11.17 build when no compatible Python is found. It includes SSL, venv, and
-package installation support. The POSIX and PowerShell entry scripts under
-`scripts/` can prepare a temporary checksum-pinned Python interpreter outside
-the project when no compatible Python exists. They pass control to the same
-project installer and remove first-stage temporary files afterward.
+1. validate the target project safely before writes;
+2. select the current admitted Core automatically;
+3. prepare or reuse compatible prerequisites;
+4. install OS, Brain, Memory, Skills, and Data at their exact admitted revisions;
+5. run owner-controlled setup;
+6. create the persistent local launcher and extension instructions;
+7. run final owner-backed `status` and `doctor` checks;
+8. hand the installed project back to the coding agent for normal use.
 
-Distribution Skills commands now honor `AI_VERSE_SKILLS_ROOT`, matching the OS
-custom-provider location setting. Complete project-local Skills discovery and
-host invocation still require composed acceptance.
+A successful installation must pass the final health checks. The coding agent must not report success before that point.
 
-`project-init --project <folder> --distribution-source <checkout>` now composes
-preparation, private Distribution environment installation, Core owner install,
-setup, and status/doctor checks. It preserves an unchanged generated launcher
-and adds local extension instructions using the existing OS registry hook.
-It does not change tracked OS instructions. The launcher supplies private
-Node and Skills paths on future calls, without depending on the source checkout.
+## Host discovery after install
 
-Member installation requires an admitted Core release whose evidence contains
-`member_bootstrap.status = accepted` and `audit_repairs_included = true`.
-No current historical Core manifest has this new gate. The public command
-therefore stops before downloads or destination writes. An internal Python
-acceptance driver can exercise historical release mechanics with
-`qualification=True`; this is not a public CLI bypass or member release.
+AI-Verse OS is installed at the project root so supported coding agents discover the runtime contract naturally:
 
-Git setup uses an existing OS package manager when `--install-system-git` is
-explicitly allowed: Homebrew or Apple's Command Line Tools on macOS,
-apt/dnf/pacman on Linux, and user-scoped winget on Windows. Git is the exception
-to private runtime installation. OS approval or installer completion may be
-required. Linux uses noninteractive sudo so the chat never waits for an
-invisible password prompt. Unsupported systems stop with an installation link.
+- Codex and compatible agents: `AGENTS.md` and `.agents/skills/`;
+- Claude Code: `CLAUDE.md`, `AGENTS.md`, and `.claude/skills/`;
+- all hosts: `AI-VERSE.yaml` remains the machine-readable architecture/source-of-truth map.
 
-Repaired-release admission, actual host/memory invocation acceptance, and hosted
-Windows/Linux qualification remain incomplete. Preparation commands do not
-constitute release qualification. The project-bootstrap workflow exercises
-historical Core mechanics separately from member release admission.
+After installation the host should work from the installed project root and follow those files rather than continuing to treat Distribution as the runtime owner.
 
-Node archives are pinned to official v22.23.3 checksums. Extraction rejects
-outbound paths, outbound links, special entries, and oversized archives. Reuse
-compares the installed tree to a fresh extraction of verified cached bytes
-before running it. Existing system programs are not replaced. This private
-bundle was exercised on macOS arm64 with Node 22.23.3 and npm 10.9.9; Linux and
-Windows platform paths still need hosted acceptance.
+## Progressive onboarding
 
-The repaired Skills source requires Git LFS during provider checkout on this
-machine. Candidate metadata explicitly requests it. Setup reuses a suitable
-existing helper or obtains a checksum-pinned private Git LFS 3.8.0 binary.
-LFS filtering is configured only for project child processes; no global
-`git lfs install` or user Git configuration change is performed. Future
-launchers reconstruct that process configuration without persisting inherited
-Git configuration values or credentials.
+Full questionnaire-style onboarding is not required during installation. First use is progressive:
 
-Distribution child commands and generated launchers use isolated Python imports,
-so a developer checkout's PYTHONPATH cannot shadow the private installed package.
+- if the member already has a real task, begin the task and learn relevant context from it;
+- if there is no task yet, ask what they would like help with;
+- request deeper profile, preference, workspace, source, boundary, or goal information only when it becomes relevant or the member explicitly asks for a full intake.
 
-Standalone Python archive URLs and SHA256 digests are pinned from the
-`astral-sh/python-build-standalone` release `20261003`, rather than assuming
-Python.org publishes relocatable interpreter archives. The macOS arm64 package
-passed real version and SSL/venv/ensurepip probes locally. Other platforms still
-need hosted acceptance.
+This keeps installation separate from personal onboarding while still making the first session immediately useful.
 
-Local composed mechanics acceptance on macOS arm64 installed all five historical
-Core components at the project root, completed owner setup/status/doctor, and
-invoked status through the persistent private launcher with state `ready`.
-This proves installation mechanics for that historical set, not inclusion of
-later audit fixes or complete Codex/Claude/Cursor behavior.
+## Internal layout
 
-Required order for the complete entry point:
+Distribution may keep prerequisite tools, downloads, staging, receipts, and its private environment in a sibling `.ai-verse-tools/<project-path-hash>/` area. This is an internal implementation detail used to keep the member project clean and to preserve Windows path budget.
 
-1. Admit project layout and an exact release set before destination writes.
-2. Claim the separate tool stack and serialize bootstrap writers.
-3. Reuse compatible prerequisite programs; obtain missing tools privately with
-   verified download provenance and platform-specific compatibility checks.
-4. Prepare Distribution in staging, retaining a resumable progress receipt.
-5. Install Core at the still-empty project root through its owner lifecycles.
-6. Complete setup and discover host instructions at the final project location.
-7. Run owner health checks plus actual host and memory acceptance.
+The installer may prepare verified private Python/Node/npm/Git LFS tooling when the machine does not already provide compatible versions. Existing system programs are not silently replaced. Git installation through an OS package manager remains explicit when required.
 
-No moving branch may replace an admitted component revision. The older Core
-release remains historical until a release manifest containing the later audit
-repairs is qualified and admitted. Green layout tests alone do not qualify it.
+## Safety and resume behavior
+
+The target project is protected:
+
+- unrelated existing files are not overwritten or implicitly adopted;
+- a non-empty project can resume only when matching AI-Verse bootstrap and Distribution receipts prove it is the same installation;
+- component source is installed from exact admitted immutable revisions;
+- tracked source drift fails closed;
+- user/global Git configuration is not silently rewritten;
+- release installation grants no new permissions, transfers no Brain strategy authority, and initializes no arbitrary Data workspaces.
+
+## Current release qualification
+
+`core-purpose-context-public-beta-2026-10-09` is released and carries:
+
+- accepted member-bootstrap evidence;
+- `audit_repairs_included = true`;
+- Linux, macOS, and Windows member-project bootstrap qualification;
+- clean-machine Core qualification;
+- Distribution CI and Core lineage acceptance;
+- Purpose Context owner/isolation/Data/Memory/runtime/restart/composed-system qualification;
+- 12/12 accepted independent review questions.
+
+Distribution's forward Core ledger resolves this release as the current Core. Older Core sets remain historical/explicit and are not substituted for the current member install path.
+
+## Agent-facing entrypoint
+
+The canonical coding-agent instructions live in:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `INSTALL.md`
+
+Those files intentionally hide release-management and bootstrap internals from the member-facing prompt while preserving all safety checks inside Distribution.
