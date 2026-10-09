@@ -48,8 +48,34 @@
       }
     }
   ],
+  "evidence": {
+    "candidate_refs_frozen": true,
+    "qualification": {
+      "status": "accepted",
+      "system_record": "AI-Verse-System/docs/PURPOSE-CONTEXT-SLICE-12.3-CLOSURE.md",
+      "distribution_ci_run": 37911706836,
+      "clean_machine_core_run": 37916866642,
+      "member_project_bootstrap_run": 37918170553,
+      "owner_contract_run": 37921740519,
+      "workspace_isolation_run": 37922223517,
+      "data_memory_integration_run": 37928193308,
+      "context_ladder_runtime_run": 37929899476,
+      "restart_rebuild_run": 37930360090,
+      "composed_core_run": 37931207537,
+      "conditional_agent_composed_run": 37933117320,
+      "conditional_agent_lineage_run": 37933117450
+    },
+    "independent_review": {
+      "status": "accepted",
+      "system_record": "AI-Verse-System/docs/PURPOSE-CONTEXT-SLICE-12.4-CLOSURE.md",
+      "questions_accepted": 12
+    },
+    "purpose_runtime": {
+      "gateway_revision": "1772b75e2add73a524715f746e87b3a6b5561bf6"
+    }
+  },
   "blockers": [
-    "Purpose Context Core admission tasks 4-6 are not yet complete"
+    "Purpose Context Core admission tasks 5-7 are not yet complete"
   ],
   "authority": {
     "grants_permissions": false,
