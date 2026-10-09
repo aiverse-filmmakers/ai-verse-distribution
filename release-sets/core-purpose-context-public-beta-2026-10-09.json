@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "core-purpose-context-public-beta-2026-10-09",
   "profile": "core",
-  "status": "blocked",
+  "status": "released",
   "created_at": "2026-10-09",
   "lineage": {
     "parent": "core-repaired-public-beta-2026-10-06",
@@ -50,6 +50,17 @@
   ],
   "evidence": {
     "candidate_refs_frozen": true,
+    "member_bootstrap": {
+      "status": "accepted",
+      "audit_repairs_included": true,
+      "qualification_head": "578fc400ade045855bbf9bfcab9e25daf651cd42",
+      "qualification_run": 37918170553,
+      "jobs": {
+        "ubuntu": 113779355161,
+        "macos": 113779354630,
+        "windows": 113779354900
+      }
+    },
     "qualification": {
       "status": "accepted",
       "system_record": "AI-Verse-System/docs/PURPOSE-CONTEXT-SLICE-12.3-CLOSURE.md",
@@ -86,9 +97,6 @@
       "rollback_rule": "software-only-owner-state-preserved"
     }
   },
-  "blockers": [
-    "Purpose Context Core admission tasks 6-7 are not yet complete"
-  ],
   "authority": {
     "grants_permissions": false,
     "transfers_brain_strategy": false,
