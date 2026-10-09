@@ -9,7 +9,6 @@
     "policy": "same-or-descendant"
   },
   "blockers": [
-    "Candidate dependency-lock freeze pending",
     "Full Core requalification pending"
   ],
   "runtime_requirements": {
@@ -45,7 +44,12 @@
       "id": "ai-verse-data",
       "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
       "revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
-      "install_order": 50
+      "install_order": 50,
+      "dependency_lock": {
+        "scheme": "distribution-companion-npm-lock-v1",
+        "manifest": "ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/lock.json",
+        "manifest_sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
+      }
     }
   ],
   "authority": {
@@ -100,6 +104,19 @@
         "status": "ahead",
         "ahead_by": 13,
         "behind_by": 0
+      }
+    },
+    "dependency_locks_frozen": true,
+    "dependency_locks_frozen_at": "2026-10-09",
+    "dependency_lock_checks": {
+      "ai-verse-data": {
+        "source_revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
+        "source_manifest": "package.json",
+        "source_manifest_unchanged_from_parent": true,
+        "source_manifest_sha256": "427fcd04fb9290e2df7c24ee19d2bf7abb427d7bec8bd2e857a893f4cc8ade2e",
+        "lockfile_sha256": "fa5c3e0f8df2c98fa48c4f7f163caff31a1ef16dc3e27223c217c38c6ff9ade3",
+        "dependency_tree_sha256": "a3ac0422af7c690006e88dcbf917a27fa6101b3497662128774d315463d0b221",
+        "manifest_sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
       }
     },
     "qualification_uses_moving_branch_heads": false
