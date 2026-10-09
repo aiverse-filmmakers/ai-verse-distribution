@@ -4,9 +4,13 @@
   "profile": "core",
   "status": "blocked",
   "created_at": "2026-10-09",
+  "lineage": {
+    "parent": "core-repaired-public-beta-2026-10-06",
+    "policy": "same-or-descendant"
+  },
   "components": [],
   "blockers": [
-    "Purpose Context Core admission tasks 2-6 are not yet complete"
+    "Purpose Context Core admission tasks 3-6 are not yet complete"
   ],
   "authority": {
     "grants_permissions": false,
