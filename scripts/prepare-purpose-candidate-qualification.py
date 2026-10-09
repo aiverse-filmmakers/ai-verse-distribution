@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,13 +14,7 @@ PROFILE_ACCEPTANCE = ROOT / "tests" / "acceptance" / "profile_acceptance.py"
 
 
 def _stage_exact_owner_lifecycle(candidate: dict) -> None:
-    """Temporarily admit only the frozen candidate refs to existing trusted owner adapters.
-
-    Distribution intentionally fail-closes lifecycle adapters by exact revision. A blocked
-    descendant candidate therefore cannot use those adapters until release admission. For
-    qualification only, extend the in-worktree allowlists to the exact candidate SHAs. The
-    canonical adapter allowlists remain unchanged until Slice 12.5 admission.
-    """
+    """Temporarily admit only the frozen candidate refs to existing trusted owner adapters."""
     revisions = {item["id"]: item["revision"] for item in candidate.get("components", [])}
     required = {
         "ai-verse-os": "PUBLIC_BETA_OS_REVISIONS",
@@ -37,28 +32,19 @@ def _stage_exact_owner_lifecycle(candidate: dict) -> None:
             'REPAIRED_CORE_OS = "e74a4e05b1f891e6f871f34a298bf10363a11d88"\n'
             f'PURPOSE_CONTEXT_OS = "{revisions["ai-verse-os"]}"\n',
         ),
-        (
-            '    REPAIRED_CORE_OS,\n})',
-            '    REPAIRED_CORE_OS,\n    PURPOSE_CONTEXT_OS,\n})',
-        ),
+        ('    REPAIRED_CORE_OS,\n})', '    REPAIRED_CORE_OS,\n    PURPOSE_CONTEXT_OS,\n})'),
         (
             'REPAIRED_CORE_BRAIN = "7c77b053df627e61b3d7f11d029500ab61095c9c"\n',
             'REPAIRED_CORE_BRAIN = "7c77b053df627e61b3d7f11d029500ab61095c9c"\n'
             f'PURPOSE_CONTEXT_BRAIN = "{revisions["ai-verse-brain"]}"\n',
         ),
-        (
-            '    REPAIRED_CORE_BRAIN,\n})',
-            '    REPAIRED_CORE_BRAIN,\n    PURPOSE_CONTEXT_BRAIN,\n})',
-        ),
+        ('    REPAIRED_CORE_BRAIN,\n})', '    REPAIRED_CORE_BRAIN,\n    PURPOSE_CONTEXT_BRAIN,\n})'),
         (
             'REPAIRED_CORE_MEMORY = "b0cae8cd8da38aa657fbc736c575177aa75e5ec7"\n',
             'REPAIRED_CORE_MEMORY = "b0cae8cd8da38aa657fbc736c575177aa75e5ec7"\n'
             f'PURPOSE_CONTEXT_MEMORY = "{revisions["ai-verse-memory"]}"\n',
         ),
-        (
-            '    REPAIRED_CORE_MEMORY,\n})',
-            '    REPAIRED_CORE_MEMORY,\n    PURPOSE_CONTEXT_MEMORY,\n})',
-        ),
+        ('    REPAIRED_CORE_MEMORY,\n})', '    REPAIRED_CORE_MEMORY,\n    PURPOSE_CONTEXT_MEMORY,\n})'),
     ]
     for old, new in patches:
         if old not in text:
@@ -78,8 +64,6 @@ def main() -> int:
     if not parent:
         raise RuntimeError("qualification candidate is missing lineage parent")
 
-    # Create an ephemeral, explicit-install-only release record in the CI working tree.
-    # This is never a channel/default and is not a Core-lineage admission mutation.
     staged = json.loads(json.dumps(candidate))
     staged["status"] = "released"
     staged["blockers"] = []
@@ -112,6 +96,14 @@ def main() -> int:
     COMPAT_PATH.write_text(json.dumps(compatibility, indent=2) + "\n", encoding="utf-8")
 
     _stage_exact_owner_lifecycle(candidate)
+
+    # The generic bootstrap fixture expects candidate-local companion locks. Purpose
+    # freezes them in Distribution's canonical dependency-locks store, so mirror the
+    # already-frozen bytes into the ephemeral fixture location for this CI checkout.
+    fixture_locks = CANDIDATE_PATH.parent / "dependency_locks"
+    if fixture_locks.exists():
+        shutil.rmtree(fixture_locks)
+    shutil.copytree(ROOT / "dependency-locks", fixture_locks)
 
     text = PROFILE_ACCEPTANCE.read_text(encoding="utf-8")
     install_old = 'install = run_cli("install", "--profile", "core", "--root", str(root))'
