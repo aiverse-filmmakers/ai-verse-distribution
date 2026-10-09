@@ -119,6 +119,7 @@
         "manifest_sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
       }
     },
+    "qualification_ref_policy": "exact-commit-sha-only",
     "qualification_uses_moving_branch_heads": false
   }
 }
