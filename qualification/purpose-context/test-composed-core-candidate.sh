@@ -22,13 +22,13 @@ expected = dict(zip(
     ['ai-verse-os','ai-verse-brain','ai-verse-memory','ai-verse-skills','ai-verse-data'],
     sys.argv[1:]
 ))
-assert p['release_set_id'] == 'core-purpose-context-candidate-2026-10-09', p
-refs = p.get('refs') or p.get('components') or {}
-for component, sha in expected.items():
-    value = refs.get(component)
-    if isinstance(value, dict):
-        value = value.get('revision') or value.get('ref') or value.get('sha')
-    assert value == sha, (component, value, sha)
+assert p['id'] == 'core-purpose-context-candidate-2026-10-09', p
+assert p['profile'] == 'core', p
+assert p['status'] == 'blocked', p
+refs = {row['id']: row['revision'] for row in p['components']}
+assert refs == expected, (refs, expected)
+assert p['evidence']['qualification_ref_policy'] == 'exact-commit-sha-only', p
+assert p['evidence']['qualification_uses_moving_branch_heads'] is False, p
 PY
 
 # Run the canonical composed Core acceptance on one exact installed system.
