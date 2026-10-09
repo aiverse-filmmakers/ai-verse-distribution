@@ -1,326 +1,118 @@
 # AI-Verse Distribution
 
-**The canonical one-product installer, release-set manager, and lifecycle orchestrator for AI-Verse.**
+**The canonical installer and release manager for AI-Verse.**
 
-AI-Verse remains modular internally. Distribution gives a normal user one product path while keeping the detailed lifecycle available for CI, support, recovery and advanced use.
+For members using Codex, Claude Code, or another coding agent, the intended experience is simple:
 
-For an ordinary first run:
+> Clone this locally and use its install procedure to set AI-Verse up in this project.
 
-```bash
-aiverse start
-```
+That is enough. The repository contains the instructions the coding agent needs.
 
-That one action:
+## Coding-agent installation
+
+- Codex and compatible agents: read `AGENTS.md`.
+- Claude Code: read `CLAUDE.md`.
+- Canonical install procedure: `INSTALL.md`.
+
+The member does **not** need to choose release IDs, component SHAs, branches, prerequisite versions, installer folders, setup commands, or doctor commands.
+
+Distribution handles those details automatically and only reports installation success after the final health checks pass.
+
+## What gets installed
+
+The current member Core release is:
+
+`core-purpose-context-public-beta-2026-10-09`
+
+Core contains:
+
+- AI-Verse OS
+- Brain
+- Memory
+- Skills
+- Data
+
+Distribution resolves the exact admitted immutable revisions automatically.
+
+The current Core is released for macOS, Linux, and Windows and carries accepted member-bootstrap, clean-machine, lineage, isolation, Data/Memory, runtime, restart/rebuild, and composed-system qualification evidence.
+
+## What the install procedure does
+
+The project install flow:
 
 ```text
-installs the exact released Agent set
--> performs safe owner-controlled setup
--> verifies whole-profile health
--> stops instead of guessing if repair/migration is needed
--> hands off to conversational use
--> keeps deeper onboarding progressive
+identify the intended project
+-> prepare/reuse required tools
+-> resolve the current admitted Core
+-> install all Core components
+-> run owner-controlled setup
+-> create persistent local runtime instructions
+-> run status
+-> run doctor
+-> hand the project back to the coding agent
 ```
 
-A successful first run ends with:
+After installation, AI-Verse OS lives at the project root so coding agents discover the shipped runtime instructions directly through `AGENTS.md`, `CLAUDE.md`, `AI-VERSE.yaml`, `.agents/skills/`, and `.claude/skills/`.
 
-> AI-Verse is ready. What would you like help with?
+## Onboarding
 
-It does not silently grant permissions, transfer Brain strategy, initialize arbitrary Data workspaces, enable remote exposure, or create a second runtime owner.
+Onboarding is progressive rather than a mandatory installation questionnaire.
 
-Distribution coordinates owner-controlled component lifecycle. It does not absorb component engines or become a source of truth for Brain, Memory, Data, Skills, Bots, Gateway, Automations, Connections, Token, Dashboard, or Apps.
+If the member already has a real task, AI-Verse starts with that task and learns relevant context as needed. A deeper intake remains available when explicitly requested.
 
-## Start: ordinary product path
+## Manual/advanced CLI
 
-Requirements for the released Agent beta set:
+Distribution also provides the `aiverse` lifecycle CLI for support, CI, recovery, and advanced use.
 
-- Python 3.11+
-- Node.js 22+
-- npm 10.x for the frozen Data companion dependency lock
-- Git
-- macOS, Linux, or Windows
-
-Install the Distribution CLI from this repository, then run:
-
-```bash
-python -m pip install .
-aiverse start
-```
-
-Optional fresh-install root:
-
-```bash
-aiverse start --root ~/AI-Verse
-```
-
-`aiverse start` always uses a released immutable Agent set. If a Distribution lock already exists, it never silently changes profile, release set or installation root. Disabled, unhealthy, migration-required or ambiguous states stop with a safe diagnostic handoff rather than being auto-repaired.
-
-For an installation that was previously set up and later becomes specifically `setup-required`, `aiverse start` may use the exact released OS reconcile contract. The automatic allowlist is intentionally tiny: one owner-controlled Brain attachment/init action, using the exact Brain revision already locked by Distribution. Registry locks, migrations, unknown automatic actions, multiple automatic actions, other component setup, credentials, permissions and destructive changes are never auto-repaired. Every repair is followed by normal status/doctor verification before the conversational handoff.
-
-Deep onboarding is not a mandatory first-run questionnaire. The normal path becomes useful first, then learns additional information when it becomes relevant. Explicit `aiverse onboard` remains available for advanced configuration.
-
-Distribution does not currently invent a background service manager. A successful start returns the verified AI-Verse root and conversational handoff; supported runtimes remain the execution owners.
-
-## Advanced lifecycle: install
-
-Requirements for the released Core beta set:
-
-- Python 3.11+
-- Node.js 22.23.3+
-- npm 10.x for the frozen Data companion dependency lock
-- Git and Git LFS
-- macOS, Linux, or Windows
-
-Install the Distribution CLI from this repository:
+Install the CLI from this repository:
 
 ```bash
 python -m pip install .
 ```
 
-For explicit lifecycle control, install a profile without running the product bootstrap:
+Common lifecycle commands:
 
 ```bash
-aiverse install
-```
-
-Interactive terminals ask for Core, Agent, Full, or Custom. Choosing Custom then presents the components available in the admitted release set and accepts comma-separated numbers or component IDs. Distribution closes required dependencies after that choice. Non-interactive installation defaults to Core.
-
-Explicit examples:
-
-```bash
-aiverse install --profile core --root ~/AI-Verse
-aiverse install --profile custom --component ai-verse-os --component ai-verse-memory --root ~/AI-Verse
-```
-
-The installer resolves only exact immutable component commit IDs from an admitted release set. Moving `main` branches are never substituted.
-
-When a frozen historical component lacks its own package-manager lock, Distribution may ship a release-scoped companion dependency lock bound to that exact source manifest. The current Core Data artifact uses this mechanism: the Data Git revision stays unchanged, while dependency installation occurs from tracked source bytes in isolated Distribution staging through verified `npm ci`. Companion locks control packaging only and never own Data records or other canonical user state.
-
-The current released Core set is:
-
-`core-repaired-public-beta-2026-10-06`
-
-Its OS, Brain, Memory, Skills, and Data revisions form the protected forward Core baseline. Future Core releases may keep each protected revision or advance it to a Git descendant, but may not silently regress to an older or unrelated revision. The append-only ledger and Git ancestry checks are documented in `docs/CORE-LINEAGE.md`.
-
-The released Agent public beta is `agent-public-beta-2026-09-14`: Core + Gateway + Automations + Multiple Bots + Token at exact immutable revisions. Its composed clean-machine gate passed on Ubuntu, macOS, and Windows, with exact qualification evidence frozen in the release manifest.
-
-The Full profile remains explicitly blocked until Connections, Dashboard, and Apps have one admitted compatible Full release set.
-
-## Setup
-
-After package installation:
-
-```bash
+aiverse install --profile core
 aiverse setup
-```
-
-To explicitly initialize selected Data workspaces during setup:
-
-```bash
-aiverse setup --workspace project-a --workspace project-b
-```
-
-No workspace is initialized unless it is explicitly selected.
-
-Setup invokes each component's owner-controlled safe lifecycle.
-
-For the current Core public-beta set this uses the standardized owner lifecycles for OS, Brain, Memory and Skills, plus the frozen Data owner lifecycle from its deterministic Distribution staging runtime. Setup does not transfer Brain strategic ownership and Data initializes only explicitly selected workspaces.
-
-Setup is idempotent where the owner lifecycle is idempotent.
-
-## Onboard
-
-```bash
-aiverse onboard
-```
-
-Distribution hands off to owner onboarding. It never invents Brain goals or silently hands strategic ownership to Brain.
-
-On an interactive terminal, `aiverse onboard` keeps strategic direction with its current owner. It may capture an optional Brain-owned ongoing practice/standard without transferring strategy.
-
-For a non-strategic Brain practice:
-
-```bash
-aiverse onboard --practice "Keep verification evidence explicit"
-```
-
-Strategic Brain flags such as `--desired-state`, `--success-definition` and `--boundary` are accepted only for systems where Brain already owns strategic direction through a separate explicit handover. Distribution never performs that handover implicitly. Expert automation may still pass an existing answers file with `--brain-answers`; direct flags and an answers file are mutually exclusive.
-
-## Verify
-
-Fast live status:
-
-```bash
 aiverse status
-aiverse status --json
-```
-
-Deep verification:
-
-```bash
 aiverse doctor
-aiverse doctor --json
-```
-
-Per-component lifecycle:
-
-```bash
-aiverse component status ai-verse-memory
-aiverse component doctor ai-verse-data
-aiverse component disable ai-verse-memory
-aiverse component enable ai-verse-memory
-aiverse component update ai-verse-data
-aiverse component uninstall ai-verse-data
-aiverse component install ai-verse-data
-aiverse component setup ai-verse-data
-```
-
-Distribution refuses lifecycle operations that the exact owner artifact does not safely expose.
-
-## Use
-
-Show the installed root and runtime handoff:
-
-```bash
 aiverse open
 ```
 
-Distribution does not invent a second runtime. The AI-Verse host and later Gateway remain the execution owners.
+For the member project flow, prefer `INSTALL.md` rather than manually reproducing lifecycle steps.
 
-## Update, rollback, disable, uninstall
+## Safety model
 
-Preview compatible release-set changes:
+Distribution coordinates owner-controlled lifecycle; it does not become the source of truth for OS, Brain, Memory, Skills, Data, Gateway, Automations, Bots, Token, Dashboard, Connections, or Apps.
 
-```bash
-aiverse update
-aiverse update --to <release-set-id>
-```
+Installation does not silently:
 
-Apply only an admitted compatible set:
+- grant permissions;
+- transfer Brain strategic authority;
+- initialize arbitrary workspaces;
+- overwrite unrelated member files;
+- substitute moving branches for admitted component revisions;
+- roll back canonical user state.
 
-```bash
-aiverse update --to <release-set-id> --apply
-```
-
-Preview software rollback:
-
-```bash
-aiverse rollback --to <known-compatible-release-set>
-```
-
-Apply:
-
-```bash
-aiverse rollback --to <known-compatible-release-set> --apply
-```
-
-Rollback changes software versions. It does not pretend to roll back canonical user state. Cross-version update and rollback are accepted only when the compatibility matrix explicitly admits that exact transition. Owner migration and compatibility rules remain authoritative.
-
-Component uninstall preserves canonical user-owned state where the component contract promises preservation. Distribution will not delete the AI-Verse OS host root because that root may contain user-owned canonical state.
-
-## Diagnostics and support bundle
-
-```bash
-aiverse support-bundle
-aiverse support-bundle --output ./aiverse-support.zip
-```
-
-The bundle contains structured Distribution lock, platform, and doctor evidence. It does not collect environment variables. Sensitive field names and credential-shaped text in diagnostic output are redacted.
+The installer fails closed when the project layout, release integrity, owner lifecycle, or health state is unsafe or ambiguous.
 
 ## Profiles
 
-**Core**
+**Core** — OS + Brain + Memory + Skills + Data. This is the current recommended member project install.
 
-OS + Brain + Memory + Skills + Data.
+**Agent** — Core + Gateway + Automations + Multiple Bots + Token. Managed separately from the direct Codex/Claude member-project Core path.
 
-**Agent**
+**Full** — Agent + Connections + Dashboard + Apps when a compatible Full release is admitted.
 
-Core + Gateway + Automations + Multiple Bots + Token. Token is a required public-beta component and remains attribution/cost truth only, never operational authority.
+**Custom** — explicit component selection from one compatible admitted release set.
 
-**Full**
+## Architecture and qualification
 
-Agent + Connections + Dashboard + Apps when released.
+Detailed contracts and evidence live in:
 
-**Custom**
-
-Explicit components selected from one compatible admitted release set. Required dependencies are resolved automatically. For example, selecting Data also selects OS because Data's public-beta lifecycle requires the OS host.
-
-Profiles select software. They do not grant permissions, authorize tools, expose network services, initialize every workspace, or transfer Brain strategic authority.
-
-Machine-readable definitions:
-
-- `profiles/profiles.json`
-- `compatibility/matrix.json`
-- `release-sets/core-repaired-public-beta-2026-10-06.json` (current Core)
-- `release-sets/core-public-beta-2026-09-13.json` (historical lineage anchor)
-- `release-sets/core-first-member-beta.json` (historical first-member set)
-- `release-sets/agent-public-beta-2026-09-14.json`
-- `release-sets/full-public-beta-pending.json`
-- `src/aiverse_distribution/catalog/core_lineage.json` (append-only forward Core ledger)
-
-The CLI ships a validated copy of the release catalog under `src/aiverse_distribution/catalog/`.
-
-## Distribution lock
-
-The local Distribution receipt lives under:
-
-```text
-~/.aiverse/distribution/locks/current.json
-```
-
-or the directory selected by `AIVERSE_DISTRIBUTION_HOME`.
-
-It records what Distribution installed. It is not the authority for component health, enablement, authorization, migration state, or domain data. `status` and `doctor` ask the component owners for live evidence.
-
-## Acceptance
-
-Cross-platform unit CI runs on Linux, macOS, and Windows.
-
-`.github/workflows/clean-machine-core.yml` exercises the real immutable Core repositories through:
-
-```text
-install -> setup -> explicit onboarding -> status -> doctor
--> disable/enable preservation checks -> owner-safe uninstall/reinstall
--> Brain/Memory/Skills/Data preservation -> deterministic Data reinstall
--> update no-op -> rollback no-op -> open/use handoff
-```
-
-`.github/workflows/clean-machine-agent.yml` is the Agent release gate. It installs the complete immutable Agent candidate on Ubuntu, macOS, and Windows and proves real composed use: Gateway + Brain Goal ownership, Memory, Skills, Data, two durable collaborating Bots, Automations wake delivery, Token collection/projection, restart/recovery, safe lifecycle operations, and state preservation.
-
-See `docs/ACCEPTANCE.md`.
-
-## What setup does and does not grant
-
-Setup may attach, initialize, discover, or verify a component only through the component owner's supported path.
-
-Setup does **not**:
-
-- transfer strategic direction to Brain;
-- grant filesystem/workspace permissions;
-- authorize external accounts;
-- authorize Skills or tools;
-- expose Gateway publicly;
-- create Bots automatically;
-- initialize Data in every workspace;
-- migrate canonical state without the owner's explicit migration contract.
-
-## Security boundary
-
-Release manifests contain data only. They do not contain shell snippets.
-
-Lifecycle commands are encoded in trusted Distribution code as argv arrays and run with `shell=False`. A release-set file therefore cannot inject arbitrary shell commands.
-
-Distribution also fails closed on:
-
-- non-immutable component refs;
-- unsupported platforms/runtime floors;
-- incompatible or unreleased profiles;
-- unsafe owner lifecycle gaps;
-- tracked OS modifications during a version-set change.
-
-## Architecture and history
-
-Read:
-
+- `INSTALL.md`
+- `docs/PROJECT-BOOTSTRAP.md`
 - `docs/ARCHITECTURE.md`
 - `docs/RELEASE-SET-CONTRACT.md`
 - `docs/ACCEPTANCE.md`
@@ -328,6 +120,4 @@ Read:
 - `docs/HISTORY.md`
 - `docs/ROADMAP.md`
 
-Canonical system contracts remain in `aiverse-filmmakers/AI-Verse-System`.
-
-This repository existed before the current modular AI-Verse architecture as an earlier profile/package experiment. That work is preserved in Git history and documented in `docs/HISTORY.md`. It is historical evidence, not current product truth.
+Canonical cross-system architecture contracts remain in `aiverse-filmmakers/AI-Verse-System`.
