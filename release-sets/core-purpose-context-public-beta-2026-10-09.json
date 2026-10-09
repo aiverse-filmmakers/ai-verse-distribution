@@ -72,10 +72,22 @@
     },
     "purpose_runtime": {
       "gateway_revision": "1772b75e2add73a524715f746e87b3a6b5561bf6"
+    },
+    "transition_policy": {
+      "cross_release_update_admitted": false,
+      "cross_release_rollback_admitted": false,
+      "update_from": [
+        "core-purpose-context-public-beta-2026-10-09"
+      ],
+      "rollback_to": [
+        "core-purpose-context-public-beta-2026-10-09"
+      ],
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved"
     }
   },
   "blockers": [
-    "Purpose Context Core admission tasks 5-7 are not yet complete"
+    "Purpose Context Core admission tasks 6-7 are not yet complete"
   ],
   "authority": {
     "grants_permissions": false,
