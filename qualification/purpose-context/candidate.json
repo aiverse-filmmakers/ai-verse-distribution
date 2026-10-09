@@ -9,7 +9,6 @@
     "policy": "same-or-descendant"
   },
   "blockers": [
-    "Candidate lineage verification pending",
     "Candidate dependency-lock freeze pending",
     "Full Core requalification pending"
   ],
@@ -63,6 +62,45 @@
       "ai-verse-memory": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
       "ai-verse-skills": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
       "ai-verse-data": "f8978f8f7a1bc94edecddc2662112233289159a3"
+    },
+    "lineage_verified": true,
+    "lineage_verified_at": "2026-10-09",
+    "lineage_checks": {
+      "ai-verse-os": {
+        "baseline": "e74a4e05b1f891e6f871f34a298bf10363a11d88",
+        "candidate": "b34bf41cd3cf267970a2462b2f881d963eebd55c",
+        "status": "ahead",
+        "ahead_by": 161,
+        "behind_by": 0
+      },
+      "ai-verse-brain": {
+        "baseline": "7c77b053df627e61b3d7f11d029500ab61095c9c",
+        "candidate": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+        "status": "ahead",
+        "ahead_by": 21,
+        "behind_by": 0
+      },
+      "ai-verse-memory": {
+        "baseline": "b0cae8cd8da38aa657fbc736c575177aa75e5ec7",
+        "candidate": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+        "status": "ahead",
+        "ahead_by": 6,
+        "behind_by": 0
+      },
+      "ai-verse-skills": {
+        "baseline": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+        "candidate": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+        "status": "identical",
+        "ahead_by": 0,
+        "behind_by": 0
+      },
+      "ai-verse-data": {
+        "baseline": "6e8781ff1dcd96a35dfb27868bd60605361483d0",
+        "candidate": "f8978f8f7a1bc94edecddc2662112233289159a3",
+        "status": "ahead",
+        "ahead_by": 13,
+        "behind_by": 0
+      }
     },
     "qualification_uses_moving_branch_heads": false
   }
