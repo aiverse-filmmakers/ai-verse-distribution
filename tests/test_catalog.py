@@ -9,15 +9,15 @@ class CatalogTests(unittest.TestCase):
 
     def test_core_is_exact_and_released(self):
         release = self.catalog.resolve("core")
-        self.assertEqual(release.id, "core-repaired-public-beta-2026-10-06")
+        self.assertEqual(release.id, "core-purpose-context-public-beta-2026-10-09")
         self.assertEqual(
             {component.id: component.revision for component in release.components},
             {
-                "ai-verse-os": "e74a4e05b1f891e6f871f34a298bf10363a11d88",
-                "ai-verse-brain": "7c77b053df627e61b3d7f11d029500ab61095c9c",
-                "ai-verse-memory": "b0cae8cd8da38aa657fbc736c575177aa75e5ec7",
+                "ai-verse-os": "4f03849444b1d01ad81317bf0fece082d5a30e79",
+                "ai-verse-brain": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+                "ai-verse-memory": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
                 "ai-verse-skills": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
-                "ai-verse-data": "6e8781ff1dcd96a35dfb27868bd60605361483d0",
+                "ai-verse-data": "f8978f8f7a1bc94edecddc2662112233289159a3",
             },
         )
         self.assertEqual(self.catalog.release_data["channels"]["core"], release.id)
@@ -64,16 +64,16 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(
             {component.id: component.revision for component in candidate.components},
             {
-          "ai-verse-os": "156f15f162c6d63159b54d3ad87e0342ec7cf9aa",
-          "ai-verse-brain": "16c0b7ea32fcb4759cfb8368876b6985016eab68",
-          "ai-verse-memory": "1c6acf036d42937e57d94dfe48ac501727861653",
-          "ai-verse-skills": "71264af6b2b9a575812fe18858d75a54ea2ff545",
-          "ai-verse-data": "8edde7dca5afa34e300130cc6b8ee2b4170ad40f",
-          "ai-verse-gateway": "7627df658b2071ecb4ea242572343edfb7abf768",
-          "ai-verse-automations": "caaed83b98026dd955640fc015d181529b91a1c6",
-          "ai-verse-multiple-bots": "c600e2bc014351a61e1c0e2673fc63f5d5fa54ec",
-          "ai-verse-token": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4"
-},
+                "ai-verse-os": "156f15f162c6d63159b54d3ad87e0342ec7cf9aa",
+                "ai-verse-brain": "16c0b7ea32fcb4759cfb8368876b6985016eab68",
+                "ai-verse-memory": "1c6acf036d42937e57d94dfe48ac501727861653",
+                "ai-verse-skills": "71264af6b2b9a575812fe18858d75a54ea2ff545",
+                "ai-verse-data": "8edde7dca5afa34e300130cc6b8ee2b4170ad40f",
+                "ai-verse-gateway": "7627df658b2071ecb4ea242572343edfb7abf768",
+                "ai-verse-automations": "caaed83b98026dd955640fc015d181529b91a1c6",
+                "ai-verse-multiple-bots": "c600e2bc014351a61e1c0e2673fc63f5d5fa54ec",
+                "ai-verse-token": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
+            },
         )
         self.assertFalse(candidate.raw["promotion"]["default_channel"])
         self.assertFalse(candidate.raw["promotion"]["automatic_update"])
@@ -124,7 +124,7 @@ class CatalogTests(unittest.TestCase):
         )
         self.assertFalse(candidate.raw["promotion"]["default_channel"])
         self.assertFalse(candidate.raw["promotion"]["automatic_update"])
-        self.assertFalse(candidate.raw["promotion"]["cross_release_transition_admitted"])
+        self.assertEqual(candidate.raw["evidence"]["distribution_acceptance"]["status"], "accepted")
 
     def test_context_ladder_candidate_cross_release_transitions_fail_closed(self):
         candidate_id = "agent-context-ladder-rc1-2026-09-15"
@@ -158,7 +158,7 @@ class CatalogTests(unittest.TestCase):
             "custom",
             components=["ai-verse-os", "ai-verse-memory"],
         )
-        self.assertEqual(release.id, "core-repaired-public-beta-2026-10-06")
+        self.assertEqual(release.id, "core-purpose-context-public-beta-2026-10-09")
         self.assertEqual([x.id for x in release.components], ["ai-verse-os", "ai-verse-memory"])
 
     def test_custom_closes_required_dependencies(self):

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "policy": "append-only-same-or-descendant",
   "anchor_release": "core-public-beta-2026-09-13",
-  "current_release": "core-repaired-public-beta-2026-10-06",
+  "current_release": "core-purpose-context-public-beta-2026-10-09",
   "protected_components": [
     "ai-verse-os",
     "ai-verse-brain",
@@ -177,6 +177,110 @@
         "transfers_brain_strategy": false,
         "initializes_all_workspaces": false
       }
+    },
+    {
+      "id": "core-purpose-context-public-beta-2026-10-09",
+      "profile": "core",
+      "status": "released",
+      "created_at": "2026-10-09",
+      "lineage": {
+        "parent": "core-repaired-public-beta-2026-10-06",
+        "policy": "same-or-descendant"
+      },
+      "runtime_requirements": {
+        "git_lfs": true
+      },
+      "components": [
+        {
+          "id": "ai-verse-os",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+          "revision": "4f03849444b1d01ad81317bf0fece082d5a30e79",
+          "install_order": 10
+        },
+        {
+          "id": "ai-verse-brain",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+          "revision": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+          "install_order": 20
+        },
+        {
+          "id": "ai-verse-memory",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+          "revision": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+          "install_order": 30
+        },
+        {
+          "id": "ai-verse-skills",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+          "revision": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+          "install_order": 40
+        },
+        {
+          "id": "ai-verse-data",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+          "revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
+          "install_order": 50,
+          "dependency_lock": {
+            "scheme": "distribution-companion-npm-lock-v1",
+            "manifest": "ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/lock.json",
+            "manifest_sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
+          }
+        }
+      ],
+      "evidence": {
+        "candidate_refs_frozen": true,
+        "member_bootstrap": {
+          "status": "accepted",
+          "audit_repairs_included": true,
+          "qualification_head": "578fc400ade045855bbf9bfcab9e25daf651cd42",
+          "qualification_run": 37918170553,
+          "jobs": {
+            "ubuntu": 113779355161,
+            "macos": 113779354630,
+            "windows": 113779354900
+          }
+        },
+        "qualification": {
+          "status": "accepted",
+          "system_record": "AI-Verse-System/docs/PURPOSE-CONTEXT-SLICE-12.3-CLOSURE.md",
+          "distribution_ci_run": 37911706836,
+          "clean_machine_core_run": 37916866642,
+          "member_project_bootstrap_run": 37918170553,
+          "owner_contract_run": 37921740519,
+          "workspace_isolation_run": 37922223517,
+          "data_memory_integration_run": 37928193308,
+          "context_ladder_runtime_run": 37929899476,
+          "restart_rebuild_run": 37930360090,
+          "composed_core_run": 37931207537,
+          "conditional_agent_composed_run": 37933117320,
+          "conditional_agent_lineage_run": 37933117450
+        },
+        "independent_review": {
+          "status": "accepted",
+          "system_record": "AI-Verse-System/docs/PURPOSE-CONTEXT-SLICE-12.4-CLOSURE.md",
+          "questions_accepted": 12
+        },
+        "purpose_runtime": {
+          "gateway_revision": "1772b75e2add73a524715f746e87b3a6b5561bf6"
+        },
+        "transition_policy": {
+          "cross_release_update_admitted": false,
+          "cross_release_rollback_admitted": false,
+          "update_from": [
+            "core-purpose-context-public-beta-2026-10-09"
+          ],
+          "rollback_to": [
+            "core-purpose-context-public-beta-2026-10-09"
+          ],
+          "state_rule": "owner-preserved",
+          "rollback_rule": "software-only-owner-state-preserved"
+        }
+      },
+      "authority": {
+        "grants_permissions": false,
+        "transfers_brain_strategy": false,
+        "initializes_all_workspaces": false
+      }
     }
   ],
   "compatibility": {
@@ -197,6 +301,25 @@
       ],
       "rollback_to": [
         "core-repaired-public-beta-2026-10-06"
+      ]
+    },
+    "core-purpose-context-public-beta-2026-10-09": {
+      "profile": "core",
+      "status": "released",
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "python_min": "3.11",
+      "node_min": "22.23.3",
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "update_from": [
+        "core-purpose-context-public-beta-2026-10-09"
+      ],
+      "rollback_to": [
+        "core-purpose-context-public-beta-2026-10-09"
       ]
     }
   }
