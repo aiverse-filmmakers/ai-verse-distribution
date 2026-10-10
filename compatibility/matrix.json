@@ -63,6 +63,17 @@
       "update_from": ["core-purpose-context-public-beta-2026-10-09"],
       "rollback_to": ["core-purpose-context-public-beta-2026-10-09"]
     },
+    "core-stable-2026-10-10": {
+      "profile": "core",
+      "status": "released",
+      "platforms": ["darwin", "linux", "win32"],
+      "python_min": "3.11",
+      "node_min": "22.23.3",
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "update_from": ["core-stable-2026-10-10"],
+      "rollback_to": ["core-stable-2026-10-10"]
+    },
     "agent-public-beta-2026-09-14": {
       "profile": "agent",
       "status": "released",
