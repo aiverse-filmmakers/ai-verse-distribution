@@ -1,0 +1,33 @@
+name: Stable Core Candidate Acceptance
+
+on:
+  pull_request:
+    paths:
+      - 'qualification/core-stable-2026-10-10/**'
+      - '.github/workflows/stable-core-candidate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    env:
+      PYTHONPATH: src
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Qualify exact stable Core candidate
+        run: python tests/acceptance/project_bootstrap_acceptance.py --source . --candidate qualification/core-stable-2026-10-10/candidate.json --output stable-core-bootstrap-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stable-core-candidate-${{ runner.os }}
+          path: stable-core-bootstrap-report.json
