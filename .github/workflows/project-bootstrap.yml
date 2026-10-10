@@ -8,6 +8,7 @@ on:
       - 'tests/test_project*.py'
       - 'tests/test_bootstrap_scripts.py'
       - 'tests/acceptance/project_bootstrap_acceptance.py'
+      - 'qualification/core-stable-2026-10-10/**'
       - '.github/workflows/project-bootstrap.yml'
 permissions:
   contents: read
@@ -45,6 +46,8 @@ jobs:
         run: python tests/acceptance/project_bootstrap_acceptance.py --source . --output bootstrap-report.json
       - name: Exact repaired Core fixture qualification
         run: python tests/acceptance/project_bootstrap_acceptance.py --source . --candidate qualification/repaired-core/candidate.json --output repaired-bootstrap-report.json
+      - name: Exact stable Core candidate qualification
+        run: python tests/acceptance/project_bootstrap_acceptance.py --source . --candidate qualification/core-stable-2026-10-10/candidate.json --output stable-core-bootstrap-report.json
       - name: Public admitted Core project bootstrap
         run: python tests/acceptance/project_bootstrap_acceptance.py --source . --public --output public-bootstrap-report.json
       - uses: actions/upload-artifact@v4
@@ -54,4 +57,5 @@ jobs:
           path: |
             bootstrap-report.json
             repaired-bootstrap-report.json
+            stable-core-bootstrap-report.json
             public-bootstrap-report.json
