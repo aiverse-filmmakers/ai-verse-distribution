@@ -107,6 +107,7 @@
     },
     "dependency_locks_frozen": true,
     "dependency_locks_frozen_at": "2026-10-10",
+    "qualification_fixture_lf_locked": true,
     "dependency_lock_checks": {
       "ai-verse-data": {
         "source_revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
