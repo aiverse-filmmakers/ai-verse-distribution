@@ -9,11 +9,11 @@ class CatalogTests(unittest.TestCase):
 
     def test_core_is_exact_and_released(self):
         release = self.catalog.resolve("core")
-        self.assertEqual(release.id, "core-purpose-context-public-beta-2026-10-09")
+        self.assertEqual(release.id, "core-stable-2026-10-10")
         self.assertEqual(
             {component.id: component.revision for component in release.components},
             {
-                "ai-verse-os": "4f03849444b1d01ad81317bf0fece082d5a30e79",
+                "ai-verse-os": "921b665cf323192da1d0319300ff330cb0260d75",
                 "ai-verse-brain": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
                 "ai-verse-memory": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
                 "ai-verse-skills": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
@@ -158,7 +158,7 @@ class CatalogTests(unittest.TestCase):
             "custom",
             components=["ai-verse-os", "ai-verse-memory"],
         )
-        self.assertEqual(release.id, "core-purpose-context-public-beta-2026-10-09")
+        self.assertEqual(release.id, "core-stable-2026-10-10")
         self.assertEqual([x.id for x in release.components], ["ai-verse-os", "ai-verse-memory"])
 
     def test_custom_closes_required_dependencies(self):

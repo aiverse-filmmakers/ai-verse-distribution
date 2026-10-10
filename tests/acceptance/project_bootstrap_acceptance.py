@@ -10,8 +10,18 @@ from aiverse_distribution.project_layout import ProjectLayout
 from aiverse_distribution.release_catalog import Catalog
 
 
+def assert_same_core_identity(existing: dict, candidate: dict) -> None:
+    """Require an already-admitted release to be the exact candidate composition."""
+    fields = ("profile", "lineage", "runtime_requirements", "components", "authority")
+    mismatched = [field for field in fields if existing.get(field) != candidate.get(field)]
+    if mismatched:
+        raise RuntimeError(
+            f"Candidate id {candidate.get('id')} is already present but differs in: {', '.join(mismatched)}"
+        )
+
+
 def qualification_fixture(source: Path, candidate_path: Path):
-    """Use an isolated catalog fixture; leave every shipped release blocked."""
+    """Qualify a blocked Core fixture, or recheck its exact identity after admission."""
     candidate = json.loads(candidate_path.read_text(encoding="utf-8"))
     if candidate.get("status") != "blocked" or candidate.get("profile") != "core":
         raise RuntimeError("Repaired qualification input must be a blocked Core fixture")
@@ -25,19 +35,41 @@ def qualification_fixture(source: Path, candidate_path: Path):
         "python_min": "3.11", "node_min": "22.23.3", "state_rule": "owner-preserved",
         "rollback_rule": "software-only-owner-state-preserved", "update_from": [candidate["id"]], "rollback_to": [candidate["id"]]}
 
-    # The runtime Catalog includes the forward Core overlay in memory. Keep the
-    # copied package's legacy catalog raw, then add only this isolated candidate;
-    # otherwise the installed Catalog would append core_lineage.json a second time.
+    # Before admission the candidate does not exist in the shipped catalogs, so
+    # qualification injects an isolated released copy. After admission, the same
+    # workflow still runs on the PR merge ref. Reuse the admitted entry only when
+    # its protected identity exactly matches the frozen candidate instead of
+    # appending a duplicate release id.
     raw_release_data = json.loads((package / "catalog" / "release_sets.json").read_text(encoding="utf-8"))
     raw_compatibility = json.loads((package / "catalog" / "compatibility.json").read_text(encoding="utf-8"))
-    raw_release_data["release_sets"].append(candidate)
-    raw_compatibility["release_sets"][candidate["id"]] = candidate_compatibility
-    (package / "catalog" / "release_sets.json").write_text(json.dumps(raw_release_data, indent=2) + "\n", encoding="utf-8")
-    (package / "catalog" / "compatibility.json").write_text(json.dumps(raw_compatibility, indent=2) + "\n", encoding="utf-8")
+    raw_lineage = json.loads((package / "catalog" / "core_lineage.json").read_text(encoding="utf-8"))
+    copied_existing = next(
+        (raw for raw in raw_release_data.get("release_sets", []) if raw.get("id") == candidate["id"]),
+        None,
+    )
+    if copied_existing is None:
+        copied_existing = next(
+            (raw for raw in raw_lineage.get("release_sets", []) if raw.get("id") == candidate["id"]),
+            None,
+        )
+    if copied_existing is None:
+        raw_release_data["release_sets"].append(candidate)
+        raw_compatibility["release_sets"][candidate["id"]] = candidate_compatibility
+        (package / "catalog" / "release_sets.json").write_text(json.dumps(raw_release_data, indent=2) + "\n", encoding="utf-8")
+        (package / "catalog" / "compatibility.json").write_text(json.dumps(raw_compatibility, indent=2) + "\n", encoding="utf-8")
+    else:
+        assert_same_core_identity(copied_existing, candidate)
 
     catalog = Catalog()
-    catalog.release_data["release_sets"].append(candidate)
-    catalog.compatibility["release_sets"][candidate["id"]] = candidate_compatibility
+    existing = next(
+        (raw for raw in catalog.release_data.get("release_sets", []) if raw.get("id") == candidate["id"]),
+        None,
+    )
+    if existing is None:
+        catalog.release_data["release_sets"].append(candidate)
+        catalog.compatibility["release_sets"][candidate["id"]] = candidate_compatibility
+    else:
+        assert_same_core_identity(existing, candidate)
     catalog._validate()
     return root, catalog, candidate["id"]
 
