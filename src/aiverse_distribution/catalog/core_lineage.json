@@ -2,7 +2,7 @@
   "schema_version": 1,
   "policy": "append-only-same-or-descendant",
   "anchor_release": "core-public-beta-2026-09-13",
-  "current_release": "core-purpose-context-public-beta-2026-10-09",
+  "current_release": "core-stable-2026-10-10",
   "protected_components": [
     "ai-verse-os",
     "ai-verse-brain",
@@ -281,6 +281,164 @@
         "transfers_brain_strategy": false,
         "initializes_all_workspaces": false
       }
+    },
+    {
+      "id": "core-stable-2026-10-10",
+      "profile": "core",
+      "status": "released",
+      "created_at": "2026-10-10",
+      "lineage": {
+        "parent": "core-purpose-context-public-beta-2026-10-09",
+        "policy": "same-or-descendant"
+      },
+      "runtime_requirements": {
+        "git_lfs": true
+      },
+      "components": [
+        {
+          "id": "ai-verse-os",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+          "revision": "921b665cf323192da1d0319300ff330cb0260d75",
+          "install_order": 10
+        },
+        {
+          "id": "ai-verse-brain",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+          "revision": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+          "install_order": 20
+        },
+        {
+          "id": "ai-verse-memory",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+          "revision": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+          "install_order": 30
+        },
+        {
+          "id": "ai-verse-skills",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+          "revision": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+          "install_order": 40
+        },
+        {
+          "id": "ai-verse-data",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+          "revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
+          "install_order": 50,
+          "dependency_lock": {
+            "scheme": "distribution-companion-npm-lock-v1",
+            "manifest": "ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/lock.json",
+            "manifest_sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
+          }
+        }
+      ],
+      "evidence": {
+        "candidate_refs_frozen": true,
+        "qualification": {
+          "status": "accepted",
+          "qualification_head": "6dbae85a086f675d89fb01eae491a1534d123327",
+          "stable_core_candidate_run": 38062934365,
+          "distribution_ci_run": 38062934363,
+          "clean_machine_core_run": 38062934415,
+          "project_bootstrap_run": 38062934418,
+          "stable_core_candidate_jobs": {
+            "ubuntu": 114244707294,
+            "macos": 114244707152,
+            "windows": 114244706924
+          }
+        },
+        "member_bootstrap": {
+          "status": "accepted",
+          "audit_repairs_included": true,
+          "qualification_head": "6dbae85a086f675d89fb01eae491a1534d123327",
+          "qualification_run": 38062934418,
+          "jobs": {
+            "ubuntu": 114244706572,
+            "macos": 114244706517,
+            "windows": 114244706685
+          },
+          "artifacts": {
+            "linux": {
+              "id": 11673678801,
+              "sha256": "0b5051d1600e019eacb53f30bc5e4df70caf40cd1e0d4f6c20a096dc4d5f004e"
+            },
+            "macos": {
+              "id": 11673698779,
+              "sha256": "e8121136a07a1b20ee4055ebb644be8bcd336a5f8e24b50a4870f662c60780df"
+            },
+            "windows": {
+              "id": 11674078671,
+              "sha256": "acd68acd5536e349b4c4259795cf4e45e016dcf0b3e9216dac83c855692923a0"
+            }
+          }
+        },
+        "candidate_artifacts": {
+          "linux": {
+            "id": 11673987996,
+            "sha256": "95e3112c1b437de89474d53671e12e45f80d85f30308c1c3462f3f97bb527106"
+          },
+          "macos": {
+            "id": 11673658527,
+            "sha256": "64a5bed9423b2dc6dbe0c280eb99f26452312638b599f182a2e42d462f145725"
+          },
+          "windows": {
+            "id": 11673573754,
+            "sha256": "23931f9111876dc3fdb284862a45a150c90695f6e69915f453fc85fce8746322"
+          }
+        },
+        "os_source_qc": {
+          "status": "accepted",
+          "revision": "921b665cf323192da1d0319300ff330cb0260d75",
+          "run": 37997418573
+        },
+        "lineage_proof": {
+          "status": "proven",
+          "parent": "core-purpose-context-public-beta-2026-10-09",
+          "checks": {
+            "ai-verse-os": {
+              "status": "ahead",
+              "ahead_by": 3,
+              "behind_by": 0
+            },
+            "ai-verse-brain": {
+              "status": "identical",
+              "ahead_by": 0,
+              "behind_by": 0
+            },
+            "ai-verse-memory": {
+              "status": "identical",
+              "ahead_by": 0,
+              "behind_by": 0
+            },
+            "ai-verse-skills": {
+              "status": "identical",
+              "ahead_by": 0,
+              "behind_by": 0
+            },
+            "ai-verse-data": {
+              "status": "identical",
+              "ahead_by": 0,
+              "behind_by": 0
+            }
+          }
+        },
+        "transition_policy": {
+          "cross_release_update_admitted": false,
+          "cross_release_rollback_admitted": false,
+          "update_from": [
+            "core-stable-2026-10-10"
+          ],
+          "rollback_to": [
+            "core-stable-2026-10-10"
+          ],
+          "state_rule": "owner-preserved",
+          "rollback_rule": "software-only-owner-state-preserved"
+        }
+      },
+      "authority": {
+        "grants_permissions": false,
+        "transfers_brain_strategy": false,
+        "initializes_all_workspaces": false
+      }
     }
   ],
   "compatibility": {
@@ -320,6 +478,25 @@
       ],
       "rollback_to": [
         "core-purpose-context-public-beta-2026-10-09"
+      ]
+    },
+    "core-stable-2026-10-10": {
+      "profile": "core",
+      "status": "released",
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "python_min": "3.11",
+      "node_min": "22.23.3",
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "update_from": [
+        "core-stable-2026-10-10"
+      ],
+      "rollback_to": [
+        "core-stable-2026-10-10"
       ]
     }
   }
