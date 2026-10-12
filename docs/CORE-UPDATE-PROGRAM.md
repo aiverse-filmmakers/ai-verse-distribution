@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 8
-Remaining: 28
-Progress: 22.2%
-Remaining percentage: 77.8%
+Completed: 9
+Remaining: 27
+Progress: 25.0%
+Remaining percentage: 75.0%
 
 ## Mission
 
@@ -139,8 +139,9 @@ Goal: make Distribution perform a safe, resumable, verified update instead of re
   - Show old/new release and changed components. Already-current installs succeed without mutation.
   - Evidence: `CoreUpdateOrchestrator.update_plan` emits stable component-sorted changes, old/new release IDs, changed-component count/list, transition evidence, and explicit `noop`; `apply_update` returns before the legacy mutation path when already current. `src/aiverse_distribution/entrypoint.py` plus the `pyproject.toml` script route the installed `aiverse` command through this updater. `tests/test_core_update_plan.py` proves deterministic add/change/remove planning, clean stable no-op, no mutation-path entry on no-op, and installed-entrypoint routing. Distribution CI run `38187667418` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U09 - Stage only changed component revisions.**
+- [x] **U09 - Stage only changed component revisions.**
   - Unchanged component software is not unnecessarily replaced or migrated.
+  - Evidence: `CoreUpdateOrchestrator._apply_core_update` derives `changed_components` from the deterministic plan, stages only changed non-OS revisions, refreshes the OS only when its revision changed, preserves unchanged component receipts exactly, and invokes owner update only for changed components that were previously set up. `tests/test_core_update_changed_only.py` proves one changed Brain revision is the only staged/owner-updated component, unchanged install/setup receipts remain unchanged, and component-set changes fail before staging. Distribution CI run `38187845246` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 ## Slice 2.2 - Transaction and ownership protection
 
@@ -299,3 +300,5 @@ Next: Uyy - <next task>
 - Added the admitted Core target resolver in `src/aiverse_distribution/core_update.py` with resolver acceptance in `tests/test_core_update_resolver.py`; default Core channel and exact targets now require explicit evidence-bound admission. Distribution CI run `38187478256` passed on Linux, macOS, and Windows for Python 3.11 and 3.12.
 - U08 completed.
 - Added deterministic Core planning and mutation-free no-op behavior in `src/aiverse_distribution/core_update.py`; routed the installed `aiverse` command through `src/aiverse_distribution/entrypoint.py`; added `tests/test_core_update_plan.py`. Distribution CI run `38187667418` passed on Linux, macOS, and Windows for Python 3.11 and 3.12.
+- U09 completed.
+- Replaced all-component staging in the Core path with changed-only staging and changed-only owner update routing in `src/aiverse_distribution/core_update.py`; added `tests/test_core_update_changed_only.py` proving unchanged receipts stay untouched and component-set changes stop before staging. Distribution CI run `38187845246` passed on Linux, macOS, and Windows for Python 3.11 and 3.12.
