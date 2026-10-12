@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 27
-Remaining: 9
-Progress: 75.0%
-Remaining percentage: 25.0%
+Completed: 28
+Remaining: 8
+Progress: 77.8%
+Remaining percentage: 22.2%
 
 ## Mission
 
@@ -226,7 +226,8 @@ Goal: qualify updates using populated installations designed to catch accidental
 - [x] **U27 - Add no-op, repeat-update, resume, and multi-release-chain acceptance.**
   - Evidence: `tests/test_update_repeat_chain_acceptance.py` exercises a real current-Core no-op, a repeated identical target that does not replay owner migration, finalization of a verified interrupted update without replay, and a two-hop populated Core chain where Brain then Memory changes while the original member-state snapshot remains preserved end-to-end. Distribution CI run `38227342410` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U28 - Produce immutable update qualification evidence for the current stable -> candidate transition.**
+- [x] **U28 - Produce immutable update qualification evidence for the current stable -> candidate transition.**
+  - Evidence: `qualification/core-update-program-u28/transition-evidence.json` freezes the exact `core-stable-2026-10-10` five-component source revisions, the synthetic all-owner qualification target tokens, deterministic change plan, preservation/failure/recovery/no-op/repeat/resume/chain acceptance results, exact Distribution commit `b5d52c9c86983f0e318c38d736475cc877646281`, successful CI run `38227342410`, and all six platform/Python job IDs. `tests/test_update_qualification_evidence.py` verifies that the evidence is exact-source-bound and explicitly non-catalog/non-admittable, so U28 cannot accidentally authorize a production cross-release transition. Distribution CI run `38227818622` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 # Phase 5 - Member update experience
 
@@ -356,3 +357,5 @@ Next: Uyy - <next task>
 - Added populated dirty-source, ambiguous-provenance, interrupted-update recovery, and forced-owner-failure acceptance cases. All preserve canonical member state while failing closed or deterministically recovering; Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
 - U27 completed.
 - Added `tests/test_update_repeat_chain_acceptance.py` covering no-op, repeated target, verified resume, and a two-hop Core chain with end-to-end member-state preservation. Distribution CI run `38227342410` passed the full six-job Linux/macOS/Windows x Python 3.11/3.12 matrix.
+- U28 completed.
+- Added `qualification/core-update-program-u28/transition-evidence.json` plus `tests/test_update_qualification_evidence.py`, freezing exact current-stable source identity and successful destructive-loss harness evidence without mutating the release catalog or admitting a production cross-release transition. Distribution CI run `38227818622` passed the full six-job Linux/macOS/Windows x Python 3.11/3.12 matrix.
