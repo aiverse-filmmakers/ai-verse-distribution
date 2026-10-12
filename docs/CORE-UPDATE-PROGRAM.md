@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 2
-Remaining: 34
-Progress: 5.6%
-Remaining percentage: 94.4%
+Completed: 3
+Remaining: 33
+Progress: 8.3%
+Remaining percentage: 91.7%
 
 ## Mission
 
@@ -107,8 +107,9 @@ Goal: make the zero-loss promise machine-testable before changing updater behavi
   - Include project root, `.aiverse/`, operator state, workspaces, databases, generated runtime files, external Distribution state, Skills storage, extension registry, and bootstrap receipts.
   - Evidence: `docs/CORE-UPDATE-PATH-INVENTORY.md` records the stable component revisions and inventories project-local member state, Brain/Memory/Data/Skills state, extension and runtime surfaces, external Distribution state, bootstrap/lifecycle receipts, and a fail-closed catch-all preservation boundary.
 
-- [ ] **U03 - Define the canonical ownership classification.**
+- [x] **U03 - Define the canonical ownership classification.**
   - Classify paths/data as system-owned replaceable, generated system-owned replaceable with receipt, user-owned immutable-to-updater, owner-migratable state, or ambiguous/conflict.
+  - Evidence: `docs/CORE-UPDATE-OWNERSHIP-CONTRACT.md` defines the five canonical ownership classes, classification precedence, mixed-ownership handling, local-modification fail-closed behavior, and mutation authority for every U02 state family.
 
 - [ ] **U04 - Encode the zero-loss preservation invariant.**
   - Add a deterministic contract/test helper that can answer whether a proposed mutation is permitted before the updater writes it.
@@ -281,3 +282,5 @@ Next: Uyy - <next task>
 - Established zero-loss user-state preservation as the primary admission requirement for Core updates.
 - U02 completed.
 - Added `docs/CORE-UPDATE-PATH-INVENTORY.md` with the complete conservative inventory of update-sensitive project, owner-state, runtime, extension, external Distribution, Skills, and receipt locations.
+- U03 completed.
+- Added `docs/CORE-UPDATE-OWNERSHIP-CONTRACT.md` with the canonical five-class ownership model, mixed-ownership rules, local-modification conflict semantics, and fail-closed classification precedence.
