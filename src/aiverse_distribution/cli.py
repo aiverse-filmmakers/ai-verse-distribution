@@ -245,9 +245,10 @@ def _parser() -> argparse.ArgumentParser:
     q.add_argument("--workspace", action="append", default=[], help="explicit Data workspace to initialize during setup")
     q.add_argument("--json", action="store_true")
 
-    q = sub.add_parser("update", help="preview or apply a compatible release-set update")
-    q.add_argument("--to", dest="release_set")
-    q.add_argument("--apply", action="store_true")
+    q = sub.add_parser("update", help="update to the newest admitted Core; use --plan to preview")
+    q.add_argument("--to", dest="release_set", help="advanced exact admitted Core target")
+    q.add_argument("--plan", action="store_true", help="preview the admitted update without applying it")
+    q.add_argument("--apply", action="store_true", help=argparse.SUPPRESS)
     q.add_argument("--json", action="store_true")
 
     q = sub.add_parser("rollback", help="preview or apply rollback to a known compatible release set")
@@ -375,7 +376,13 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             return 0
 
         if args.command == "update":
-            payload = app.apply_update(args.release_set) if args.apply else app.update_plan(args.release_set)
+            if args.plan and args.apply:
+                raise DistributionError("--plan cannot be combined with legacy --apply")
+            payload = (
+                app.update_plan(args.release_set)
+                if args.plan
+                else app.apply_update(args.release_set)
+            )
             _emit(payload, args.json)
             return 0
 
