@@ -20,11 +20,11 @@ def _recorded_stack(project: Path) -> Path:
 
 
 def _reexec_with_recorded_python_if_needed(project: Path) -> None:
-    """Use the existing Core install's private Python when system Python is too old."""
+    """Use the existing Core install's recorded private Python when system Python is too old."""
     if sys.version_info >= (3, 11):
         return
 
-    stack = _recorded_stack(project)
+    stack = _recorded_stack(project).expanduser().resolve()
     receipt_path = stack / "project.json"
     try:
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
@@ -36,17 +36,21 @@ def _reexec_with_recorded_python_if_needed(project: Path) -> None:
     recorded = receipt.get("python")
     if not isinstance(recorded, str) or not recorded:
         raise SystemExit("Pilot refused: Core receipt does not record its private Python executable")
-    python = Path(recorded).expanduser().resolve()
+
+    # Check containment on the recorded executable path itself, without resolving
+    # its symlink target. A private venv/bin/python path on macOS commonly points
+    # to /Library or /opt/homebrew and is still the correct recorded interpreter.
+    python = Path(os.path.abspath(os.path.expanduser(recorded)))
     try:
-        python.relative_to(stack.resolve())
+        python.relative_to(stack)
     except ValueError as exc:
-        raise SystemExit("Pilot refused: recorded Python is outside the private Core tool stack") from exc
+        raise SystemExit("Pilot refused: recorded Python path is outside the private Core tool stack") from exc
     if not python.is_file():
         raise SystemExit(f"Pilot refused: recorded Core Python is unavailable: {python}")
 
     print(
         f"System Python {sys.version_info.major}.{sys.version_info.minor} is too old; "
-        "continuing with the existing Core installation's private Python...",
+        "continuing with the existing Core installation's recorded private Python...",
         flush=True,
     )
     os.execv(str(python), [str(python), str(Path(__file__).resolve()), *sys.argv[1:]])
