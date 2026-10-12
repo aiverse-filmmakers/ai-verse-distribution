@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
@@ -18,23 +19,52 @@ class ExistingCoreUpdateRoute:
     update_argv: tuple[str, ...]
 
 
-def _inside_stack(layout: ProjectLayout, value: object, label: str) -> Path:
+def _recorded_path_inside_stack(
+    layout: ProjectLayout,
+    value: object,
+    label: str,
+    *,
+    allow_external_symlink_target: bool = False,
+) -> Path:
+    """Validate the recorded path itself is inside the private stack.
+
+    Python virtual-environment executables on macOS are commonly symlinks whose
+    resolved target lives in /Library, /opt/homebrew, or another system prefix.
+    The ownership boundary is the recorded executable path inside the private
+    stack, not the final interpreter binary reached through that legitimate
+    symlink. Other recorded execution files still require their resolved target
+    to remain inside the stack.
+    """
+
     if not isinstance(value, str) or not value:
         raise DistributionError(
             f"Existing Core installation is missing its recorded {label}; preserve the project for recovery"
         )
-    path = Path(value).expanduser().resolve()
+
+    stack = layout.stack.expanduser().resolve()
+    raw = Path(os.path.abspath(os.path.expanduser(value)))
     try:
-        path.relative_to(layout.stack)
+        raw.relative_to(stack)
     except ValueError as exc:
         raise DistributionError(
             f"Existing Core {label} is outside its recorded private tool stack; update stopped safely"
         ) from exc
-    if not path.is_file():
+
+    if not raw.is_file():
         raise DistributionError(
             f"Existing Core {label} is unavailable; update stopped without reinstalling or changing member state"
         )
-    return path
+
+    if not allow_external_symlink_target:
+        resolved = raw.resolve()
+        try:
+            resolved.relative_to(stack)
+        except ValueError as exc:
+            raise DistributionError(
+                f"Existing Core {label} resolves outside its recorded private tool stack; update stopped safely"
+            ) from exc
+
+    return raw
 
 
 def bootstrap_route_args(argv: Iterable[str]) -> tuple[ProjectLayout, Optional[str]]:
@@ -94,8 +124,13 @@ def plan_existing_core_update(
             "Distribution source must stay outside the installed OS project during update"
         )
 
-    python = _inside_stack(layout, receipt.get("python"), "Python executable")
-    launcher = _inside_stack(layout, receipt.get("launcher"), "project launcher")
+    python = _recorded_path_inside_stack(
+        layout,
+        receipt.get("python"),
+        "Python executable",
+        allow_external_symlink_target=True,
+    )
+    launcher = _recorded_path_inside_stack(layout, receipt.get("launcher"), "project launcher")
 
     refresh = (
         str(python),
