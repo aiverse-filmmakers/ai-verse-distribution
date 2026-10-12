@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 30
-Remaining: 6
-Progress: 83.3%
-Remaining percentage: 16.7%
+Completed: 31
+Remaining: 5
+Progress: 86.1%
+Remaining percentage: 13.9%
 
 ## Mission
 
@@ -245,8 +245,9 @@ Goal: hide implementation detail and make updating feel like a normal product ac
 
 ## Slice 5.2 - Clear handoff
 
-- [ ] **U31 - Add concise human-readable update progress and completion output.**
+- [x] **U31 - Add concise human-readable update progress and completion output.**
   - Report old/new Core, changed components, preserved state classes, health result, and conflicts only when relevant.
+  - Evidence: `src/aiverse_distribution/update_output.py` adds a dedicated member-facing Core update formatter. Plain terminal updates now print live `Updating AI-Verse...` progress before mutation, then show old/new Core release IDs, changed component names, the six protected member-state classes, final `Health checks: PASS`, and completion without exposing component SHAs or internal paths. No-op and preview output remain short, conflicts show only the relevant failure alongside the initial progress line, and `--json` remains complete structured output. `tests/test_update_output.py` proves success, no-op, preview, conflict, SHA-hiding, and JSON behavior. Distribution CI run `38229484801` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 - [ ] **U32 - Make install and update routing obvious and documented.**
   - Fresh install stays one action. Existing installations are routed to lifecycle update instead of delete/reinstall guidance.
@@ -365,3 +366,5 @@ Next: Uyy - <next task>
 - Updated AI-Verse OS `AGENTS.md` with the canonical natural-language Core update rule and added `scripts/verify-update-request-contract.py` plus a dedicated three-platform CI workflow. OS run `38228297894` passed on Ubuntu, macOS, and Windows at commit `64f7325444d18f94c9d4755d32eb89f3468bda6b`.
 - U30 completed.
 - Changed plain `aiverse update` into the one-action default admitted-Core update, added explicit `--plan` preview, preserved hidden legacy `--apply` compatibility, and added `tests/test_update_cli.py`. Distribution CI run `38228862077` passed the full six-job Linux/macOS/Windows x Python 3.11/3.12 matrix.
+- U31 completed.
+- Added `src/aiverse_distribution/update_output.py`, live terminal progress before the update transaction, concise completion/no-op/preview formatting, protected-state reporting, SHA hiding, relevant-only conflict output, and `tests/test_update_output.py`; JSON output remains structured and complete. Distribution CI run `38229484801` passed the full six-job Linux/macOS/Windows x Python 3.11/3.12 matrix.
