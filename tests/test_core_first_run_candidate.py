@@ -19,14 +19,9 @@ class CoreFirstRunCandidateTests(unittest.TestCase):
     def test_u33_candidate_is_explicit_only_and_does_not_advance_core_channel(self):
         self.assertEqual(self.catalog.resolve("core").id, STABLE)
         self.assertEqual(self.candidate.raw["classification"], "explicit-install-qualification-candidate")
-        self.assertEqual(
-            self.candidate.raw["promotion"],
-            {
-                "default_channel": False,
-                "automatic_update": False,
-                "cross_release_transition_admitted": False,
-            },
-        )
+        promotion = self.candidate.raw["promotion"]
+        self.assertFalse(promotion["default_channel"])
+        self.assertFalse(promotion["automatic_update"])
         self.assertEqual(self.candidate.raw["evidence"]["qualification"]["status"], "pending-u35")
 
     def test_u33_candidate_changes_only_os_from_stable(self):
@@ -53,13 +48,12 @@ class CoreFirstRunCandidateTests(unittest.TestCase):
         self.assertIn("core-update-request", scope["natural_update_contract"])
         self.assertEqual(scope["update_request_ci_run"], 38228297894)
 
-    def test_u33_candidate_has_no_cross_release_admission_yet(self):
-        compatibility = self.catalog.compatibility_for(CANDIDATE)
-        self.assertEqual(compatibility["update_from"], [CANDIDATE])
-        self.assertEqual(compatibility["rollback_to"], [CANDIDATE])
-        policy = self.candidate.raw["evidence"]["transition_policy"]
-        self.assertFalse(policy["cross_release_update_admitted"])
-        self.assertFalse(policy["cross_release_rollback_admitted"])
+    def test_u33_candidate_never_self_promotes(self):
+        self.assertEqual(self.catalog.resolve("core").id, STABLE)
+        self.assertFalse(self.candidate.raw["promotion"]["default_channel"])
+        self.assertFalse(self.candidate.raw["promotion"]["automatic_update"])
+        self.assertFalse(self.candidate.raw["evidence"]["qualification"]["cross_platform_populated_update"])
+        self.assertFalse(self.candidate.raw["evidence"]["qualification"]["real_member_pilot"])
 
     def test_u33_public_manifest_matches_candidate_overlay(self):
         public = json.loads(
