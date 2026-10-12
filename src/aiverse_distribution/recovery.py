@@ -252,6 +252,7 @@ class LastKnownGoodStore:
         verify_exact_source: Callable[[Any, Path], None],
         health: Dict[str, Any],
     ) -> tuple[Path, Dict[str, Any], str]:
+        root = root.expanduser().resolve()
         if health.get("ok") is not True:
             raise DistributionError("current installation is not healthy enough to become a Last-Known-Good recovery point")
         generation_id = f"lkg-{uuid.uuid4().hex}"
