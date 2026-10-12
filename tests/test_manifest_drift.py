@@ -23,8 +23,12 @@ class ManifestDriftTests(unittest.TestCase):
         lineage = json.loads(
             (ROOT / "src" / "aiverse_distribution" / "catalog" / "core_lineage.json").read_text(encoding="utf-8")
         )
+        candidates = json.loads(
+            (ROOT / "src" / "aiverse_distribution" / "catalog" / "core_candidates.json").read_text(encoding="utf-8")
+        )
         effective = json.loads(json.dumps(runtime))
         effective["release_sets"].update(lineage["compatibility"])
+        effective["release_sets"].update(candidates["compatibility"])
         public = json.loads((ROOT / "compatibility" / "matrix.json").read_text(encoding="utf-8"))
         self.assertEqual(public, effective)
 
@@ -32,11 +36,16 @@ class ManifestDriftTests(unittest.TestCase):
         runtime = json.loads(
             (ROOT / "src" / "aiverse_distribution" / "catalog" / "release_sets.json").read_text(encoding="utf-8")
         )
+        candidates = json.loads(
+            (ROOT / "src" / "aiverse_distribution" / "catalog" / "core_candidates.json").read_text(encoding="utf-8")
+        )
         by_id = {item["id"]: item for item in runtime["release_sets"]}
+        by_id.update({item["id"]: item for item in candidates["release_sets"]})
 
         mapping = {
             "core-first-member-beta-2026-09-13": ROOT / "release-sets" / "core-first-member-beta.json",
             "core-public-beta-2026-09-13": ROOT / "release-sets" / "core-public-beta-2026-09-13.json",
+            "core-first-run-rc1-2026-10-12": ROOT / "release-sets" / "core-first-run-rc1-2026-10-12.json",
             "agent-public-beta-2026-09-14": ROOT / "release-sets" / "agent-public-beta-2026-09-14.json",
             "agent-invisible-intelligence-rc1-2026-09-14": ROOT / "release-sets" / "agent-invisible-intelligence-rc1-2026-09-14.json",
             "agent-context-ladder-rc1-2026-09-15": ROOT / "release-sets" / "agent-context-ladder-rc1-2026-09-15.json",
