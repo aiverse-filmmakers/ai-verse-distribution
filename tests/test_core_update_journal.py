@@ -113,15 +113,11 @@ class CoreUpdateJournalTests(unittest.TestCase):
         def staged(component, install_root, release):
             active = app.update_journal.load()
             self.assertIsNotNone(active)
-            self.assertEqual(active["stage"], "sources-verified")
+            self.assertEqual(active["stage"], "checkpointed")
             self.assertEqual(active["source_release"], "core-stable-2026-10-10")
             self.assertEqual(active["target_release"], target.id)
-            self.assertEqual(
-                active["checkpoint"]["components"]["ai-verse-brain"]["revision"],
-                app.catalog.get_release(
-                    "core-stable-2026-10-10", require_released=True
-                ).components[1].revision,
-            )
+            self.assertTrue(active["rollback_safe"])
+            self.assertIn("ai-verse-brain", active["verified_sources"])
             return {
                 "repository": component.repository,
                 "revision": component.revision,
@@ -138,10 +134,17 @@ class CoreUpdateJournalTests(unittest.TestCase):
             app, "_verify_exact_source", return_value=None
         ), patch.object(app, "_stage_component", side_effect=staged), patch(
             "aiverse_distribution.core_update.owner_update", return_value=None
+        ), patch(
+            "aiverse_distribution.core_update.owner_setup", return_value=[]
+        ), patch.object(
+            app, "status", return_value={"state": "ready", "release_set_id": target.id}
+        ), patch.object(
+            app, "doctor", return_value={"ok": True, "release_set_id": target.id}
         ):
             result = app.apply_update(target.id)
 
         self.assertTrue(result["changed"])
+        self.assertTrue(result["health"]["ok"])
         self.assertFalse(app.update_journal.active_path.exists())
         self.assertEqual(len(list(app.update_journal.history.glob("*.json"))), 1)
 
