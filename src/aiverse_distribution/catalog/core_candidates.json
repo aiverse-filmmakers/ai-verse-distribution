@@ -14,7 +14,7 @@
       "promotion": {
         "default_channel": false,
         "automatic_update": false,
-        "cross_release_transition_admitted": false
+        "cross_release_transition_admitted": true
       },
       "runtime_requirements": {
         "git_lfs": true
@@ -75,9 +75,11 @@
           "real_member_pilot": false
         },
         "transition_policy": {
-          "cross_release_update_admitted": false,
+          "cross_release_update_admitted": true,
           "cross_release_rollback_admitted": false,
+          "admission_ref": "qualification/core-update-program-u34/transition-admission.json",
           "update_from": [
+            "core-stable-2026-10-10",
             "core-first-run-rc1-2026-10-12"
           ],
           "rollback_to": [
@@ -108,6 +110,7 @@
       "state_rule": "owner-preserved",
       "rollback_rule": "software-only-owner-state-preserved",
       "update_from": [
+        "core-stable-2026-10-10",
         "core-first-run-rc1-2026-10-12"
       ],
       "rollback_to": [
