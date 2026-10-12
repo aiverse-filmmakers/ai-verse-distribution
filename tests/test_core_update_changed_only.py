@@ -106,12 +106,20 @@ class CoreUpdateChangedOnlyTests(unittest.TestCase):
             app, "_verify_exact_source", return_value=None
         ), patch.object(app, "_stage_component", side_effect=staged) as stage_mock, patch(
             "aiverse_distribution.core_update.owner_update", return_value=None
-        ) as owner_mock:
+        ) as owner_mock, patch(
+            "aiverse_distribution.core_update.owner_setup", return_value=[]
+        ), patch.object(
+            app, "status", return_value={"state": "ready", "release_set_id": target.id}
+        ), patch.object(
+            app, "doctor", return_value={"ok": True, "release_set_id": target.id}
+        ):
             result = app.apply_update(target.id)
 
         self.assertEqual(result["changed_components"], ["ai-verse-brain"])
         self.assertEqual(result["staged_components"], ["ai-verse-brain"])
         self.assertEqual(result["owner_updated_components"], ["ai-verse-brain"])
+        self.assertEqual(result["reconciled_components"], ["ai-verse-brain"])
+        self.assertTrue(result["health"]["ok"])
         self.assertEqual(stage_mock.call_count, 1)
         self.assertEqual(owner_mock.call_count, 1)
         self.assertEqual(owner_mock.call_args.args[0], "ai-verse-brain")
@@ -150,7 +158,7 @@ class CoreUpdateChangedOnlyTests(unittest.TestCase):
         stage_mock.assert_not_called()
 
     def test_unmodified_receipt_setup_timestamp_is_not_refreshed(self):
-        temp, _, store, app, current, before = self._fixture()
+        temp, root, store, app, current, before = self._fixture()
         self.addCleanup(temp.cleanup)
         target = self._target_with_changed_brain(current)
         admission = self._admission(target.id)
@@ -166,13 +174,19 @@ class CoreUpdateChangedOnlyTests(unittest.TestCase):
             return_value={
                 "repository": "brain-repo",
                 "revision": "f" * 40,
-                "source": "/tmp/brain",
-                "runtime_source": "/tmp/brain",
+                "source": str(root / "brain"),
+                "runtime_source": str(root / "brain"),
                 "installed_at": "2026-10-12T00:00:00Z",
                 "setup_completed_at": None,
                 "uninstalled_at": None,
             },
-        ), patch("aiverse_distribution.core_update.owner_update", return_value=None):
+        ), patch("aiverse_distribution.core_update.owner_update", return_value=None), patch(
+            "aiverse_distribution.core_update.owner_setup", return_value=[]
+        ), patch.object(
+            app, "status", return_value={"state": "ready", "release_set_id": target.id}
+        ), patch.object(
+            app, "doctor", return_value={"ok": True, "release_set_id": target.id}
+        ):
             app.apply_update(target.id)
 
         after = store.load()
