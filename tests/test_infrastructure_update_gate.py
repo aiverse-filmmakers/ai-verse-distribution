@@ -92,20 +92,37 @@ def recipe(
 
 
 def release(raw=True):
+    component = ComponentRef(
+        "ai-verse-example",
+        "https://github.com/aiverse-filmmakers/AI-Verse-Example.git",
+        REVISION,
+        10,
+    )
+    raw_payload = (
+        {
+            "id": "core-target",
+            "profile": "core",
+            "status": "released",
+            "components": [
+                {
+                    "id": component.id,
+                    "repository": component.repository,
+                    "revision": component.revision,
+                    "install_order": component.install_order,
+                }
+            ],
+            "blockers": [],
+        }
+        if raw
+        else {}
+    )
     return ReleaseSet(
         id="core-target",
         profile="core",
         status="released",
-        components=(
-            ComponentRef(
-                "ai-verse-example",
-                "https://github.com/aiverse-filmmakers/AI-Verse-Example.git",
-                REVISION,
-                10,
-            ),
-        ),
+        components=(component,),
         blockers=(),
-        raw={"fixture": True} if raw else {},
+        raw=raw_payload,
     )
 
 
