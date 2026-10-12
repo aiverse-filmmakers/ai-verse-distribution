@@ -1,14 +1,14 @@
 # AI-Verse Core Update Program
 
-Status: ACTIVE
+Status: COMPLETE
 Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 35
-Remaining: 1
-Progress: 97.2%
-Remaining percentage: 2.8%
+Completed: 36
+Remaining: 0
+Progress: 100.0%
+Remaining percentage: 0.0%
 
 ## Mission
 
@@ -260,11 +260,11 @@ Goal: use the new updater for a real Core release and prove the full member jour
 ## Slice 6.1 - Candidate and admission
 
 - [x] **U33 - Build the next Core candidate containing the onboarding/first-run improvements.**
-  - Evidence: `core-first-run-rc1-2026-10-12` is frozen in `src/aiverse_distribution/catalog/core_candidates.json` and mirrored at `release-sets/core-first-run-rc1-2026-10-12.json`. It keeps Brain, Memory, Skills, and Data exactly pinned to `core-stable-2026-10-10` and advances only OS from `921b665cf323192da1d0319300ff330cb0260d75` to `64f7325444d18f94c9d4755d32eb89f3468bda6b`, an exact three-commit descendant containing the progressive first-use rules and natural update-request contract. The candidate is explicit-only, does not advance the Core channel, is marked `pending-u35`, and has no cross-release update or rollback admission yet. `tests/test_core_first_run_candidate.py` plus manifest-drift acceptance verify these boundaries. Distribution CI run `38231817119` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
+  - Evidence: `core-first-run-rc1-2026-10-12` was frozen as the explicit qualification candidate and mirrored at `release-sets/core-first-run-rc1-2026-10-12.json`. It keeps Brain, Memory, Skills, and Data exactly pinned to `core-stable-2026-10-10` and advances only OS from `921b665cf323192da1d0319300ff330cb0260d75` to `64f7325444d18f94c9d4755d32eb89f3468bda6b`, an exact three-commit descendant containing the progressive first-use rules and natural update-request contract. At U33 completion it remained explicit-only and non-default pending qualification. Distribution CI run `38231817119` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 - [x] **U34 - Admit `core-stable-2026-10-10` as an allowed update source for the candidate.**
   - Admit rollback only if the software/state contract proves it safe.
-  - Evidence: `qualification/core-update-program-u34/transition-admission.json` binds the exact five-component stable source and exact candidate target, with only `ai-verse-os` changed. `src/aiverse_distribution/catalog/core_update_transitions.json`, candidate compatibility, and the candidate manifest now admit `core-stable-2026-10-10 -> core-first-run-rc1-2026-10-12` while keeping the candidate non-default and `pending-u35`. `tests/test_candidate_transition_admission.py` runs the actual catalog/transition resolver on the populated member fixture, proves the full protected member tree and both workspace Data databases survive, unchanged Brain/Memory/Skills/Data receipts remain exact, OS reconcile runs, and final health passes. Candidate -> stable rollback remains explicitly unadmitted because no exact reverse qualification exists. Distribution CI run `38232637219` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
+  - Evidence: `qualification/core-update-program-u34/transition-admission.json` binds the exact five-component stable source and exact candidate target, with only `ai-verse-os` changed. The exact forward transition was admitted while the candidate remained non-default pending U35. `tests/test_candidate_transition_admission.py` runs the actual catalog/transition resolver on the populated member fixture, proves the full protected member tree and both workspace Data databases survive, unchanged Brain/Memory/Skills/Data receipts remain exact, OS reconcile runs, and final health passes. Candidate -> stable rollback remains explicitly unadmitted because no exact reverse qualification exists. Distribution CI run `38232637219` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 - [x] **U35 - Run full qualification and a real populated-project pilot.**
   - CI platform matrix plus update of the owner's real current installation without deleting its state.
@@ -272,8 +272,9 @@ Goal: use the new updater for a real Core release and prove the full member jour
 
 ## Slice 6.2 - Release
 
-- [ ] **U36 - Release the new Core and close the Update Program v1.**
+- [x] **U36 - Release the new Core and close the Update Program v1.**
   - Advance the Core channel only after all gates pass, record final evidence, update this tracker to 100%, and publish the final member update instruction.
+  - Evidence: `qualification/core-update-program-u36/release-evidence.json` freezes the production promotion of `core-first-run-rc1-2026-10-12`, the accepted U35 real-member qualification, exact one-component OS delta, current Core channel, empty candidate overlay, admitted stable -> release transition, intentionally unadmitted reverse rollback, and final member instruction in `docs/CORE-UPDATE-V1-RELEASE.md`. Distribution CI run `38241417356` passed all six Linux/macOS/Windows x Python 3.11/3.12 jobs at release commit `1201be64772a9b32cf26a3b19fa4fedb2c78d3fd`.
 
 # Required acceptance evidence for every future Core release
 
@@ -375,8 +376,10 @@ Next: Uyy - <next task>
 - U32 completed.
 - Added explicit install-vs-update routing across bootstrap code and member/agent documentation. Completed Core installs now refresh only private Distribution tooling and invoke the preservation-safe lifecycle updater, while fresh/incomplete installs remain on one-action install/resume. Distribution CI run `38231081430` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 - U33 completed.
-- Frozen `core-first-run-rc1-2026-10-12` as an explicit-only qualification candidate. Only AI-Verse OS advances, by three descendant commits from the stable OS pin; all other Core owners remain exactly stable. The candidate is not a channel default and still has no cross-release update or rollback admission. Distribution CI run `38231817119` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
+- Frozen `core-first-run-rc1-2026-10-12` as an explicit-only qualification candidate. Only AI-Verse OS advances, by three descendant commits from the stable OS pin; all other Core owners remain exactly stable. The candidate was not a channel default at U33 completion. Distribution CI run `38231817119` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 - U34 completed.
-- Admitted the exact `core-stable-2026-10-10 -> core-first-run-rc1-2026-10-12` forward transition with immutable evidence and populated-state preservation acceptance. Reverse rollback to stable remains unadmitted because no reverse qualification proves it safe. The candidate remains non-default and pending U35 full qualification/pilot. Distribution CI run `38232637219` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
+- Admitted the exact `core-stable-2026-10-10 -> core-first-run-rc1-2026-10-12` forward transition with immutable evidence and populated-state preservation acceptance. Reverse rollback to stable remains unadmitted because no reverse qualification proves it safe. Distribution CI run `38232637219` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 - U35 completed.
 - Accepted `qualification/core-update-program-u35/qualification.json` after the full six-job CI matrix and the owner's real populated installation pilot both passed. The real update changed only `ai-verse-os`, preserved member state, passed status/doctor/updater health, and recorded no private member content. Reverse rollback remains unadmitted.
+- U36 completed.
+- Promoted `core-first-run-rc1-2026-10-12` to the current production Core, emptied the candidate overlay, retained evidence-bound stable -> release admission, kept reverse rollback unadmitted, published `docs/CORE-UPDATE-V1-RELEASE.md`, froze `qualification/core-update-program-u36/release-evidence.json`, and passed final Distribution CI run `38241417356` on Linux, macOS, and Windows for Python 3.11 and 3.12. Core Update Program v1 is complete.
