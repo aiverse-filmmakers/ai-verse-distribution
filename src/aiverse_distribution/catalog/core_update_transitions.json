@@ -94,6 +94,45 @@
           }
         }
       }
+    },
+    "core-first-run-rc1-2026-10-12": {
+      "profile": "core",
+      "update_from": [
+        "core-stable-2026-10-10",
+        "core-first-run-rc1-2026-10-12"
+      ],
+      "rollback_to": [
+        "core-first-run-rc1-2026-10-12"
+      ],
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "preservation_evidence": {
+        "updates": {
+          "core-stable-2026-10-10": {
+            "status": "accepted",
+            "kind": "populated-os-only-preservation",
+            "from": "core-stable-2026-10-10",
+            "to": "core-first-run-rc1-2026-10-12",
+            "qualification_ref": "qualification/core-update-program-u34/transition-admission.json#stable-to-candidate"
+          },
+          "core-first-run-rc1-2026-10-12": {
+            "status": "accepted",
+            "kind": "self-transition-noop",
+            "from": "core-first-run-rc1-2026-10-12",
+            "to": "core-first-run-rc1-2026-10-12",
+            "qualification_ref": "qualification/core-update-program-u34/transition-admission.json#candidate-self"
+          }
+        },
+        "rollbacks": {
+          "core-first-run-rc1-2026-10-12": {
+            "status": "accepted",
+            "kind": "self-transition-noop",
+            "from": "core-first-run-rc1-2026-10-12",
+            "to": "core-first-run-rc1-2026-10-12",
+            "qualification_ref": "qualification/core-update-program-u34/transition-admission.json#candidate-self"
+          }
+        }
+      }
     }
   }
 }
