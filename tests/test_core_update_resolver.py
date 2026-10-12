@@ -8,8 +8,12 @@ from aiverse_distribution.transition_contract import UnsupportedCoreTransition
 from aiverse_distribution.release_catalog import DistributionError
 
 
+STABLE = "core-stable-2026-10-10"
+CURRENT = "core-first-run-rc1-2026-10-12"
+
+
 class CoreUpdateResolverTests(unittest.TestCase):
-    def _store(self, root: Path, *, profile: str = "core", release: str = "core-stable-2026-10-10"):
+    def _store(self, root: Path, *, profile: str = "core", release: str = STABLE):
         store = StateStore(root / "distribution")
         store.write(
             {
@@ -28,10 +32,19 @@ class CoreUpdateResolverTests(unittest.TestCase):
             store = self._store(Path(td))
             app = CoreUpdateOrchestrator(state=store)
             target, admission = app.resolve_core_update_target()
-            self.assertEqual(target.id, "core-stable-2026-10-10")
-            self.assertEqual(admission.source_release, "core-stable-2026-10-10")
-            self.assertEqual(admission.target_release, "core-stable-2026-10-10")
+            self.assertEqual(target.id, CURRENT)
+            self.assertEqual(admission.source_release, STABLE)
+            self.assertEqual(admission.target_release, CURRENT)
             self.assertEqual(admission.evidence["status"], "accepted")
+
+    def test_current_install_resolves_clean_self_transition(self):
+        with tempfile.TemporaryDirectory() as td:
+            store = self._store(Path(td), release=CURRENT)
+            app = CoreUpdateOrchestrator(state=store)
+            target, admission = app.resolve_core_update_target()
+            self.assertEqual(target.id, CURRENT)
+            self.assertEqual(admission.source_release, CURRENT)
+            self.assertEqual(admission.target_release, CURRENT)
 
     def test_exact_unadmitted_cross_release_target_fails_closed(self):
         with tempfile.TemporaryDirectory() as td:
