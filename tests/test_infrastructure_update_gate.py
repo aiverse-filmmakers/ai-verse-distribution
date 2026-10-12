@@ -248,6 +248,24 @@ class InfrastructureUpdateGateTests(unittest.TestCase):
         self.assertEqual(result["state"], "COMPATIBLE")
         reader.assert_not_called()
 
+    def test_non_catalog_raw_fixture_metadata_does_not_trigger_descriptor_network_probe(self):
+        fixture_target = ReleaseSet(
+            id="core-target",
+            profile="core",
+            status="released",
+            components=release().components,
+            blockers=(),
+            raw={"distribution_generated_files": [{"path": "run.py"}]},
+        )
+        reader = Mock(side_effect=AssertionError("fixture metadata must not fetch descriptors"))
+        gate = InfrastructureUpdateGate(descriptor_reader=reader)
+        result = gate.evaluate(
+            target=fixture_target,
+            changed_components={"ai-verse-example"},
+        )
+        self.assertEqual(result["state"], "COMPATIBLE")
+        reader.assert_not_called()
+
 
 class CoreUpdateInfrastructureIntegrationTests(unittest.TestCase):
     def _store(self, root: Path) -> StateStore:

@@ -546,10 +546,17 @@ class InfrastructureUpdateGate:
                 "message": "No setup change is required for this software update.",
             }
 
-        # Unit/legacy fixture ReleaseSets without canonical raw release metadata are
-        # outside runtime admission. Keep existing isolated tests scoped to the
-        # behavior they exercise rather than causing network descriptor probes.
-        if not target.raw:
+        # Unit/legacy fixture ReleaseSets without canonical catalog-shaped raw
+        # metadata are outside runtime admission. `raw` is also used by some
+        # preservation tests to carry generated-file fixtures, so non-empty alone
+        # cannot prove this is an admitted runtime release.
+        runtime_release = (
+            isinstance(target.raw, dict)
+            and target.raw.get("id") == target.id
+            and target.raw.get("profile") == target.profile
+            and isinstance(target.raw.get("components"), list)
+        )
+        if not runtime_release:
             return {
                 "state": "COMPATIBLE",
                 "activation_allowed": True,
