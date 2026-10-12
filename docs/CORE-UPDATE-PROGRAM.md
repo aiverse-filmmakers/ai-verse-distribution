@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 1
-Remaining: 35
-Progress: 2.8%
-Remaining percentage: 97.2%
+Completed: 2
+Remaining: 34
+Progress: 5.6%
+Remaining percentage: 94.4%
 
 ## Mission
 
@@ -103,8 +103,9 @@ Goal: make the zero-loss promise machine-testable before changing updater behavi
 
 ## Slice 1.1 - Ownership boundaries
 
-- [ ] **U02 - Inventory every update-sensitive path and state location.**
+- [x] **U02 - Inventory every update-sensitive path and state location.**
   - Include project root, `.aiverse/`, operator state, workspaces, databases, generated runtime files, external Distribution state, Skills storage, extension registry, and bootstrap receipts.
+  - Evidence: `docs/CORE-UPDATE-PATH-INVENTORY.md` records the stable component revisions and inventories project-local member state, Brain/Memory/Data/Skills state, extension and runtime surfaces, external Distribution state, bootstrap/lifecycle receipts, and a fail-closed catch-all preservation boundary.
 
 - [ ] **U03 - Define the canonical ownership classification.**
   - Classify paths/data as system-owned replaceable, generated system-owned replaceable with receipt, user-owned immutable-to-updater, owner-migratable state, or ambiguous/conflict.
@@ -278,3 +279,5 @@ Next: Uyy - <next task>
 - Created the 36-task Core Update Program.
 - Baseline fixed at `core-stable-2026-10-10`.
 - Established zero-loss user-state preservation as the primary admission requirement for Core updates.
+- U02 completed.
+- Added `docs/CORE-UPDATE-PATH-INVENTORY.md` with the complete conservative inventory of update-sensitive project, owner-state, runtime, extension, external Distribution, Skills, and receipt locations.
