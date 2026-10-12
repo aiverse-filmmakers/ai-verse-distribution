@@ -10,6 +10,7 @@ from .process import run
 from .release_catalog import Catalog, DistributionError, ReleaseSet
 from .state import StateStore, now_iso
 from .transition_contract import CoreTransitionContract, TransitionAdmission
+from .update_journal import CoreUpdateJournal
 
 
 class CoreUpdateOrchestrator(BaseOrchestrator):
@@ -23,6 +24,7 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
     ) -> None:
         super().__init__(state=state, catalog=catalog)
         self.transition_contract = transition_contract or CoreTransitionContract(self.catalog)
+        self.update_journal = CoreUpdateJournal(self.state.home)
 
     def _installed_core(self) -> tuple[dict, ReleaseSet]:
         lock = self.state.load()
@@ -203,6 +205,16 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                 + "; ".join(detail)
             )
 
+        checkpoint = json.loads(json.dumps(lock))
+        checkpoint.pop("_pending_lifecycle", None)
+        journal = self.update_journal.begin(
+            source_release=str(lock["release_set_id"]),
+            target_release=target.id,
+            transition_kind=transition_kind,
+            changed_components=list(plan["changed_components"]),
+            checkpoint=checkpoint,
+        )
+
         root = Path(lock["root"]).expanduser().resolve()
         previous_setup = {
             cid: bool(receipt.get("setup_completed_at"))
@@ -214,14 +226,6 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
             for cid, receipt in lock.get("components", {}).items()
             if receipt.get("uninstalled_at")
         }
-        for component in current_catalog.components:
-            if component.id in known_ids:
-                receipt = lock["components"][component.id]
-                self._verify_exact_source(
-                    component,
-                    Path(receipt["source"]).expanduser().resolve(),
-                )
-
         changed_ids = set(plan["changed_components"])
         old_os = next(
             (component for component in current_catalog.components if component.id == "ai-verse-os"),
@@ -237,11 +241,23 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
         staged_components: list[str] = []
         owner_updated_components: list[str] = []
         try:
+            for component in current_catalog.components:
+                if component.id in known_ids:
+                    receipt = lock["components"][component.id]
+                    self._verify_exact_source(
+                        component,
+                        Path(receipt["source"]).expanduser().resolve(),
+                    )
+            self.update_journal.mark("sources-verified")
+
             for component in target.components:
                 if component.id not in changed_ids or component.id == "ai-verse-os":
                     continue
                 prepared[component.id] = self._stage_component(component, root, target)
                 staged_components.append(component.id)
+            self.update_journal.mark(
+                "staged", staged_components=sorted(staged_components)
+            )
 
             effect = self.state.begin_effect(
                 f"release-transition:{transition_kind}:{lock['release_set_id']}:{target.id}",
@@ -250,6 +266,7 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                     "to": target.id,
                     "kind": transition_kind,
                     "changed_components": sorted(changed_ids),
+                    "journal_token": journal["token"],
                 },
             )
 
@@ -270,6 +287,7 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                     )
                 run(["git", "-C", str(root), "fetch", "origin", new_os.revision])
                 run(["git", "-C", str(root), "checkout", "--detach", new_os.revision])
+            self.update_journal.mark("software-applied")
 
             new_lock = json.loads(json.dumps(lock))
             new_lock["release_set_id"] = target.id
@@ -309,6 +327,10 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                     owner_updated_components.append(component.id)
                     new_lock["components"][component.id]["setup_completed_at"] = now_iso()
                     new_lock["components"][component.id]["last_setup_result"] = "success"
+            self.update_journal.mark(
+                "owners-migrated",
+                owner_migrated_components=sorted(owner_updated_components),
+            )
 
             configured_components = [
                 component.id
@@ -326,14 +348,32 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
             else:
                 new_lock.pop("setup_completed_at", None)
             new_lock = self.state.commit_effect(new_lock, effect, archive_previous=True)
+            self.update_journal.mark(
+                "receipt-committed",
+                committed_generation=new_lock.get("_receipt_generation"),
+            )
+            self.update_journal.finish(
+                "completed",
+                final_release=target.id,
+                staged_components=sorted(staged_components),
+                owner_migrated_components=sorted(owner_updated_components),
+            )
             return {
                 **plan,
                 "applied": True,
                 "changed": True,
                 "staged_components": sorted(staged_components),
                 "owner_updated_components": sorted(owner_updated_components),
+                "journal_token": journal["token"],
             }
-        except Exception:
+        except Exception as exc:
+            try:
+                self.update_journal.mark(
+                    "failed",
+                    last_error={"type": type(exc).__name__, "message": str(exc)},
+                )
+            except Exception:
+                pass
             if os_changed and old_os:
                 run(
                     ["git", "-C", str(root), "checkout", "--detach", old_os.revision],
