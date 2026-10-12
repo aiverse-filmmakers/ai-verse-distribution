@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "program_task": "U34",
+  "status": "accepted",
+  "transition": {
+    "from": "core-stable-2026-10-10",
+    "to": "core-first-run-rc1-2026-10-12",
+    "kind": "forward-core-update",
+    "state_rule": "owner-preserved",
+    "rollback_rule": "software-only-owner-state-preserved"
+  },
+  "source_components": {
+    "ai-verse-os": "921b665cf323192da1d0319300ff330cb0260d75",
+    "ai-verse-brain": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+    "ai-verse-memory": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+    "ai-verse-skills": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+    "ai-verse-data": "f8978f8f7a1bc94edecddc2662112233289159a3"
+  },
+  "target_components": {
+    "ai-verse-os": "64f7325444d18f94c9d4755d32eb89f3468bda6b",
+    "ai-verse-brain": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+    "ai-verse-memory": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+    "ai-verse-skills": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+    "ai-verse-data": "f8978f8f7a1bc94edecddc2662112233289159a3"
+  },
+  "changed_components": [
+    "ai-verse-os"
+  ],
+  "preservation_basis": {
+    "exact_candidate_acceptance_test": "tests/test_candidate_transition_admission.py::test_u34_exact_stable_to_candidate_populated_update_preserves_member_state",
+    "os_preservation_test": "tests/test_component_preservation.py::test_u17_os_update_preserves_user_owned_os_state",
+    "cross_cutting_preservation_test": "tests/test_component_preservation.py::test_u22_cross_cutting_member_state_survives_component_update",
+    "failure_recovery_suite": "tests/test_populated_update_acceptance.py",
+    "repeat_resume_chain_suite": "tests/test_update_repeat_chain_acceptance.py",
+    "destructive_loss_qualification": "qualification/core-update-program-u28/transition-evidence.json",
+    "os_update_request_ci_run": 38228297894
+  },
+  "rollback": {
+    "stable_target_admitted": false,
+    "reason": "No exact candidate-to-stable reverse software/state qualification has been performed. User state must not be rewound by inference."
+  },
+  "release_control": {
+    "candidate_default_channel": false,
+    "candidate_automatic_update": false,
+    "u35_full_qualification_required": true,
+    "u35_real_member_pilot_required": true,
+    "u36_promotion_required": true
+  }
+}
