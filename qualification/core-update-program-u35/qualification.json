@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "program_task": "U35",
+  "source_release": "core-stable-2026-10-10",
+  "target_release": "core-first-run-rc1-2026-10-12",
+  "component_change_plan": {
+    "changed_components": ["ai-verse-os"],
+    "unchanged_components": [
+      "ai-verse-brain",
+      "ai-verse-memory",
+      "ai-verse-skills",
+      "ai-verse-data"
+    ]
+  },
+  "qualification": {
+    "exact_transition_admission": {
+      "status": "passed",
+      "evidence": "qualification/core-update-program-u34/transition-admission.json"
+    },
+    "populated_member_fixture": {
+      "status": "passed",
+      "test": "tests/test_candidate_transition_admission.py::CandidateTransitionAdmissionTests::test_u34_exact_stable_to_candidate_populated_update_preserves_member_state"
+    },
+    "before_after_preservation": {
+      "status": "passed",
+      "covers": [
+        "profile/preferences/goals",
+        "Brain direction/history",
+        "Memory atomic history/provenance",
+        "workspaces",
+        "Data records",
+        "connections",
+        "custom files",
+        "user-created skills",
+        "automations/extensions",
+        "project and Distribution history"
+      ]
+    },
+    "owner_migration": {
+      "status": "passed",
+      "result": "not-required",
+      "reason": "Only ai-verse-os changes; Brain, Memory, Skills, and Data remain exactly pinned. OS reconcile is required and tested."
+    },
+    "dirty_local_edit_conflict": {
+      "status": "passed",
+      "evidence_run": 38225571349
+    },
+    "interruption_recovery": {
+      "status": "passed",
+      "evidence_runs": [38225571349, 38227342410]
+    },
+    "repeat_noop_resume_chain": {
+      "status": "passed",
+      "evidence_run": 38227342410
+    },
+    "final_status": {
+      "status": "passed"
+    },
+    "final_doctor": {
+      "status": "passed"
+    },
+    "rollback": {
+      "advertised": false,
+      "stable_target_admitted": false,
+      "reason": "No exact reverse-transition preservation qualification exists."
+    },
+    "platform_matrix": {
+      "status": "passed",
+      "run": 38232637219,
+      "platforms": ["linux", "macos", "windows"],
+      "python": ["3.11", "3.12"]
+    },
+    "owner_real_installation_pilot": {
+      "status": "pending-external-execution",
+      "runner": "scripts/u35-owner-pilot.py",
+      "requirements": [
+        "exact installed source core-stable-2026-10-10",
+        "exact target core-first-run-rc1-2026-10-12",
+        "actual project member-state fingerprint before and after",
+        "semantic Data preservation",
+        "pre-existing Distribution history preservation",
+        "final status PASS",
+        "final doctor PASS",
+        "updater health PASS"
+      ],
+      "private_content_recorded": false
+    }
+  },
+  "release_gate": "blocked-until-owner-real-installation-pilot-passes"
+}
