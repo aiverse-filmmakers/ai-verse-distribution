@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 5
-Remaining: 31
-Progress: 13.9%
-Remaining percentage: 86.1%
+Completed: 6
+Remaining: 30
+Progress: 16.7%
+Remaining percentage: 83.3%
 
 ## Mission
 
@@ -121,8 +121,9 @@ Goal: make the zero-loss promise machine-testable before changing updater behavi
   - Define forward software update, state migration, software rollback, state preservation, failure behavior, and unsupported transition behavior.
   - Evidence: `docs/CORE-UPDATE-TRANSITION-CONTRACT.md` canonically separates software update from owner state migration, defines software-only rollback with preserved owner/user state, explicit directional transition authority, no-op behavior, fail-closed unsupported transitions, and failure/recovery boundaries.
 
-- [ ] **U06 - Strengthen compatibility/admission metadata for update paths.**
+- [x] **U06 - Strengthen compatibility/admission metadata for update paths.**
   - New Core releases must explicitly declare and validate admitted `update_from` and `rollback_to` relationships plus preservation evidence.
+  - Evidence: `src/aiverse_distribution/catalog/core_update_transitions.json` is the explicit evidence-bound Core transition ledger; `src/aiverse_distribution/transition_contract.py` validates every released forward Core relationship against compatibility metadata and exact directional preservation evidence; `tests/test_transition_contract.py` proves missing/drifted evidence and inferred cross-release transitions fail closed. Distribution CI run `38187313729` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 # Phase 2 - Transactional Core updater
 
@@ -290,3 +291,5 @@ Next: Uyy - <next task>
 - Added `src/aiverse_distribution/update_safety.py` and `tests/test_update_safety.py`; the deterministic pre-write mutation gate passed Distribution CI run `38186959526` on Linux, macOS, and Windows for Python 3.11 and 3.12.
 - U05 completed.
 - Added `docs/CORE-UPDATE-TRANSITION-CONTRACT.md` defining forward update, owner migration, software-only rollback, preservation, no-op, failure, directional admission, and unsupported-transition semantics.
+- U06 completed.
+- Added `src/aiverse_distribution/catalog/core_update_transitions.json`, `src/aiverse_distribution/transition_contract.py`, and `tests/test_transition_contract.py`; admission relationships now require exact preservation evidence and stay self-only until a future transition is separately qualified. Distribution CI run `38187313729` passed on Linux, macOS, and Windows for Python 3.11 and 3.12.
