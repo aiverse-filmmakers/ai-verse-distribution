@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 
 from .release_catalog import ReleaseSet
 from .state import StateStore, now_iso
@@ -25,6 +25,7 @@ def run_changed_owner_migrations(
     state: StateStore,
     owner_update: Callable,
     preservation_verified: bool,
+    on_migrated: Optional[Callable[[list[str]], None]] = None,
 ) -> list[str]:
     """Invoke only component-owner migration/update lifecycles for changed owners."""
 
@@ -60,6 +61,9 @@ def run_changed_owner_migrations(
             state=state,
         )
         migrated.append(component_id)
+        migrated.sort()
+        if on_migrated is not None:
+            on_migrated(list(migrated))
     return sorted(migrated)
 
 
@@ -73,6 +77,7 @@ def run_changed_owner_reconcile(
     root: Path,
     state: StateStore,
     owner_setup: Callable,
+    on_reconciled: Optional[Callable[[list[str]], None]] = None,
 ) -> list[str]:
     """Run owner-controlled setup/reconcile only where the prior install was setup."""
 
@@ -97,4 +102,7 @@ def run_changed_owner_reconcile(
         receipt["setup_completed_at"] = now_iso()
         receipt["last_setup_result"] = "success"
         reconciled.append(component_id)
+        reconciled.sort()
+        if on_reconciled is not None:
+            on_reconciled(list(reconciled))
     return sorted(reconciled)
