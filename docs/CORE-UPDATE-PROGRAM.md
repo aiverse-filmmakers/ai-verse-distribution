@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 4
-Remaining: 32
-Progress: 11.1%
-Remaining percentage: 88.9%
+Completed: 5
+Remaining: 31
+Progress: 13.9%
+Remaining percentage: 86.1%
 
 ## Mission
 
@@ -117,8 +117,9 @@ Goal: make the zero-loss promise machine-testable before changing updater behavi
 
 ## Slice 1.2 - Release transition rules
 
-- [ ] **U05 - Formalize Core update and rollback semantics.**
+- [x] **U05 - Formalize Core update and rollback semantics.**
   - Define forward software update, state migration, software rollback, state preservation, failure behavior, and unsupported transition behavior.
+  - Evidence: `docs/CORE-UPDATE-TRANSITION-CONTRACT.md` canonically separates software update from owner state migration, defines software-only rollback with preserved owner/user state, explicit directional transition authority, no-op behavior, fail-closed unsupported transitions, and failure/recovery boundaries.
 
 - [ ] **U06 - Strengthen compatibility/admission metadata for update paths.**
   - New Core releases must explicitly declare and validate admitted `update_from` and `rollback_to` relationships plus preservation evidence.
@@ -287,3 +288,5 @@ Next: Uyy - <next task>
 - Added `docs/CORE-UPDATE-OWNERSHIP-CONTRACT.md` with the canonical five-class ownership model, mixed-ownership rules, local-modification conflict semantics, and fail-closed classification precedence.
 - U04 completed.
 - Added `src/aiverse_distribution/update_safety.py` and `tests/test_update_safety.py`; the deterministic pre-write mutation gate passed Distribution CI run `38186959526` on Linux, macOS, and Windows for Python 3.11 and 3.12.
+- U05 completed.
+- Added `docs/CORE-UPDATE-TRANSITION-CONTRACT.md` defining forward update, owner migration, software-only rollback, preservation, no-op, failure, directional admission, and unsupported-transition semantics.
