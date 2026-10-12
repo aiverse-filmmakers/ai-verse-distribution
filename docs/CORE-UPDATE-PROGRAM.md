@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 26
-Remaining: 10
-Progress: 72.2%
-Remaining percentage: 27.8%
+Completed: 27
+Remaining: 9
+Progress: 75.0%
+Remaining percentage: 25.0%
 
 ## Mission
 
@@ -223,7 +223,8 @@ Goal: qualify updates using populated installations designed to catch accidental
 - [x] **U26 - Add dirty-file, ambiguity, interruption, and forced-failure acceptance cases.**
   - Evidence: `tests/test_populated_update_acceptance.py` includes four destructive-loss cases: dirty tracked source fails before staging, escaped/ambiguous receipt provenance fails closed, a simulated receipt-committed interruption deterministically rolls back then retries idempotently, and a forced owner migration failure restores prior software without changing canonical member state. Each case verifies preservation and journal cleanup/recovery semantics. Distribution CI run `38225571349` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U27 - Add no-op, repeat-update, resume, and multi-release-chain acceptance.**
+- [x] **U27 - Add no-op, repeat-update, resume, and multi-release-chain acceptance.**
+  - Evidence: `tests/test_update_repeat_chain_acceptance.py` exercises a real current-Core no-op, a repeated identical target that does not replay owner migration, finalization of a verified interrupted update without replay, and a two-hop populated Core chain where Brain then Memory changes while the original member-state snapshot remains preserved end-to-end. Distribution CI run `38227342410` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 - [ ] **U28 - Produce immutable update qualification evidence for the current stable -> candidate transition.**
 
@@ -353,3 +354,5 @@ Next: Uyy - <next task>
 - Ran the fully populated five-owner Core update acceptance, including generated bootstrap refresh and final health, on the full Linux/macOS/Windows x Python 3.11/3.12 matrix in Distribution CI run `38225571349`.
 - U26 completed.
 - Added populated dirty-source, ambiguous-provenance, interrupted-update recovery, and forced-owner-failure acceptance cases. All preserve canonical member state while failing closed or deterministically recovering; Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
+- U27 completed.
+- Added `tests/test_update_repeat_chain_acceptance.py` covering no-op, repeated target, verified resume, and a two-hop Core chain with end-to-end member-state preservation. Distribution CI run `38227342410` passed the full six-job Linux/macOS/Windows x Python 3.11/3.12 matrix.
