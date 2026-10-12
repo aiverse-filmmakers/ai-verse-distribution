@@ -66,27 +66,28 @@
     },
     "platform_matrix": {
       "status": "passed",
-      "run": 38233943990,
-      "commit": "77b20eab17857c2c256f50764a41d36d6d60df13",
+      "run": 38238783665,
+      "commit": "b901f7f98670335add3f9ce25c151836c1b8d3e0",
       "platforms": ["linux", "macos", "windows"],
       "python": ["3.11", "3.12"],
       "all_six_jobs_passed": true
     },
     "owner_real_installation_pilot": {
-      "status": "pending-external-execution",
+      "status": "passed",
       "runner": "scripts/u35-owner-pilot.py",
-      "requirements": [
-        "exact installed source core-stable-2026-10-10",
-        "exact target core-first-run-rc1-2026-10-12",
-        "actual project member-state fingerprint before and after",
-        "semantic Data preservation",
-        "pre-existing Distribution history preservation",
-        "final status PASS",
-        "final doctor PASS",
-        "updater health PASS"
-      ],
-      "private_content_recorded": false
+      "executed_at": "2026-10-12T11:01:20.899211+00:00",
+      "source_release": "core-stable-2026-10-10",
+      "target_release": "core-first-run-rc1-2026-10-12",
+      "changed_components": ["ai-verse-os"],
+      "member_state_preserved": true,
+      "before_state_sha256": "870deb0c380eb72a726860bc0b9637de227bdf2c011ad2d06f29f3f1cf0700e7",
+      "after_state_sha256": "0eabb8f458683bbdb35540069de98e2eb59ca665aeed82cc75ac3242612e9fa3",
+      "status_pass": true,
+      "doctor_pass": true,
+      "updater_health_pass": true,
+      "private_content_recorded": false,
+      "rollback_advertised": false
     }
   },
-  "release_gate": "blocked-until-owner-real-installation-pilot-passes"
+  "release_gate": "passed"
 }
