@@ -16,6 +16,7 @@ from .generated_refresh import (
     plan_generated_refresh,
     restore_generated_refresh,
 )
+from .infrastructure_gate import InfrastructureUpdateGate, require_update_activation
 from .orchestrator import Orchestrator as BaseOrchestrator
 from .process import run
 from .release_catalog import Catalog, DistributionError, ReleaseSet
@@ -32,10 +33,12 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
         state: Optional[StateStore] = None,
         catalog: Optional[Catalog] = None,
         transition_contract: Optional[CoreTransitionContract] = None,
+        infrastructure_gate: Optional[InfrastructureUpdateGate] = None,
     ) -> None:
         super().__init__(state=state, catalog=catalog)
         self.transition_contract = transition_contract or CoreTransitionContract(self.catalog)
         self.update_journal = CoreUpdateJournal(self.state.home)
+        self.infrastructure_gate = infrastructure_gate or InfrastructureUpdateGate()
 
     def _installed_core(self) -> tuple[dict, ReleaseSet]:
         lock = self.state.load()
@@ -172,6 +175,15 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
             "brain_handover": False,
             "permission_grants": False,
         }
+        if transition_kind == "update":
+            infrastructure = self.infrastructure_gate.evaluate(
+                target=target,
+                changed_components=plan["changed_components"],
+            )
+            plan["infrastructure"] = infrastructure
+            plan["activation_allowed"] = infrastructure.get("activation_allowed") is True
+        else:
+            plan["activation_allowed"] = True
         if not changes:
             plan["message"] = "AI-Verse is already current."
         return plan
@@ -314,6 +326,9 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                 "generated_refreshed": [],
                 "message": "AI-Verse is already current.",
             }
+
+        if transition_kind == "update":
+            require_update_activation(plan)
 
         lock = self.state.load()
         assert lock is not None

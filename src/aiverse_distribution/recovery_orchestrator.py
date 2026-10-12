@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 from .adapters import owner_setup, owner_update
 from .core_update import CoreUpdateOrchestrator
 from .core_update_health import require_final_health
+from .infrastructure_gate import require_update_activation
 from .process import run
 from .recovery import LastKnownGoodStore
 from .release_catalog import DistributionError
@@ -74,6 +75,9 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
                 if recovery:
                     result["recovery"] = recovery
                 return result
+
+            if transition_kind == "update":
+                require_update_activation(plan)
 
             lkg = self.ensure_last_known_good()
             result = self._apply_core_update(
