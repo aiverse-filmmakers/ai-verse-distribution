@@ -4,12 +4,8 @@
   "releases": {
     "core-repaired-public-beta-2026-10-06": {
       "profile": "core",
-      "update_from": [
-        "core-repaired-public-beta-2026-10-06"
-      ],
-      "rollback_to": [
-        "core-repaired-public-beta-2026-10-06"
-      ],
+      "update_from": ["core-repaired-public-beta-2026-10-06"],
+      "rollback_to": ["core-repaired-public-beta-2026-10-06"],
       "state_rule": "owner-preserved",
       "rollback_rule": "software-only-owner-state-preserved",
       "preservation_evidence": {
@@ -35,12 +31,8 @@
     },
     "core-purpose-context-public-beta-2026-10-09": {
       "profile": "core",
-      "update_from": [
-        "core-purpose-context-public-beta-2026-10-09"
-      ],
-      "rollback_to": [
-        "core-purpose-context-public-beta-2026-10-09"
-      ],
+      "update_from": ["core-purpose-context-public-beta-2026-10-09"],
+      "rollback_to": ["core-purpose-context-public-beta-2026-10-09"],
       "state_rule": "owner-preserved",
       "rollback_rule": "software-only-owner-state-preserved",
       "preservation_evidence": {
@@ -66,12 +58,8 @@
     },
     "core-stable-2026-10-10": {
       "profile": "core",
-      "update_from": [
-        "core-stable-2026-10-10"
-      ],
-      "rollback_to": [
-        "core-stable-2026-10-10"
-      ],
+      "update_from": ["core-stable-2026-10-10"],
+      "rollback_to": ["core-stable-2026-10-10"],
       "state_rule": "owner-preserved",
       "rollback_rule": "software-only-owner-state-preserved",
       "preservation_evidence": {
@@ -101,26 +89,24 @@
         "core-stable-2026-10-10",
         "core-first-run-rc1-2026-10-12"
       ],
-      "rollback_to": [
-        "core-first-run-rc1-2026-10-12"
-      ],
+      "rollback_to": ["core-first-run-rc1-2026-10-12"],
       "state_rule": "owner-preserved",
       "rollback_rule": "software-only-owner-state-preserved",
       "preservation_evidence": {
         "updates": {
           "core-stable-2026-10-10": {
             "status": "accepted",
-            "kind": "populated-os-only-preservation",
+            "kind": "real-and-synthetic-populated-os-only-preservation",
             "from": "core-stable-2026-10-10",
             "to": "core-first-run-rc1-2026-10-12",
-            "qualification_ref": "qualification/core-update-program-u34/transition-admission.json#stable-to-candidate"
+            "qualification_ref": "qualification/core-update-program-u35/qualification.json"
           },
           "core-first-run-rc1-2026-10-12": {
             "status": "accepted",
             "kind": "self-transition-noop",
             "from": "core-first-run-rc1-2026-10-12",
             "to": "core-first-run-rc1-2026-10-12",
-            "qualification_ref": "qualification/core-update-program-u34/transition-admission.json#candidate-self"
+            "qualification_ref": "qualification/core-update-program-u35/qualification.json"
           }
         },
         "rollbacks": {
@@ -129,7 +115,7 @@
             "kind": "self-transition-noop",
             "from": "core-first-run-rc1-2026-10-12",
             "to": "core-first-run-rc1-2026-10-12",
-            "qualification_ref": "qualification/core-update-program-u34/transition-admission.json#candidate-self"
+            "qualification_ref": "qualification/core-update-program-u35/qualification.json"
           }
         }
       }
