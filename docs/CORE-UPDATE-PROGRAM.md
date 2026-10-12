@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 6
-Remaining: 30
-Progress: 16.7%
-Remaining percentage: 83.3%
+Completed: 7
+Remaining: 29
+Progress: 19.4%
+Remaining percentage: 80.6%
 
 ## Mission
 
@@ -131,8 +131,9 @@ Goal: make Distribution perform a safe, resumable, verified update instead of re
 
 ## Slice 2.1 - Resolve and stage
 
-- [ ] **U07 - Resolve the latest admitted Core from an installed Core.**
+- [x] **U07 - Resolve the latest admitted Core from an installed Core.**
   - Default update target is the current admitted Core channel unless an advanced exact target is explicitly supplied.
+  - Evidence: `src/aiverse_distribution/core_update.py` adds `resolve_core_update_target`, which starts from the installed Core receipt, resolves the default Core channel or an exact advanced target, then requires U06 transition admission and preservation evidence before returning a target. `tests/test_core_update_resolver.py` proves the current stable self-target resolves and unadmitted cross-release or non-Core targets fail closed. Distribution CI run `38187478256` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 - [ ] **U08 - Produce a deterministic update plan and clean no-op behavior.**
   - Show old/new release and changed components. Already-current installs succeed without mutation.
@@ -293,3 +294,5 @@ Next: Uyy - <next task>
 - Added `docs/CORE-UPDATE-TRANSITION-CONTRACT.md` defining forward update, owner migration, software-only rollback, preservation, no-op, failure, directional admission, and unsupported-transition semantics.
 - U06 completed.
 - Added `src/aiverse_distribution/catalog/core_update_transitions.json`, `src/aiverse_distribution/transition_contract.py`, and `tests/test_transition_contract.py`; admission relationships now require exact preservation evidence and stay self-only until a future transition is separately qualified. Distribution CI run `38187313729` passed on Linux, macOS, and Windows for Python 3.11 and 3.12.
+- U07 completed.
+- Added the admitted Core target resolver in `src/aiverse_distribution/core_update.py` with resolver acceptance in `tests/test_core_update_resolver.py`; default Core channel and exact targets now require explicit evidence-bound admission. Distribution CI run `38187478256` passed on Linux, macOS, and Windows for Python 3.11 and 3.12.
