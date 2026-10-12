@@ -82,9 +82,13 @@ class PopulatedCoreFixture:
         target_raw: dict | None = None,
     ) -> "PopulatedCoreFixture":
         temp = tempfile.TemporaryDirectory()
-        base = Path(temp.name)
-        project = base / "AI-Verse"
+        base = Path(temp.name).resolve()
+        project = (base / "AI-Verse").resolve()
         project.mkdir(parents=True)
+        # A real Core project is an OS Git checkout. The synthetic fixture keeps a
+        # minimal checkout identity so interrupted OS recovery exercises the same
+        # fail-closed branch without requiring a network clone.
+        (project / ".git").mkdir()
         store = StateStore(base / "distribution")
         app = CoreUpdateOrchestrator(state=store)
         current = app.catalog.get_release("core-stable-2026-10-10", require_released=True)
@@ -110,7 +114,7 @@ class PopulatedCoreFixture:
             receipts[component.id] = {
                 "repository": component.repository,
                 "revision": component.revision,
-                "source": str(source),
+                "source": str(source.resolve()),
                 "installed_at": "2026-10-10T00:00:00+00:00",
                 "setup_completed_at": "2026-10-10T01:00:00+00:00",
                 "uninstalled_at": None,
@@ -184,8 +188,8 @@ class PopulatedCoreFixture:
                 "project": str(project),
                 "stack": str(base),
                 "owned_files": {
-                    str(generated_project): _sha256(generated_project),
-                    str(generated_stack): _sha256(generated_stack),
+                    str(generated_project.resolve()): _sha256(generated_project),
+                    str(generated_stack.resolve()): _sha256(generated_stack),
                 },
                 "pending_files": {},
             },
@@ -284,8 +288,8 @@ class PopulatedCoreFixture:
         return {
             "repository": component.repository,
             "revision": component.revision,
-            "source": str(source),
-            "runtime_source": str(source),
+            "source": str(source.resolve()),
+            "runtime_source": str(source.resolve()),
             "installed_at": "2026-10-12T02:00:00+00:00",
             "setup_completed_at": None,
             "uninstalled_at": None,
