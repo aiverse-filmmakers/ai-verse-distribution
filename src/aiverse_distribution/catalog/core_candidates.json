@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "release_sets": [
+    {
+      "id": "core-first-run-rc1-2026-10-12",
+      "profile": "core",
+      "status": "released",
+      "created_at": "2026-10-12",
+      "classification": "explicit-install-qualification-candidate",
+      "lineage": {
+        "parent": "core-stable-2026-10-10",
+        "policy": "same-or-descendant"
+      },
+      "promotion": {
+        "default_channel": false,
+        "automatic_update": false,
+        "cross_release_transition_admitted": false
+      },
+      "runtime_requirements": {
+        "git_lfs": true
+      },
+      "components": [
+        {
+          "id": "ai-verse-os",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+          "revision": "64f7325444d18f94c9d4755d32eb89f3468bda6b",
+          "install_order": 10
+        },
+        {
+          "id": "ai-verse-brain",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+          "revision": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+          "install_order": 20
+        },
+        {
+          "id": "ai-verse-memory",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+          "revision": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+          "install_order": 30
+        },
+        {
+          "id": "ai-verse-skills",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+          "revision": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+          "install_order": 40
+        },
+        {
+          "id": "ai-verse-data",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+          "revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
+          "install_order": 50,
+          "dependency_lock": {
+            "scheme": "distribution-companion-npm-lock-v1",
+            "manifest": "ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/lock.json",
+            "manifest_sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
+          }
+        }
+      ],
+      "evidence": {
+        "candidate_refs_frozen": true,
+        "first_run_scope": {
+          "stable_source": "core-stable-2026-10-10",
+          "os_base": "921b665cf323192da1d0319300ff330cb0260d75",
+          "os_candidate": "64f7325444d18f94c9d4755d32eb89f3468bda6b",
+          "os_ahead_by": 3,
+          "os_behind_by": 0,
+          "progressive_onboarding_contract": "AGENTS.md#first-use-and-progressive-onboarding-rule",
+          "migration_drop_contract": "AGENTS.md#migration-drop-first-use-rule",
+          "natural_update_contract": "AGENTS.md#core-update-request-rule",
+          "update_request_ci_run": 38228297894
+        },
+        "qualification": {
+          "status": "pending-u35",
+          "cross_platform_populated_update": false,
+          "real_member_pilot": false
+        },
+        "transition_policy": {
+          "cross_release_update_admitted": false,
+          "cross_release_rollback_admitted": false,
+          "update_from": [
+            "core-first-run-rc1-2026-10-12"
+          ],
+          "rollback_to": [
+            "core-first-run-rc1-2026-10-12"
+          ],
+          "state_rule": "owner-preserved",
+          "rollback_rule": "software-only-owner-state-preserved"
+        }
+      },
+      "authority": {
+        "grants_permissions": false,
+        "transfers_brain_strategy": false,
+        "initializes_all_workspaces": false
+      }
+    }
+  ],
+  "compatibility": {
+    "core-first-run-rc1-2026-10-12": {
+      "profile": "core",
+      "status": "released",
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "python_min": "3.11",
+      "node_min": "22.23.3",
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "update_from": [
+        "core-first-run-rc1-2026-10-12"
+      ],
+      "rollback_to": [
+        "core-first-run-rc1-2026-10-12"
+      ]
+    }
+  }
+}
