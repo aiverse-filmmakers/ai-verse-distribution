@@ -3,17 +3,20 @@ import unittest
 from aiverse_distribution.release_catalog import Catalog, CatalogValidationError, ReleaseBlockedError
 
 
+CURRENT_CORE = "core-first-run-rc1-2026-10-12"
+
+
 class CatalogTests(unittest.TestCase):
     def setUp(self):
         self.catalog = Catalog()
 
     def test_core_is_exact_and_released(self):
         release = self.catalog.resolve("core")
-        self.assertEqual(release.id, "core-stable-2026-10-10")
+        self.assertEqual(release.id, CURRENT_CORE)
         self.assertEqual(
             {component.id: component.revision for component in release.components},
             {
-                "ai-verse-os": "921b665cf323192da1d0319300ff330cb0260d75",
+                "ai-verse-os": "64f7325444d18f94c9d4755d32eb89f3468bda6b",
                 "ai-verse-brain": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
                 "ai-verse-memory": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
                 "ai-verse-skills": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
@@ -158,7 +161,7 @@ class CatalogTests(unittest.TestCase):
             "custom",
             components=["ai-verse-os", "ai-verse-memory"],
         )
-        self.assertEqual(release.id, "core-stable-2026-10-10")
+        self.assertEqual(release.id, CURRENT_CORE)
         self.assertEqual([x.id for x in release.components], ["ai-verse-os", "ai-verse-memory"])
 
     def test_custom_closes_required_dependencies(self):
