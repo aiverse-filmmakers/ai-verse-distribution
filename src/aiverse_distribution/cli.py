@@ -14,6 +14,7 @@ from .diagnostics import create_support_bundle
 from .orchestrator import Orchestrator
 from .process import ProcessError
 from .redaction import sanitize, sanitize_text
+from .update_output import format_core_update
 
 
 def _emit(payload: Any, as_json: bool = False) -> None:
@@ -24,6 +25,10 @@ def _emit(payload: Any, as_json: bool = False) -> None:
         print(json.dumps(payload, indent=2, sort_keys=True, default=str))
         return
     if isinstance(payload, dict):
+        update_text = format_core_update(payload)
+        if update_text is not None:
+            print(update_text)
+            return
         if "state" in payload:
             print(f"state: {payload['state']}")
         if "release_set_id" in payload:
