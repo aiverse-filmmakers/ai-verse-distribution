@@ -81,7 +81,10 @@ class RepeatAndChainAcceptanceTests(unittest.TestCase):
         self.addCleanup(fixture.cleanup)
         before = self._snapshot(fixture)
 
-        result = fixture.app.apply_update()
+        # U27 proves the exact already-current no-op. U36 later advances the
+        # default Core channel, so keep this historical acceptance bound to the
+        # fixture's installed release instead of reinterpreting it as an update.
+        result = fixture.app.apply_update(fixture.current.id)
 
         self.assertTrue(result["noop"])
         self.assertFalse(result["changed"])
