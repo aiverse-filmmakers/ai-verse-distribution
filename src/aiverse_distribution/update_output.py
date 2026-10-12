@@ -57,8 +57,6 @@ def format_core_update(payload: dict[str, Any]) -> Optional[str]:
         return f"AI-Verse is already up to date.\nCore: {target_text}"
 
     lines = [
-        "Updating AI-Verse...",
-        "",
         "Core",
         f"{source_text} -> {target_text}",
         "",
