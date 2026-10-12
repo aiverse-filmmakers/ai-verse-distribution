@@ -6,6 +6,7 @@ from aiverse_distribution.release_catalog import Catalog
 
 
 ROOT = Path(__file__).resolve().parents[1]
+CURRENT_CORE = "core-first-run-rc1-2026-10-12"
 
 
 class ManifestDriftTests(unittest.TestCase):
@@ -17,35 +18,19 @@ class ManifestDriftTests(unittest.TestCase):
         self.assertEqual(public, runtime)
 
     def test_root_compatibility_matches_effective_runtime_catalog(self):
-        runtime = json.loads(
-            (ROOT / "src" / "aiverse_distribution" / "catalog" / "compatibility.json").read_text(encoding="utf-8")
-        )
-        lineage = json.loads(
-            (ROOT / "src" / "aiverse_distribution" / "catalog" / "core_lineage.json").read_text(encoding="utf-8")
-        )
-        candidates = json.loads(
-            (ROOT / "src" / "aiverse_distribution" / "catalog" / "core_candidates.json").read_text(encoding="utf-8")
-        )
-        effective = json.loads(json.dumps(runtime))
-        effective["release_sets"].update(lineage["compatibility"])
-        effective["release_sets"].update(candidates["compatibility"])
+        catalog = Catalog()
         public = json.loads((ROOT / "compatibility" / "matrix.json").read_text(encoding="utf-8"))
-        self.assertEqual(public, effective)
+        self.assertEqual(public, catalog.compatibility)
 
     def test_root_release_manifests_match_runtime_catalog(self):
-        runtime = json.loads(
-            (ROOT / "src" / "aiverse_distribution" / "catalog" / "release_sets.json").read_text(encoding="utf-8")
-        )
-        candidates = json.loads(
-            (ROOT / "src" / "aiverse_distribution" / "catalog" / "core_candidates.json").read_text(encoding="utf-8")
-        )
-        by_id = {item["id"]: item for item in runtime["release_sets"]}
-        by_id.update({item["id"]: item for item in candidates["release_sets"]})
+        catalog = Catalog()
+        schema_version = catalog.release_data["schema_version"]
+        by_id = {item["id"]: item for item in catalog.release_data["release_sets"]}
 
         mapping = {
             "core-first-member-beta-2026-09-13": ROOT / "release-sets" / "core-first-member-beta.json",
             "core-public-beta-2026-09-13": ROOT / "release-sets" / "core-public-beta-2026-09-13.json",
-            "core-first-run-rc1-2026-10-12": ROOT / "release-sets" / "core-first-run-rc1-2026-10-12.json",
+            CURRENT_CORE: ROOT / "release-sets" / f"{CURRENT_CORE}.json",
             "agent-public-beta-2026-09-14": ROOT / "release-sets" / "agent-public-beta-2026-09-14.json",
             "agent-invisible-intelligence-rc1-2026-09-14": ROOT / "release-sets" / "agent-invisible-intelligence-rc1-2026-09-14.json",
             "agent-context-ladder-rc1-2026-09-15": ROOT / "release-sets" / "agent-context-ladder-rc1-2026-09-15.json",
@@ -54,8 +39,8 @@ class ManifestDriftTests(unittest.TestCase):
         }
         for release_id, path in mapping.items():
             public = json.loads(path.read_text(encoding="utf-8"))
-            self.assertEqual(public["schema_version"], runtime["schema_version"])
-            expected = {"schema_version": runtime["schema_version"], **by_id[release_id]}
+            self.assertEqual(public["schema_version"], schema_version)
+            expected = {"schema_version": schema_version, **by_id[release_id]}
             self.assertEqual(public, expected)
 
     def test_current_forward_core_public_manifest_matches_lineage(self):
@@ -75,7 +60,7 @@ class ManifestDriftTests(unittest.TestCase):
 
     def test_catalog_still_validates_after_public_mirroring(self):
         catalog = Catalog()
-        self.assertEqual(catalog.resolve("core").id, "core-stable-2026-10-10")
+        self.assertEqual(catalog.resolve("core").id, CURRENT_CORE)
         self.assertEqual(catalog.resolve("agent").id, "agent-public-beta-2026-09-14")
 
     def test_full_blockers_match_canonical_release_set(self):
