@@ -17,13 +17,13 @@ class ProjectRoutingTests(unittest.TestCase):
         root = Path(folder.name)
         project = root / "member-project"
         layout = ProjectLayout.resolve(project)
-        project.mkdir(parents=True)
-        (project / "AGENTS.md").write_text("installed core", encoding="utf-8")
+        layout.project.mkdir(parents=True)
+        (layout.project / "AGENTS.md").write_text("installed core", encoding="utf-8")
         layout.stack.mkdir(parents=True)
         layout.distribution_home.joinpath("locks").mkdir(parents=True)
         layout.distribution_home.joinpath("locks/current.json").write_text(
             json.dumps({
-                "root": str(project),
+                "root": str(layout.project),
                 "profile": "core",
                 "release_set_id": "core-stable-2026-10-10",
             }),
@@ -38,12 +38,12 @@ class ProjectRoutingTests(unittest.TestCase):
         layout.receipt.write_text(
             json.dumps({
                 "schema_version": 1,
-                "project": str(project),
+                "project": str(layout.project),
                 "stack": str(layout.stack),
                 "phase": phase,
                 "release_set_id": "core-stable-2026-10-10",
-                "python": str(python),
-                "launcher": str(launcher),
+                "python": str(python.resolve()),
+                "launcher": str(launcher.resolve()),
             }),
             encoding="utf-8",
         )
