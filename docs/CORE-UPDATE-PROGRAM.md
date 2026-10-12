@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 29
-Remaining: 7
-Progress: 80.6%
-Remaining percentage: 19.4%
+Completed: 30
+Remaining: 6
+Progress: 83.3%
+Remaining percentage: 16.7%
 
 ## Mission
 
@@ -239,8 +239,9 @@ Goal: hide implementation detail and make updating feel like a normal product ac
   - Codex/Claude/compatible agents should locate and invoke the canonical project updater automatically.
   - Evidence: AI-Verse OS `AGENTS.md` commit `64f7325444d18f94c9d4755d32eb89f3468bda6b` adds the canonical Core update request rule: natural update language invokes project-bound `aiverse update`, normal updates require no release IDs or paths, Git pull/reset/reclone/reinstall shortcuts are forbidden, protected owner/member state may not be directly migrated, and fail-closed conflicts must be surfaced. `scripts/verify-update-request-contract.py` verifies the runtime contract plus Claude's existing delegation to `AGENTS.md`; OS workflow `Update Request Contract` run `38228297894` passed on Ubuntu, macOS, and Windows.
 
-- [ ] **U30 - Provide one short terminal update command.**
+- [x] **U30 - Provide one short terminal update command.**
   - Target experience: `aiverse update`, with no release IDs or paths required.
+  - Evidence: `src/aiverse_distribution/cli.py` makes plain `aiverse update` apply the default admitted Core immediately, keeps `--to` only as an advanced exact-target option, provides explicit non-mutating preview through `aiverse update --plan`, and retains hidden legacy `--apply` compatibility. `tests/test_update_cli.py` proves default apply, explicit preview, optional exact target, legacy compatibility, invalid plan/apply rejection, and one-action help. Distribution CI run `38228862077` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 ## Slice 5.2 - Clear handoff
 
@@ -362,3 +363,5 @@ Next: Uyy - <next task>
 - Added `qualification/core-update-program-u28/transition-evidence.json` plus `tests/test_update_qualification_evidence.py`, freezing exact current-stable source identity and successful destructive-loss harness evidence without mutating the release catalog or admitting a production cross-release transition. Distribution CI run `38227818622` passed the full six-job Linux/macOS/Windows x Python 3.11/3.12 matrix.
 - U29 completed.
 - Updated AI-Verse OS `AGENTS.md` with the canonical natural-language Core update rule and added `scripts/verify-update-request-contract.py` plus a dedicated three-platform CI workflow. OS run `38228297894` passed on Ubuntu, macOS, and Windows at commit `64f7325444d18f94c9d4755d32eb89f3468bda6b`.
+- U30 completed.
+- Changed plain `aiverse update` into the one-action default admitted-Core update, added explicit `--plan` preview, preserved hidden legacy `--apply` compatibility, and added `tests/test_update_cli.py`. Distribution CI run `38228862077` passed the full six-job Linux/macOS/Windows x Python 3.11/3.12 matrix.
