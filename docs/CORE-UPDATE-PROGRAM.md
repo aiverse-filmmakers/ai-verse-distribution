@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 25
-Remaining: 11
-Progress: 69.4%
-Remaining percentage: 30.6%
+Completed: 26
+Remaining: 10
+Progress: 72.2%
+Remaining percentage: 27.8%
 
 ## Mission
 
@@ -220,7 +220,8 @@ Goal: qualify updates using populated installations designed to catch accidental
 - [x] **U25 - Run the populated update acceptance on macOS, Linux, and Windows.**
   - Evidence: `tests/test_populated_update_acceptance.py::test_u25_populated_all_component_update_preserves_member_state` changes all five Core owners in one transaction, runs owner migration/reconcile and two digest-receipted generated refreshes, then proves the full populated member snapshot is preserved and final health passes. Distribution CI run `38225571349` passed on Ubuntu, macOS, and Windows for Python 3.11 and 3.12.
 
-- [ ] **U26 - Add dirty-file, ambiguity, interruption, and forced-failure acceptance cases.**
+- [x] **U26 - Add dirty-file, ambiguity, interruption, and forced-failure acceptance cases.**
+  - Evidence: `tests/test_populated_update_acceptance.py` includes four destructive-loss cases: dirty tracked source fails before staging, escaped/ambiguous receipt provenance fails closed, a simulated receipt-committed interruption deterministically rolls back then retries idempotently, and a forced owner migration failure restores prior software without changing canonical member state. Each case verifies preservation and journal cleanup/recovery semantics. Distribution CI run `38225571349` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 - [ ] **U27 - Add no-op, repeat-update, resume, and multi-release-chain acceptance.**
 
@@ -350,3 +351,5 @@ Next: Uyy - <next task>
 - Added `src/aiverse_distribution/preservation.py` and before/after acceptance proving exact canonical preservation, semantic Data preservation, approved additive migrations, and detection of destructive member-state changes. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
 - U25 completed.
 - Ran the fully populated five-owner Core update acceptance, including generated bootstrap refresh and final health, on the full Linux/macOS/Windows x Python 3.11/3.12 matrix in Distribution CI run `38225571349`.
+- U26 completed.
+- Added populated dirty-source, ambiguous-provenance, interrupted-update recovery, and forced-owner-failure acceptance cases. All preserve canonical member state while failing closed or deterministically recovering; Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
