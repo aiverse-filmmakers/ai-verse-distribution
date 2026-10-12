@@ -51,6 +51,31 @@ def format_core_update(payload: dict[str, Any]) -> Optional[str]:
         else:
             lines.extend(["", "Would update:"])
             lines.extend(f"- {component}" for component in components)
+
+        infrastructure = payload.get("infrastructure")
+        if isinstance(infrastructure, dict):
+            state = infrastructure.get("state")
+            if state == "OPTIONAL":
+                lines.extend([
+                    "",
+                    "Setup improvement: available separately",
+                    "This software update can continue and will not rearrange your setup.",
+                ])
+            elif state == "REQUIRED":
+                lines.extend([
+                    "",
+                    "Setup change required",
+                    "AI-Verse found a setup change that must be completed before the new version can finish.",
+                    "Nothing has been changed yet.",
+                    "Action: complete the setup upgrade before updating.",
+                ])
+            elif state == "BLOCKED/REVIEW":
+                lines.extend([
+                    "",
+                    "Setup review required",
+                    "AI-Verse cannot safely confirm the setup changes needed for this version.",
+                    "Nothing has been changed.",
+                ])
         return "\n".join(lines)
 
     if payload.get("noop") or payload.get("changed") is False:
@@ -69,5 +94,12 @@ def format_core_update(payload: dict[str, Any]) -> Optional[str]:
     health = payload.get("health")
     if isinstance(health, dict) and health.get("ok") is True:
         lines.extend(["", "Health checks: PASS"])
+    infrastructure = payload.get("infrastructure")
+    if isinstance(infrastructure, dict) and infrastructure.get("state") == "OPTIONAL":
+        lines.extend([
+            "",
+            "Setup improvement remains available separately.",
+            "This update did not rearrange your setup.",
+        ])
     lines.append("AI-Verse is up to date.")
     return "\n".join(lines)
