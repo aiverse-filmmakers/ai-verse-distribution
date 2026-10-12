@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 20
-Remaining: 16
-Progress: 55.6%
-Remaining percentage: 44.4%
+Completed: 21
+Remaining: 15
+Progress: 58.3%
+Remaining percentage: 41.7%
 
 ## Mission
 
@@ -193,7 +193,8 @@ Goal: prove preservation separately for every Core owner and major user surface.
 - [x] **U20 - Prove Skills update preserves user-created/custom skills while updating released built-ins safely.**
   - Evidence: `tests/test_component_preservation.py::test_u20_skills_update_preserves_member_skills_while_managed_generation_changes` allows the Skills owner to publish a new managed built-in generation while proving workspace custom skills and external personal reusable skills remain byte-for-byte unchanged. Distribution CI run `38225571349` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U21 - Prove Data update/migration preserves workspace databases and records.**
+- [x] **U21 - Prove Data update/migration preserves workspace databases and records.**
+  - Evidence: `tests/test_component_preservation.py::test_u21_data_migration_preserves_workspace_database_records` migrates two populated workspace SQLite databases by adding owner schema metadata while semantic snapshots prove every pre-update table, column value, and member record remains intact; non-Data member extension registry state is also unchanged. Distribution CI run `38225571349` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 ## Slice 3.2 - Cross-cutting member state
 
@@ -335,3 +336,5 @@ Next: Uyy - <next task>
 - Added Memory preservation acceptance proving atomic memories and provenance survive owner migration while derived recall state may be rebuilt. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
 - U20 completed.
 - Added Skills preservation acceptance proving released managed generations can advance without changing member-created workspace or personal reusable skills. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
+- U21 completed.
+- Added Data preservation acceptance with semantic SQLite record verification across two populated workspaces and preservation of non-Data extension state. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
