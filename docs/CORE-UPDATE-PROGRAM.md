@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 22
-Remaining: 14
-Progress: 61.1%
-Remaining percentage: 38.9%
+Completed: 23
+Remaining: 13
+Progress: 63.9%
+Remaining percentage: 36.1%
 
 ## Mission
 
@@ -207,8 +207,9 @@ Goal: qualify updates using populated installations designed to catch accidental
 
 ## Slice 4.1 - Preservation fixture
 
-- [ ] **U23 - Build a synthetic populated member installation fixture.**
+- [x] **U23 - Build a synthetic populated member installation fixture.**
   - Include profile, preferences, goals, direction, memories, decisions, multiple workspaces, Data rows, connections, custom files, custom skill, custom automation/extension state, and realistic history.
+  - Evidence: `tests/preservation_support.py` builds a realistic resolved Core project/tool-stack fixture with profile/preferences/goals, operator Brain/Memory/decisions/context, two workspaces, populated SQLite Data records, workspace and personal custom Skills, connections, automations, custom extensions/files/apps/agents, generated bootstrap receipts, derived runtime state, and pre-existing Distribution history. `test_u23_fixture_contains_every_required_member_surface` verifies the required surfaces are actually populated. Distribution CI run `38225571349` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 - [ ] **U24 - Build before/after preservation fingerprints.**
   - Hash or semantically verify all state that must remain unchanged and separately verify approved migrations.
@@ -341,3 +342,5 @@ Next: Uyy - <next task>
 - Added Data preservation acceptance with semantic SQLite record verification across two populated workspaces and preservation of non-Data extension state. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
 - U22 completed.
 - Added cross-cutting preservation acceptance for workspaces, connections, custom content, extensions, automations, decisions, and pre-existing project/Distribution history. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
+- U23 completed.
+- Added `tests/preservation_support.py`, the populated synthetic member installation used by destructive-loss qualification, and verified all required state surfaces are non-empty. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
