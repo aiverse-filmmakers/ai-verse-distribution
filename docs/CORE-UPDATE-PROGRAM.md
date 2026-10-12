@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 18
-Remaining: 18
-Progress: 50.0%
-Remaining percentage: 50.0%
+Completed: 19
+Remaining: 17
+Progress: 52.8%
+Remaining percentage: 47.2%
 
 ## Mission
 
@@ -187,7 +187,8 @@ Goal: prove preservation separately for every Core owner and major user surface.
 - [x] **U18 - Prove Brain update/migration preserves Brain-owned direction and history.**
   - Evidence: `tests/test_component_preservation.py::test_u18_brain_migration_preserves_direction_and_history` runs the changed Brain owner migration through the transactional updater, permits new Brain migration metadata, and proves operator/workspace direction, history, and strategy-model state remain byte-for-byte unchanged. Distribution CI run `38225571349` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U19 - Prove Memory update/migration preserves stored memories and provenance.**
+- [x] **U19 - Prove Memory update/migration preserves stored memories and provenance.**
+  - Evidence: `tests/test_component_preservation.py::test_u19_memory_migration_preserves_atomic_memories_and_provenance` runs the changed Memory owner lifecycle, permits owner migration metadata and a rebuilt derived recall index, and proves canonical operator/workspace atomic memories plus provenance remain byte-for-byte unchanged. Distribution CI run `38225571349` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 - [ ] **U20 - Prove Skills update preserves user-created/custom skills while updating released built-ins safely.**
 
@@ -329,3 +330,5 @@ Next: Uyy - <next task>
 - Added the OS preservation acceptance in `tests/test_component_preservation.py`; an OS-only update now proves canonical member-owned OS state remains unchanged through reconcile. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
 - U18 completed.
 - Added Brain preservation acceptance covering operator/workspace direction, history, and model state through the owner migration path. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
+- U19 completed.
+- Added Memory preservation acceptance proving atomic memories and provenance survive owner migration while derived recall state may be rebuilt. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
