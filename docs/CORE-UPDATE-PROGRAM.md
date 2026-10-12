@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 28
-Remaining: 8
-Progress: 77.8%
-Remaining percentage: 22.2%
+Completed: 29
+Remaining: 7
+Progress: 80.6%
+Remaining percentage: 19.4%
 
 ## Mission
 
@@ -235,8 +235,9 @@ Goal: hide implementation detail and make updating feel like a normal product ac
 
 ## Slice 5.1 - One-action update
 
-- [ ] **U29 - Add runtime instruction support for the natural request `Update AI-Verse`.**
+- [x] **U29 - Add runtime instruction support for the natural request `Update AI-Verse`.**
   - Codex/Claude/compatible agents should locate and invoke the canonical project updater automatically.
+  - Evidence: AI-Verse OS `AGENTS.md` commit `64f7325444d18f94c9d4755d32eb89f3468bda6b` adds the canonical Core update request rule: natural update language invokes project-bound `aiverse update`, normal updates require no release IDs or paths, Git pull/reset/reclone/reinstall shortcuts are forbidden, protected owner/member state may not be directly migrated, and fail-closed conflicts must be surfaced. `scripts/verify-update-request-contract.py` verifies the runtime contract plus Claude's existing delegation to `AGENTS.md`; OS workflow `Update Request Contract` run `38228297894` passed on Ubuntu, macOS, and Windows.
 
 - [ ] **U30 - Provide one short terminal update command.**
   - Target experience: `aiverse update`, with no release IDs or paths required.
@@ -359,3 +360,5 @@ Next: Uyy - <next task>
 - Added `tests/test_update_repeat_chain_acceptance.py` covering no-op, repeated target, verified resume, and a two-hop Core chain with end-to-end member-state preservation. Distribution CI run `38227342410` passed the full six-job Linux/macOS/Windows x Python 3.11/3.12 matrix.
 - U28 completed.
 - Added `qualification/core-update-program-u28/transition-evidence.json` plus `tests/test_update_qualification_evidence.py`, freezing exact current-stable source identity and successful destructive-loss harness evidence without mutating the release catalog or admitting a production cross-release transition. Distribution CI run `38227818622` passed the full six-job Linux/macOS/Windows x Python 3.11/3.12 matrix.
+- U29 completed.
+- Updated AI-Verse OS `AGENTS.md` with the canonical natural-language Core update rule and added `scripts/verify-update-request-contract.py` plus a dedicated three-platform CI workflow. OS run `38228297894` passed on Ubuntu, macOS, and Windows at commit `64f7325444d18f94c9d4755d32eb89f3468bda6b`.
