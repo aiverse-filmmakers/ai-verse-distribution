@@ -78,51 +78,40 @@ class CoreUpdatePlanTests(unittest.TestCase):
             self.assertEqual(plan["changes"][0], {"component": "a-component", "from": "a-old", "to": None})
             self.assertEqual(plan["changes"][1], {"component": "b-component", "from": None, "to": "b-new"})
 
-    def test_current_stable_is_clean_noop(self):
-        with tempfile.TemporaryDirectory() as td:
-            root = Path(td)
-            store = StateStore(root / "distribution")
-            catalog_app = CoreUpdateOrchestrator(state=store)
-            release = catalog_app.catalog.get_release("core-stable-2026-10-10", require_released=True)
-            store.write(
-                {
-                    "schema_version": 1,
-                    "release_set_id": release.id,
-                    "profile": "core",
-                    "root": str(root / "AI-Verse"),
-                    "components": {
-                        component.id: {"revision": component.revision}
-                        for component in release.components
-                    },
+    def _current_store(self, root: Path):
+        store = StateStore(root / "distribution")
+        catalog_app = CoreUpdateOrchestrator(state=store)
+        release = catalog_app.catalog.resolve("core")
+        store.write(
+            {
+                "schema_version": 1,
+                "release_set_id": release.id,
+                "profile": "core",
+                "root": str(root / "AI-Verse"),
+                "components": {
+                    component.id: {"revision": component.revision}
+                    for component in release.components
                 },
-                archive_previous=False,
-            )
+            },
+            archive_previous=False,
+        )
+        return store, release
+
+    def test_current_core_is_clean_noop(self):
+        with tempfile.TemporaryDirectory() as td:
+            store, release = self._current_store(Path(td))
             app = CoreUpdateOrchestrator(state=store)
             plan = app.update_plan()
             self.assertTrue(plan["noop"])
+            self.assertEqual(plan["from"], release.id)
+            self.assertEqual(plan["to"], release.id)
             self.assertEqual(plan["changes"], [])
             self.assertEqual(plan["changed_components"], [])
             self.assertEqual(plan["message"], "AI-Verse is already current.")
 
     def test_noop_apply_never_enters_legacy_mutation_path(self):
         with tempfile.TemporaryDirectory() as td:
-            root = Path(td)
-            store = StateStore(root / "distribution")
-            bootstrap_app = CoreUpdateOrchestrator(state=store)
-            release = bootstrap_app.catalog.get_release("core-stable-2026-10-10", require_released=True)
-            store.write(
-                {
-                    "schema_version": 1,
-                    "release_set_id": release.id,
-                    "profile": "core",
-                    "root": str(root / "AI-Verse"),
-                    "components": {
-                        component.id: {"revision": component.revision}
-                        for component in release.components
-                    },
-                },
-                archive_previous=False,
-            )
+            store, release = self._current_store(Path(td))
             app = CoreUpdateOrchestrator(state=store)
             with patch(
                 "aiverse_distribution.core_update.BaseOrchestrator.apply_update",
@@ -131,6 +120,8 @@ class CoreUpdatePlanTests(unittest.TestCase):
                 result = app.apply_update()
             self.assertTrue(result["applied"])
             self.assertFalse(result["changed"])
+            self.assertEqual(result["from"], release.id)
+            self.assertEqual(result["to"], release.id)
             self.assertEqual(result["staged_components"], [])
             self.assertEqual(result["owner_updated_components"], [])
 
