@@ -66,9 +66,11 @@
     },
     "platform_matrix": {
       "status": "passed",
-      "run": 38232637219,
+      "run": 38233943990,
+      "commit": "77b20eab17857c2c256f50764a41d36d6d60df13",
       "platforms": ["linux", "macos", "windows"],
-      "python": ["3.11", "3.12"]
+      "python": ["3.11", "3.12"],
+      "all_six_jobs_passed": true
     },
     "owner_real_installation_pilot": {
       "status": "pending-external-execution",
