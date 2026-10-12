@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 21
-Remaining: 15
-Progress: 58.3%
-Remaining percentage: 41.7%
+Completed: 22
+Remaining: 14
+Progress: 61.1%
+Remaining percentage: 38.9%
 
 ## Mission
 
@@ -198,7 +198,8 @@ Goal: prove preservation separately for every Core owner and major user surface.
 
 ## Slice 3.2 - Cross-cutting member state
 
-- [ ] **U22 - Prove workspaces, connections, custom files, extensions, automations, decisions, and project history survive updates.**
+- [x] **U22 - Prove workspaces, connections, custom files, extensions, automations, decisions, and project history survive updates.**
+  - Evidence: `tests/test_component_preservation.py::test_u22_cross_cutting_member_state_survives_component_update` fingerprints workspace manifests/context/decisions/inbox/knowledge/skills/automations/assets/outputs, connections, root automations/decisions, archives, custom files/apps/agents, shared extension registry/member-extension state, and pre-existing Distribution history around a Brain update. Every pre-existing cross-cutting member artifact remains unchanged. Distribution CI run `38225571349` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 # Phase 4 - Destructive-loss acceptance harness
 
@@ -338,3 +339,5 @@ Next: Uyy - <next task>
 - Added Skills preservation acceptance proving released managed generations can advance without changing member-created workspace or personal reusable skills. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
 - U21 completed.
 - Added Data preservation acceptance with semantic SQLite record verification across two populated workspaces and preservation of non-Data extension state. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
+- U22 completed.
+- Added cross-cutting preservation acceptance for workspaces, connections, custom content, extensions, automations, decisions, and pre-existing project/Distribution history. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
