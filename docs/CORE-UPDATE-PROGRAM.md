@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 7
-Remaining: 29
-Progress: 19.4%
-Remaining percentage: 80.6%
+Completed: 8
+Remaining: 28
+Progress: 22.2%
+Remaining percentage: 77.8%
 
 ## Mission
 
@@ -135,8 +135,9 @@ Goal: make Distribution perform a safe, resumable, verified update instead of re
   - Default update target is the current admitted Core channel unless an advanced exact target is explicitly supplied.
   - Evidence: `src/aiverse_distribution/core_update.py` adds `resolve_core_update_target`, which starts from the installed Core receipt, resolves the default Core channel or an exact advanced target, then requires U06 transition admission and preservation evidence before returning a target. `tests/test_core_update_resolver.py` proves the current stable self-target resolves and unadmitted cross-release or non-Core targets fail closed. Distribution CI run `38187478256` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U08 - Produce a deterministic update plan and clean no-op behavior.**
+- [x] **U08 - Produce a deterministic update plan and clean no-op behavior.**
   - Show old/new release and changed components. Already-current installs succeed without mutation.
+  - Evidence: `CoreUpdateOrchestrator.update_plan` emits stable component-sorted changes, old/new release IDs, changed-component count/list, transition evidence, and explicit `noop`; `apply_update` returns before the legacy mutation path when already current. `src/aiverse_distribution/entrypoint.py` plus the `pyproject.toml` script route the installed `aiverse` command through this updater. `tests/test_core_update_plan.py` proves deterministic add/change/remove planning, clean stable no-op, no mutation-path entry on no-op, and installed-entrypoint routing. Distribution CI run `38187667418` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 - [ ] **U09 - Stage only changed component revisions.**
   - Unchanged component software is not unnecessarily replaced or migrated.
@@ -296,3 +297,5 @@ Next: Uyy - <next task>
 - Added `src/aiverse_distribution/catalog/core_update_transitions.json`, `src/aiverse_distribution/transition_contract.py`, and `tests/test_transition_contract.py`; admission relationships now require exact preservation evidence and stay self-only until a future transition is separately qualified. Distribution CI run `38187313729` passed on Linux, macOS, and Windows for Python 3.11 and 3.12.
 - U07 completed.
 - Added the admitted Core target resolver in `src/aiverse_distribution/core_update.py` with resolver acceptance in `tests/test_core_update_resolver.py`; default Core channel and exact targets now require explicit evidence-bound admission. Distribution CI run `38187478256` passed on Linux, macOS, and Windows for Python 3.11 and 3.12.
+- U08 completed.
+- Added deterministic Core planning and mutation-free no-op behavior in `src/aiverse_distribution/core_update.py`; routed the installed `aiverse` command through `src/aiverse_distribution/entrypoint.py`; added `tests/test_core_update_plan.py`. Distribution CI run `38187667418` passed on Linux, macOS, and Windows for Python 3.11 and 3.12.
