@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "program_task": "U36",
+  "status": "released",
+  "released_at": "2026-10-12",
+  "previous_core": "core-stable-2026-10-10",
+  "current_core": "core-first-run-rc1-2026-10-12",
+  "release_commit": "1201be64772a9b32cf26a3b19fa4fedb2c78d3fd",
+  "component_change_plan": {
+    "changed_components": ["ai-verse-os"],
+    "unchanged_components": [
+      "ai-verse-brain",
+      "ai-verse-memory",
+      "ai-verse-skills",
+      "ai-verse-data"
+    ]
+  },
+  "qualification": {
+    "u35": "qualification/core-update-program-u35/qualification.json",
+    "real_owner_installation_pilot": "passed",
+    "member_state_preserved": true,
+    "status_pass": true,
+    "doctor_pass": true,
+    "updater_health_pass": true,
+    "private_content_recorded": false
+  },
+  "release_catalog": {
+    "current_channel": "core-first-run-rc1-2026-10-12",
+    "classification": "production-core-release",
+    "candidate_overlay_empty": true,
+    "forward_update_from_stable": "admitted",
+    "reverse_rollback_to_stable": "not-admitted"
+  },
+  "final_distribution_ci": {
+    "status": "passed",
+    "run": 38241417356,
+    "commit": "1201be64772a9b32cf26a3b19fa4fedb2c78d3fd",
+    "platforms": ["linux", "macos", "windows"],
+    "python": ["3.11", "3.12"],
+    "all_six_jobs_passed": true
+  },
+  "member_update_instruction": {
+    "natural_language": "Update AI-Verse.",
+    "terminal": "aiverse update",
+    "document": "docs/CORE-UPDATE-V1-RELEASE.md"
+  },
+  "safety": {
+    "delete_or_reinstall_required": false,
+    "user_owned_state_preserved": true,
+    "ambiguous_or_modified_state_fails_closed": true,
+    "rollback_advertised": false
+  }
+}
