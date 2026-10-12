@@ -7,6 +7,7 @@ from aiverse_distribution.preservation import (
     require_preserved,
     require_sqlite_records_preserved,
 )
+from aiverse_distribution.release_catalog import Catalog
 from aiverse_distribution.transition_contract import (
     CoreTransitionContract,
     UnsupportedCoreTransition,
@@ -100,22 +101,17 @@ class CandidateTransitionAdmissionTests(unittest.TestCase):
             contract.require_rollback(CANDIDATE, STABLE)
 
     def test_u34_candidate_remains_non_default_and_pending_full_qualification(self):
-        catalog = PopulatedCoreFixture.create(set()).app.catalog
-        try:
-            candidate = catalog.get_release(CANDIDATE)
-            self.assertEqual(catalog.resolve("core").id, STABLE)
-            self.assertFalse(candidate.raw["promotion"]["default_channel"])
-            self.assertFalse(candidate.raw["promotion"]["automatic_update"])
-            self.assertTrue(candidate.raw["promotion"]["cross_release_transition_admitted"])
-            self.assertEqual(candidate.raw["evidence"]["qualification"]["status"], "pending-u35")
-            self.assertFalse(candidate.raw["evidence"]["qualification"]["real_member_pilot"])
-        finally:
-            catalog_fixture = None
+        catalog = Catalog()
+        candidate = catalog.get_release(CANDIDATE)
+        self.assertEqual(catalog.resolve("core").id, STABLE)
+        self.assertFalse(candidate.raw["promotion"]["default_channel"])
+        self.assertFalse(candidate.raw["promotion"]["automatic_update"])
+        self.assertTrue(candidate.raw["promotion"]["cross_release_transition_admitted"])
+        self.assertEqual(candidate.raw["evidence"]["qualification"]["status"], "pending-u35")
+        self.assertFalse(candidate.raw["evidence"]["qualification"]["real_member_pilot"])
 
     def test_u34_immutable_admission_evidence_matches_exact_catalog_revisions(self):
-        fixture = PopulatedCoreFixture.create(set())
-        self.addCleanup(fixture.cleanup)
-        catalog = fixture.app.catalog
+        catalog = Catalog()
         evidence = json.loads(
             (ROOT / "qualification/core-update-program-u34/transition-admission.json").read_text(
                 encoding="utf-8"
