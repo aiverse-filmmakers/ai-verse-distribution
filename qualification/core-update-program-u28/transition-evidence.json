@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "kind": "core-update-program-qualification-evidence",
+  "status": "accepted-harness-only",
+  "frozen_at": "2026-10-12",
+  "source": {
+    "release_set_id": "core-stable-2026-10-10",
+    "components": {
+      "ai-verse-os": "921b665cf323192da1d0319300ff330cb0260d75",
+      "ai-verse-brain": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+      "ai-verse-memory": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+      "ai-verse-skills": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+      "ai-verse-data": "f8978f8f7a1bc94edecddc2662112233289159a3"
+    }
+  },
+  "target_candidate": {
+    "id": "core-update-program-u28-synthetic-candidate",
+    "kind": "synthetic-populated-acceptance-target",
+    "catalog_release": false,
+    "admittable": false,
+    "synthetic_revision_tokens": true,
+    "component_revision_tokens": {
+      "ai-verse-os": "1111111111111111111111111111111111111111",
+      "ai-verse-brain": "2222222222222222222222222222222222222222",
+      "ai-verse-memory": "3333333333333333333333333333333333333333",
+      "ai-verse-skills": "4444444444444444444444444444444444444444",
+      "ai-verse-data": "5555555555555555555555555555555555555555"
+    }
+  },
+  "change_plan": [
+    {
+      "component": "ai-verse-brain",
+      "from": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+      "to_token": "2222222222222222222222222222222222222222"
+    },
+    {
+      "component": "ai-verse-data",
+      "from": "f8978f8f7a1bc94edecddc2662112233289159a3",
+      "to_token": "5555555555555555555555555555555555555555"
+    },
+    {
+      "component": "ai-verse-memory",
+      "from": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+      "to_token": "3333333333333333333333333333333333333333"
+    },
+    {
+      "component": "ai-verse-os",
+      "from": "921b665cf323192da1d0319300ff330cb0260d75",
+      "to_token": "1111111111111111111111111111111111111111"
+    },
+    {
+      "component": "ai-verse-skills",
+      "from": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+      "to_token": "4444444444444444444444444444444444444444"
+    }
+  ],
+  "qualification": {
+    "repository": "aiverse-filmmakers/ai-verse-distribution",
+    "tested_distribution_commit": "b5d52c9c86983f0e318c38d736475cc877646281",
+    "workflow_run": 38227342410,
+    "workflow_conclusion": "success",
+    "jobs": {
+      "ubuntu-3.11": 114737979995,
+      "ubuntu-3.12": 114737979935,
+      "macos-3.11": 114737979973,
+      "macos-3.12": 114737980088,
+      "windows-3.11": 114737980067,
+      "windows-3.12": 114737979688
+    },
+    "platforms": [
+      "linux",
+      "macos",
+      "windows"
+    ],
+    "python": [
+      "3.11",
+      "3.12"
+    ]
+  },
+  "acceptance": {
+    "populated_fixture": "accepted",
+    "before_after_preservation": "accepted",
+    "owner_migrations": "accepted",
+    "dirty_file_conflict": "accepted",
+    "ambiguity_conflict": "accepted",
+    "interruption_recovery": "accepted",
+    "forced_failure_recovery": "accepted",
+    "no_op": "accepted",
+    "repeat_update": "accepted",
+    "verified_resume": "accepted",
+    "multi_release_chain": "accepted",
+    "final_status": "accepted",
+    "final_doctor": "accepted"
+  },
+  "test_bindings": [
+    "tests/test_component_preservation.py",
+    "tests/test_populated_update_acceptance.py",
+    "tests/test_update_repeat_chain_acceptance.py"
+  ],
+  "transition_policy": {
+    "state_rule": "owner-preserved",
+    "rollback_rule": "software-only-owner-state-preserved",
+    "release_admission_requested": false,
+    "release_catalog_mutated": false,
+    "cross_release_update_admitted": false,
+    "cross_release_rollback_admitted": false
+  },
+  "qualification_ref": "distribution-ci:38227342410@b5d52c9c86983f0e318c38d736475cc877646281",
+  "notes": [
+    "This freezes Update Program harness evidence only. It is not a production Core release candidate and cannot authorize a catalog transition.",
+    "U33 builds the real next Core candidate. U34 may admit core-stable-2026-10-10 only after that exact candidate is independently qualified."
+  ]
+}
