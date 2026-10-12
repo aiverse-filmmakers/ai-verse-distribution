@@ -1,0 +1,32 @@
+name: Apply Safe Infrastructure Slice 4.2 patch
+
+on:
+  push:
+    branches: [safe-infra-4.2-update-gating]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: safe-infra-4.2-update-gating
+          fetch-depth: 0
+      - name: Apply guarded patch
+        run: python tools/apply_slice_4_2_patch.py
+      - name: Commit integrated updater changes
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No patch changes required."
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/aiverse_distribution/core_update.py src/aiverse_distribution/recovery_orchestrator.py src/aiverse_distribution/update_output.py
+          git commit -m "Integrate Slice 4.2 update activation gating"
+          git push origin HEAD:safe-infra-4.2-update-gating
