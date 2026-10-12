@@ -115,10 +115,6 @@ def _validate_descriptor(component: ComponentRef, descriptor: Dict[str, Any]) ->
         raise InfrastructureEvidenceError(
             f"{component.id}: component release descriptor owner mismatch"
         )
-    if descriptor.get("revision") != component.revision:
-        raise InfrastructureEvidenceError(
-            f"{component.id}: component release descriptor revision mismatch"
-        )
 
 
 def _validate_infrastructure_block(
@@ -126,6 +122,15 @@ def _validate_infrastructure_block(
     descriptor: Dict[str, Any],
     infrastructure: Dict[str, Any],
 ) -> list[_Recipe]:
+    # The carrier is read from the exact target Git snapshot. Historical
+    # component descriptors may have a stale top-level revision field, and that
+    # must not retroactively block already-qualified software updates when no
+    # infrastructure contract is published. Once infrastructure recipes exist,
+    # however, the descriptor and every recipe must bind to this exact target.
+    if descriptor.get("revision") != component.revision:
+        raise InfrastructureEvidenceError(
+            f"{component.id}: infrastructure descriptor revision mismatch"
+        )
     if infrastructure.get("contract_version") != INFRASTRUCTURE_CONTRACT:
         raise InfrastructureEvidenceError(
             f"{component.id}: unsupported infrastructure upgrade contract"

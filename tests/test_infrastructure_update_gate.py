@@ -129,6 +129,14 @@ class InfrastructureUpdateGateTests(unittest.TestCase):
         self.assertTrue(result["activation_allowed"])
         self.assertTrue(result["staging_allowed"])
 
+    def test_exact_target_snapshot_without_infrastructure_tolerates_legacy_descriptor_revision(self):
+        payload = descriptor()
+        payload["migration"].pop("infrastructure")
+        payload["revision"] = "f" * 40
+        result = self.evaluate(payload)
+        self.assertEqual(result["state"], "COMPATIBLE")
+        self.assertTrue(result["activation_allowed"])
+
     def test_optional_recipe_never_blocks_normal_software_update(self):
         payload = descriptor(recipes=[recipe("v2-v3", "layout/v2", "layout/v3")])
         result = self.evaluate(
