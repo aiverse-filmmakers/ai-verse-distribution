@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 9
-Remaining: 27
-Progress: 25.0%
-Remaining percentage: 75.0%
+Completed: 16
+Remaining: 20
+Progress: 44.4%
+Remaining percentage: 55.6%
 
 ## Mission
 
@@ -145,28 +145,35 @@ Goal: make Distribution perform a safe, resumable, verified update instead of re
 
 ## Slice 2.2 - Transaction and ownership protection
 
-- [ ] **U10 - Add a pre-update checkpoint and durable operation journal.**
+- [x] **U10 - Add a pre-update checkpoint and durable operation journal.**
   - Record current software release, component revisions, lifecycle state, and enough recovery metadata to resume or safely recover after interruption.
+  - Evidence: `src/aiverse_distribution/update_journal.py` writes an atomic digest-bound pre-update receipt checkpoint, source/target release, exact changed components, stage progression, timestamps, and recovery metadata before mutable update stages begin. `tests/test_core_update_journal.py` proves the checkpoint exists before staging and archives only after completion. Distribution CI run `38188145873` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U11 - Enforce local modification and ambiguity conflict detection.**
+- [x] **U11 - Enforce local modification and ambiguity conflict detection.**
   - Modified/unknown files are never silently overwritten. Safe owned/generated files can be refreshed only when ownership can be proven.
+  - Evidence: `src/aiverse_distribution/core_update_guard.py` requires changed software to match its current release receipt, managed containment boundary, exact Git revision, and clean tracked provenance before staging. Symlinks, escaped sources, revision drift, dirty files, and unverifiable ownership fail closed. `tests/test_core_update_transaction.py` exercises ambiguous and dirty-source rejection. Distribution CI run `38188504252` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U12 - Run owner-controlled migrations only for changed components.**
+- [x] **U12 - Run owner-controlled migrations only for changed components.**
   - Brain, Memory, Skills, Data, and future components use their owner lifecycle instead of Distribution inventing state mutations.
+  - Evidence: `src/aiverse_distribution/core_update_lifecycle.py` routes state changes only through changed component owner `update`/migration lifecycles, guarded by the U04 owner-migratable safety contract and accepted transition preservation evidence. It skips unchanged, absent, and not-previously-setup components and journals each completed owner migration. `tests/test_core_update_transaction.py` proves only the changed Brain owner is migrated. Distribution CI run `38188504252` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U13 - Safely refresh generated runtime adapters and bootstrap-owned files.**
+- [x] **U13 - Safely refresh generated runtime adapters and bootstrap-owned files.**
   - Use receipts/digests so unchanged generated files can update while member edits remain preserved and reported.
+  - Evidence: `src/aiverse_distribution/generated_refresh.py` plans refreshes read-only from the bootstrap ownership ledger, requires digest/provenance proof, records pending digests before atomic writes, supports idempotent completion and safe restoration, and refuses unreceipted, missing, symlinked, escaped, or locally edited generated files. `tests/test_generated_refresh.py` proves safe refresh/restore plus fail-closed local-edit and unreceipted behavior. Distribution CI run `38188504252` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 ## Slice 2.3 - Verify and recover
 
-- [ ] **U14 - Run required post-update setup/reconcile.**
+- [x] **U14 - Run required post-update setup/reconcile.**
   - Only safe owner-controlled setup/reconciliation is automatic.
+  - Evidence: `run_changed_owner_reconcile` in `src/aiverse_distribution/core_update_lifecycle.py` runs owner `setup` only for changed components that were active and set up before the transition, then records successful reconciliation in the receipt and durable journal. `tests/test_core_update_transaction.py` proves unchanged components are not reconciled. Distribution CI run `38188504252` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U15 - Make status + doctor a mandatory final update gate.**
+- [x] **U15 - Make status + doctor a mandatory final update gate.**
   - An update is not reported successful until final composed verification passes.
+  - Evidence: `src/aiverse_distribution/core_update_health.py` requires target-release agreement plus a healthy aggregate status and `doctor.ok == true`. `CoreUpdateOrchestrator` runs both after the target receipt commit and before the journal can complete. The health-failure transaction test proves a failed gate cannot be reported as success. Distribution CI run `38188504252` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U16 - Implement failed-update software rollback and interrupted-update recovery.**
+- [x] **U16 - Implement failed-update software rollback and interrupted-update recovery.**
   - Restore previous software when safe, preserve user state, and make rerunning the updater deterministic and idempotent.
+  - Evidence: `CoreUpdateOrchestrator._recover_interrupted_update` uses the U10 checkpoint to restore prior software receipts, safely restore receipted generated files, and restore the previous OS revision only when tracked files remain clean. A verified interrupted update is finalized instead of needlessly rolled back; otherwise retries recover first and then proceed. Recovery refuses unsafe overwrite when unexpected changes appear and preserves owner/user state rather than destructively rewinding it. `tests/test_core_update_transaction.py` covers post-migration health failure rollback and simulated interrupted receipt recovery. Distribution CI run `38188504252` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 # Phase 3 - Component and user-state preservation
 
@@ -302,3 +309,17 @@ Next: Uyy - <next task>
 - Added deterministic Core planning and mutation-free no-op behavior in `src/aiverse_distribution/core_update.py`; routed the installed `aiverse` command through `src/aiverse_distribution/entrypoint.py`; added `tests/test_core_update_plan.py`. Distribution CI run `38187667418` passed on Linux, macOS, and Windows for Python 3.11 and 3.12.
 - U09 completed.
 - Replaced all-component staging in the Core path with changed-only staging and changed-only owner update routing in `src/aiverse_distribution/core_update.py`; added `tests/test_core_update_changed_only.py` proving unchanged receipts stay untouched and component-set changes stop before staging. Distribution CI run `38187845246` passed on Linux, macOS, and Windows for Python 3.11 and 3.12.
+- U10 completed.
+- Added `src/aiverse_distribution/update_journal.py` and journal acceptance covering an atomic digest-bound checkpoint plus durable stage/recovery metadata. Distribution CI run `38188145873` passed the full six-job platform/Python matrix.
+- U11 completed.
+- Added `src/aiverse_distribution/core_update_guard.py`; changed software now requires receipt, containment, exact revision, clean Git provenance, and U04 mutation admission before staging.
+- U12 completed.
+- Added changed-only owner migration routing in `src/aiverse_distribution/core_update_lifecycle.py` with durable per-owner progress journaling.
+- U13 completed.
+- Added `src/aiverse_distribution/generated_refresh.py` and `tests/test_generated_refresh.py` for digest-bound bootstrap/generated refresh, preservation of local edits, and safe generated-file recovery.
+- U14 completed.
+- Added changed-only owner setup/reconciliation after migration, preserving unchanged owners and recording successful setup receipts.
+- U15 completed.
+- Added `src/aiverse_distribution/core_update_health.py`; target status and doctor are now mandatory before an update journal can complete.
+- U16 completed.
+- Integrated checkpoint, conflict admission, changed-only owner lifecycle, generated refresh, final verification, software rollback, and interruption recovery in `src/aiverse_distribution/core_update.py`; added `tests/test_core_update_transaction.py` covering failed-health rollback and interrupted receipt recovery. Distribution CI run `38188504252` passed Linux, macOS, and Windows for Python 3.11 and 3.12.
