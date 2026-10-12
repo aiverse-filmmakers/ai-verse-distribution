@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "policy": "explicit-evidence-bound-transitions",
+  "releases": {
+    "core-repaired-public-beta-2026-10-06": {
+      "profile": "core",
+      "update_from": [
+        "core-repaired-public-beta-2026-10-06"
+      ],
+      "rollback_to": [
+        "core-repaired-public-beta-2026-10-06"
+      ],
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "preservation_evidence": {
+        "updates": {
+          "core-repaired-public-beta-2026-10-06": {
+            "status": "accepted",
+            "kind": "self-transition-noop",
+            "from": "core-repaired-public-beta-2026-10-06",
+            "to": "core-repaired-public-beta-2026-10-06",
+            "qualification_ref": "member-bootstrap:37428356698"
+          }
+        },
+        "rollbacks": {
+          "core-repaired-public-beta-2026-10-06": {
+            "status": "accepted",
+            "kind": "self-transition-noop",
+            "from": "core-repaired-public-beta-2026-10-06",
+            "to": "core-repaired-public-beta-2026-10-06",
+            "qualification_ref": "member-bootstrap:37428356698"
+          }
+        }
+      }
+    },
+    "core-purpose-context-public-beta-2026-10-09": {
+      "profile": "core",
+      "update_from": [
+        "core-purpose-context-public-beta-2026-10-09"
+      ],
+      "rollback_to": [
+        "core-purpose-context-public-beta-2026-10-09"
+      ],
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "preservation_evidence": {
+        "updates": {
+          "core-purpose-context-public-beta-2026-10-09": {
+            "status": "accepted",
+            "kind": "self-transition-noop",
+            "from": "core-purpose-context-public-beta-2026-10-09",
+            "to": "core-purpose-context-public-beta-2026-10-09",
+            "qualification_ref": "member-bootstrap:37918170553"
+          }
+        },
+        "rollbacks": {
+          "core-purpose-context-public-beta-2026-10-09": {
+            "status": "accepted",
+            "kind": "self-transition-noop",
+            "from": "core-purpose-context-public-beta-2026-10-09",
+            "to": "core-purpose-context-public-beta-2026-10-09",
+            "qualification_ref": "member-bootstrap:37918170553"
+          }
+        }
+      }
+    },
+    "core-stable-2026-10-10": {
+      "profile": "core",
+      "update_from": [
+        "core-stable-2026-10-10"
+      ],
+      "rollback_to": [
+        "core-stable-2026-10-10"
+      ],
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "preservation_evidence": {
+        "updates": {
+          "core-stable-2026-10-10": {
+            "status": "accepted",
+            "kind": "self-transition-noop",
+            "from": "core-stable-2026-10-10",
+            "to": "core-stable-2026-10-10",
+            "qualification_ref": "member-bootstrap:38062934418"
+          }
+        },
+        "rollbacks": {
+          "core-stable-2026-10-10": {
+            "status": "accepted",
+            "kind": "self-transition-noop",
+            "from": "core-stable-2026-10-10",
+            "to": "core-stable-2026-10-10",
+            "qualification_ref": "member-bootstrap:38062934418"
+          }
+        }
+      }
+    }
+  }
+}
