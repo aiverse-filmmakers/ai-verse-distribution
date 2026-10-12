@@ -383,11 +383,13 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         if args.command == "update":
             if args.plan and args.apply:
                 raise DistributionError("--plan cannot be combined with legacy --apply")
-            payload = (
-                app.update_plan(args.release_set)
-                if args.plan
-                else app.apply_update(args.release_set)
-            )
+            if args.plan:
+                payload = app.update_plan(args.release_set)
+            else:
+                if not args.json:
+                    print("Updating AI-Verse...")
+                    print()
+                payload = app.apply_update(args.release_set)
             _emit(payload, args.json)
             return 0
 
