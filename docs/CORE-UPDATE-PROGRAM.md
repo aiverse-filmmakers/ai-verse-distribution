@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 3
-Remaining: 33
-Progress: 8.3%
-Remaining percentage: 91.7%
+Completed: 4
+Remaining: 32
+Progress: 11.1%
+Remaining percentage: 88.9%
 
 ## Mission
 
@@ -111,8 +111,9 @@ Goal: make the zero-loss promise machine-testable before changing updater behavi
   - Classify paths/data as system-owned replaceable, generated system-owned replaceable with receipt, user-owned immutable-to-updater, owner-migratable state, or ambiguous/conflict.
   - Evidence: `docs/CORE-UPDATE-OWNERSHIP-CONTRACT.md` defines the five canonical ownership classes, classification precedence, mixed-ownership handling, local-modification fail-closed behavior, and mutation authority for every U02 state family.
 
-- [ ] **U04 - Encode the zero-loss preservation invariant.**
+- [x] **U04 - Encode the zero-loss preservation invariant.**
   - Add a deterministic contract/test helper that can answer whether a proposed mutation is permitted before the updater writes it.
+  - Evidence: `src/aiverse_distribution/update_safety.py` implements pure deterministic `evaluate_mutation` and pre-write `require_mutation_permitted` gates for all five ownership classes; `tests/test_update_safety.py` exercises permitted system/generated mutations and fail-closed user-owned, owner-state, local-edit, ambiguity, provenance, receipt, transition, and containment cases. Distribution CI run `38186959526` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 ## Slice 1.2 - Release transition rules
 
@@ -284,3 +285,5 @@ Next: Uyy - <next task>
 - Added `docs/CORE-UPDATE-PATH-INVENTORY.md` with the complete conservative inventory of update-sensitive project, owner-state, runtime, extension, external Distribution, Skills, and receipt locations.
 - U03 completed.
 - Added `docs/CORE-UPDATE-OWNERSHIP-CONTRACT.md` with the canonical five-class ownership model, mixed-ownership rules, local-modification conflict semantics, and fail-closed classification precedence.
+- U04 completed.
+- Added `src/aiverse_distribution/update_safety.py` and `tests/test_update_safety.py`; the deterministic pre-write mutation gate passed Distribution CI run `38186959526` on Linux, macOS, and Windows for Python 3.11 and 3.12.
