@@ -4,11 +4,22 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from .adapters import owner_update
+from .adapters import owner_setup, owner_update
+from .core_update_guard import verify_changed_sources_clean
+from .core_update_health import require_final_health
+from .core_update_lifecycle import (
+    run_changed_owner_migrations,
+    run_changed_owner_reconcile,
+)
+from .generated_refresh import (
+    apply_generated_refresh,
+    plan_generated_refresh,
+    restore_generated_refresh,
+)
 from .orchestrator import Orchestrator as BaseOrchestrator
 from .process import run
 from .release_catalog import Catalog, DistributionError, ReleaseSet
-from .state import StateStore, now_iso
+from .state import LifecycleRecoveryRequired, StateStore, now_iso
 from .transition_contract import CoreTransitionContract, TransitionAdmission
 from .update_journal import CoreUpdateJournal
 
@@ -87,6 +98,13 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                 revisions[component_id] = revision if isinstance(revision, str) else None
         return revisions
 
+    @staticmethod
+    def _receipt_matches_checkpoint(current: dict, checkpoint: dict) -> bool:
+        for key in ("release_set_id", "profile", "root", "state", "setup_completed_at"):
+            if current.get(key) != checkpoint.get(key):
+                return False
+        return current.get("components") == checkpoint.get("components")
+
     def update_plan(
         self,
         target_release_set: Optional[str] = None,
@@ -158,6 +176,125 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
             plan["message"] = "AI-Verse is already current."
         return plan
 
+    def _restore_os_from_checkpoint(self, journal: dict) -> bool:
+        changed = set(journal.get("changed_components", []))
+        if "ai-verse-os" not in changed:
+            return False
+        checkpoint = journal["checkpoint"]
+        receipt = checkpoint.get("components", {}).get("ai-verse-os", {})
+        revision = receipt.get("revision")
+        root_text = checkpoint.get("root")
+        if not isinstance(revision, str) or not isinstance(root_text, str):
+            raise LifecycleRecoveryRequired(
+                "Core update checkpoint cannot prove the previous OS revision"
+            )
+        root = Path(root_text).expanduser().resolve()
+        if not (root / ".git").is_dir():
+            raise LifecycleRecoveryRequired(
+                "Core update recovery cannot prove the OS checkout identity"
+            )
+        dirty = run(
+            ["git", "-C", str(root), "status", "--porcelain", "--untracked-files=no"],
+            check=False,
+        )
+        if dirty.returncode != 0 or dirty.stdout.strip():
+            raise LifecycleRecoveryRequired(
+                "OS files changed during the interrupted update; recovery will not overwrite them"
+            )
+        head = run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"], check=False
+        ).stdout.strip()
+        if head != revision:
+            run(["git", "-C", str(root), "checkout", "--detach", revision])
+        return True
+
+    def _recover_interrupted_update(self) -> Optional[dict]:
+        journal = self.update_journal.load()
+        if not journal:
+            return None
+
+        current = self.state.load()
+        if not current:
+            raise LifecycleRecoveryRequired(
+                "Core update journal exists but the Distribution receipt is missing"
+            )
+
+        if (
+            journal.get("stage") == "verified"
+            and current.get("release_set_id") == journal.get("target_release")
+        ):
+            try:
+                health = require_final_health(
+                    target_release=str(journal["target_release"]),
+                    status=self.status(),
+                    doctor=self.doctor(),
+                )
+            except Exception:
+                health = None
+            if health is not None:
+                self.update_journal.finish(
+                    "completed",
+                    final_release=journal["target_release"],
+                    recovery_finalized=True,
+                    health=health,
+                )
+                return {
+                    "action": "finalized-verified-update",
+                    "from": journal["source_release"],
+                    "to": journal["target_release"],
+                }
+
+        migrated = journal.get("owner_migrated_components", [])
+        if migrated and journal.get("rollback_safe") is not True:
+            raise LifecycleRecoveryRequired(
+                "An interrupted update migrated owner state but the transition does not prove software-only rollback safety"
+            )
+
+        self.update_journal.mark(
+            "recovering",
+            recovery={
+                **journal.get("recovery", {}),
+                "software_rollback_attempted": True,
+            },
+        )
+        os_restored = self._restore_os_from_checkpoint(journal)
+        generated_restored = restore_generated_refresh(
+            backups=list(journal.get("generated_backups", [])),
+            distribution_home=self.state.home,
+        )
+
+        checkpoint = json.loads(json.dumps(journal["checkpoint"]))
+        checkpoint.pop("_pending_lifecycle", None)
+        pending = self.state.pending_effect()
+        if pending:
+            metadata = pending.get("metadata", {})
+            if metadata.get("journal_token") != journal.get("token"):
+                raise LifecycleRecoveryRequired(
+                    "Pending lifecycle ownership does not match the Core update journal"
+                )
+            self.state.commit_effect(checkpoint, pending, archive_previous=True)
+        elif not self._receipt_matches_checkpoint(current, checkpoint):
+            self.state.write(checkpoint, archive_previous=True)
+
+        self.update_journal.finish(
+            "rolled-back",
+            final_release=journal["source_release"],
+            generated_restored=generated_restored,
+            os_restored=os_restored,
+            recovery={
+                **journal.get("recovery", {}),
+                "software_rollback_attempted": True,
+                "software_rollback_completed": True,
+            },
+        )
+        return {
+            "action": "rolled-back-interrupted-update",
+            "from": journal["target_release"],
+            "to": journal["source_release"],
+            "generated_restored": generated_restored,
+            "os_restored": os_restored,
+        }
+
     def _apply_core_update(
         self,
         target_release_set: Optional[str],
@@ -172,6 +309,9 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                 "changed": False,
                 "staged_components": [],
                 "owner_updated_components": [],
+                "owner_migrated_components": [],
+                "reconciled_components": [],
+                "generated_refreshed": [],
                 "message": "AI-Verse is already current.",
             }
 
@@ -205,6 +345,16 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                 + "; ".join(detail)
             )
 
+        root = Path(lock["root"]).expanduser().resolve()
+        changed_ids = set(plan["changed_components"])
+        verified_sources = verify_changed_sources_clean(
+            lock=lock,
+            current_release=current_catalog,
+            changed_components=changed_ids,
+            distribution_home=self.state.home,
+            verify_exact_source=self._verify_exact_source,
+        )
+
         checkpoint = json.loads(json.dumps(lock))
         checkpoint.pop("_pending_lifecycle", None)
         journal = self.update_journal.begin(
@@ -214,8 +364,15 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
             changed_components=list(plan["changed_components"]),
             checkpoint=checkpoint,
         )
+        rollback_safe = (
+            plan.get("rollback_rule") == "software-only-owner-state-preserved"
+        )
+        self.update_journal.mark(
+            "checkpointed",
+            rollback_safe=rollback_safe,
+            verified_sources=verified_sources,
+        )
 
-        root = Path(lock["root"]).expanduser().resolve()
         previous_setup = {
             cid: bool(receipt.get("setup_completed_at"))
             for cid, receipt in lock.get("components", {}).items()
@@ -226,7 +383,6 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
             for cid, receipt in lock.get("components", {}).items()
             if receipt.get("uninstalled_at")
         }
-        changed_ids = set(plan["changed_components"])
         old_os = next(
             (component for component in current_catalog.components if component.id == "ai-verse-os"),
             None,
@@ -239,17 +395,11 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
 
         prepared: dict[str, dict] = {}
         staged_components: list[str] = []
-        owner_updated_components: list[str] = []
+        owner_migrated_components: list[str] = []
+        reconciled_components: list[str] = []
+        generated_refreshed: list[str] = []
+        health: Optional[dict] = None
         try:
-            for component in current_catalog.components:
-                if component.id in known_ids:
-                    receipt = lock["components"][component.id]
-                    self._verify_exact_source(
-                        component,
-                        Path(receipt["source"]).expanduser().resolve(),
-                    )
-            self.update_journal.mark("sources-verified")
-
             for component in target.components:
                 if component.id not in changed_ids or component.id == "ai-verse-os":
                     continue
@@ -259,77 +409,100 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                 "staged", staged_components=sorted(staged_components)
             )
 
-            effect = self.state.begin_effect(
-                f"release-transition:{transition_kind}:{lock['release_set_id']}:{target.id}",
-                metadata={
-                    "from": lock["release_set_id"],
-                    "to": target.id,
-                    "kind": transition_kind,
-                    "changed_components": sorted(changed_ids),
-                    "journal_token": journal["token"],
-                },
-            )
-
             if os_changed and new_os:
-                dirty = run(
-                    [
-                        "git",
-                        "-C",
-                        str(root),
-                        "status",
-                        "--porcelain",
-                        "--untracked-files=no",
-                    ]
-                ).stdout.strip()
-                if dirty:
-                    raise DistributionError(
-                        "tracked OS system files are modified; refusing immutable update"
-                    )
                 run(["git", "-C", str(root), "fetch", "origin", new_os.revision])
                 run(["git", "-C", str(root), "checkout", "--detach", new_os.revision])
             self.update_journal.mark("software-applied")
 
             new_lock = json.loads(json.dumps(lock))
+            new_lock.pop("_pending_lifecycle", None)
             new_lock["release_set_id"] = target.id
             new_lock["state"] = "updating"
             for component in target.components:
                 if component.id not in changed_ids:
                     continue
-
-                was_setup = previous_setup.get(component.id, False)
                 if component.id == "ai-verse-os":
                     new_lock["components"][component.id] = {
                         "repository": component.repository,
                         "revision": component.revision,
                         "source": str(root),
                         "installed_at": now_iso(),
-                        "setup_completed_at": now_iso() if was_setup else None,
+                        "setup_completed_at": None,
                         "uninstalled_at": None,
                     }
+                    if component.id in previous_absent:
+                        new_lock["components"][component.id]["uninstalled_at"] = previous_absent[
+                            component.id
+                        ]
                     continue
-
                 receipt = prepared[component.id]
                 new_lock["components"][component.id] = receipt
                 if component.id in previous_absent:
                     new_lock["components"][component.id]["uninstalled_at"] = previous_absent[
                         component.id
                     ]
-                    continue
-                if was_setup:
-                    owner_source = Path(receipt.get("runtime_source", receipt["source"]))
-                    owner_update(
-                        component.id,
-                        root=root,
-                        source=owner_source,
-                        revision=component.revision,
-                        state=self.state,
-                    )
-                    owner_updated_components.append(component.id)
-                    new_lock["components"][component.id]["setup_completed_at"] = now_iso()
-                    new_lock["components"][component.id]["last_setup_result"] = "success"
+
+            def record_migrated(items: list[str]) -> None:
+                self.update_journal.mark(
+                    "owners-migrating", owner_migrated_components=items
+                )
+
+            owner_migrated_components = run_changed_owner_migrations(
+                target=target,
+                changed_components=changed_ids,
+                previous_setup=previous_setup,
+                previous_absent=previous_absent,
+                receipts=new_lock["components"],
+                root=root,
+                state=self.state,
+                owner_update=owner_update,
+                preservation_verified=(
+                    plan.get("transition_evidence", {}).get("status") == "accepted"
+                ),
+                on_migrated=record_migrated,
+            )
             self.update_journal.mark(
                 "owners-migrated",
-                owner_migrated_components=sorted(owner_updated_components),
+                owner_migrated_components=owner_migrated_components,
+            )
+
+            generated_plan = plan_generated_refresh(
+                target_raw=target.raw,
+                project_root=root,
+                distribution_home=self.state.home,
+            )
+            if generated_plan:
+                self.update_journal.mark(
+                    "generated-planned", generated_backups=generated_plan
+                )
+                generated_refreshed = apply_generated_refresh(
+                    plan=generated_plan,
+                    distribution_home=self.state.home,
+                )
+            self.update_journal.mark(
+                "generated-refreshed",
+                generated_backups=generated_plan,
+                generated_refreshed=generated_refreshed,
+            )
+
+            def record_reconciled(items: list[str]) -> None:
+                self.update_journal.mark(
+                    "reconciling", reconciled_components=items
+                )
+
+            reconciled_components = run_changed_owner_reconcile(
+                target=target,
+                changed_components=changed_ids,
+                previous_setup=previous_setup,
+                previous_absent=previous_absent,
+                receipts=new_lock["components"],
+                root=root,
+                state=self.state,
+                owner_setup=owner_setup,
+                on_reconciled=record_reconciled,
+            )
+            self.update_journal.mark(
+                "reconciled", reconciled_components=reconciled_components
             )
 
             configured_components = [
@@ -347,38 +520,55 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                 new_lock["setup_completed_at"] = now_iso()
             else:
                 new_lock.pop("setup_completed_at", None)
-            new_lock = self.state.commit_effect(new_lock, effect, archive_previous=True)
+
+            committed = self.state.write(new_lock, archive_previous=True)
             self.update_journal.mark(
                 "receipt-committed",
-                committed_generation=new_lock.get("_receipt_generation"),
+                committed_generation=committed.get("_receipt_generation"),
             )
+
+            status = self.status()
+            doctor = self.doctor()
+            health = require_final_health(
+                target_release=target.id,
+                status=status,
+                doctor=doctor,
+            )
+            self.update_journal.mark("verified", health=health)
             self.update_journal.finish(
                 "completed",
                 final_release=target.id,
                 staged_components=sorted(staged_components),
-                owner_migrated_components=sorted(owner_updated_components),
+                owner_migrated_components=owner_migrated_components,
+                reconciled_components=reconciled_components,
+                generated_refreshed=generated_refreshed,
+                health=health,
             )
             return {
                 **plan,
                 "applied": True,
                 "changed": True,
                 "staged_components": sorted(staged_components),
-                "owner_updated_components": sorted(owner_updated_components),
+                "owner_updated_components": owner_migrated_components,
+                "owner_migrated_components": owner_migrated_components,
+                "reconciled_components": reconciled_components,
+                "generated_refreshed": generated_refreshed,
+                "health": health,
                 "journal_token": journal["token"],
             }
         except Exception as exc:
             try:
-                self.update_journal.mark(
-                    "failed",
-                    last_error={"type": type(exc).__name__, "message": str(exc)},
-                )
-            except Exception:
-                pass
-            if os_changed and old_os:
-                run(
-                    ["git", "-C", str(root), "checkout", "--detach", old_os.revision],
-                    check=False,
-                )
+                active = self.update_journal.load()
+                if active:
+                    self.update_journal.mark(
+                        "failed",
+                        last_error={"type": type(exc).__name__, "message": str(exc)},
+                    )
+                    self._recover_interrupted_update()
+            except Exception as recovery_exc:
+                raise DistributionError(
+                    f"Core update failed ({exc}); automatic software recovery also failed: {recovery_exc}"
+                ) from exc
             raise
 
     def apply_update(
@@ -393,23 +583,32 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
         if not lock or lock.get("profile") != "core":
             return super().apply_update(target_release_set, transition_kind=transition_kind)
         with self.state.lifecycle_transaction():
-            return self._apply_core_update(
+            recovery = self._recover_interrupted_update()
+            result = self._apply_core_update(
                 target_release_set,
                 transition_kind=transition_kind,
             )
+            if recovery:
+                result["recovery"] = recovery
+            return result
 
     def rollback(self, release_set_id: str, apply: bool = False) -> dict:
         lock = self.state.load()
         if not lock or lock.get("profile") != "core":
             return super().rollback(release_set_id, apply=apply)
         with self.state.lifecycle_transaction():
+            recovery = self._recover_interrupted_update()
             plan = self.update_plan(release_set_id, transition_kind="rollback")
             plan["rollback"] = True
             if not apply:
+                if recovery:
+                    plan["recovery"] = recovery
                 return plan
             result = self._apply_core_update(
                 release_set_id,
                 transition_kind="rollback",
             )
             result["rollback"] = True
+            if recovery:
+                result["recovery"] = recovery
             return result
