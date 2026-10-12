@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 16
-Remaining: 20
-Progress: 44.4%
-Remaining percentage: 55.6%
+Completed: 17
+Remaining: 19
+Progress: 47.2%
+Remaining percentage: 52.8%
 
 ## Mission
 
@@ -181,7 +181,8 @@ Goal: prove preservation separately for every Core owner and major user surface.
 
 ## Slice 3.1 - Core component owners
 
-- [ ] **U17 - Prove OS update preserves user-owned OS state.**
+- [x] **U17 - Prove OS update preserves user-owned OS state.**
+  - Evidence: `tests/test_component_preservation.py::test_u17_os_update_preserves_user_owned_os_state` runs an OS-only transactional Core transition and fingerprints operator profile/preferences/goals, context, decisions, Brain/Memory state, workspaces, connections, automations, extensions, custom apps/agents/files, and project history before/after. The OS reconcile path runs while the protected member state remains byte-for-byte unchanged. Distribution CI run `38225571349` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 - [ ] **U18 - Prove Brain update/migration preserves Brain-owned direction and history.**
 
@@ -323,3 +324,5 @@ Next: Uyy - <next task>
 - Added `src/aiverse_distribution/core_update_health.py`; target status and doctor are now mandatory before an update journal can complete.
 - U16 completed.
 - Integrated checkpoint, conflict admission, changed-only owner lifecycle, generated refresh, final verification, software rollback, and interruption recovery in `src/aiverse_distribution/core_update.py`; added `tests/test_core_update_transaction.py` covering failed-health rollback and interrupted receipt recovery. Distribution CI run `38188504252` passed Linux, macOS, and Windows for Python 3.11 and 3.12.
+- U17 completed.
+- Added the OS preservation acceptance in `tests/test_component_preservation.py`; an OS-only update now proves canonical member-owned OS state remains unchanged through reconcile. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
