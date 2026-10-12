@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 23
-Remaining: 13
-Progress: 63.9%
-Remaining percentage: 36.1%
+Completed: 24
+Remaining: 12
+Progress: 66.7%
+Remaining percentage: 33.3%
 
 ## Mission
 
@@ -211,8 +211,9 @@ Goal: qualify updates using populated installations designed to catch accidental
   - Include profile, preferences, goals, direction, memories, decisions, multiple workspaces, Data rows, connections, custom files, custom skill, custom automation/extension state, and realistic history.
   - Evidence: `tests/preservation_support.py` builds a realistic resolved Core project/tool-stack fixture with profile/preferences/goals, operator Brain/Memory/decisions/context, two workspaces, populated SQLite Data records, workspace and personal custom Skills, connections, automations, custom extensions/files/apps/agents, generated bootstrap receipts, derived runtime state, and pre-existing Distribution history. `test_u23_fixture_contains_every_required_member_surface` verifies the required surfaces are actually populated. Distribution CI run `38225571349` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U24 - Build before/after preservation fingerprints.**
+- [x] **U24 - Build before/after preservation fingerprints.**
   - Hash or semantically verify all state that must remain unchanged and separately verify approved migrations.
+  - Evidence: `src/aiverse_distribution/preservation.py` provides deterministic tree SHA-256 fingerprints, symlink-aware path identity, semantic SQLite snapshots that allow additive owner schema migration while preserving prior record values, canonical member-state snapshots, and subset-preservation for append-only history. `tests/test_populated_update_acceptance.py` proves approved migration metadata is allowed while custom-file overwrite and Data record mutation are detected. Distribution CI run `38225571349` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
 ## Slice 4.2 - Failure and platform matrix
 
@@ -344,3 +345,5 @@ Next: Uyy - <next task>
 - Added cross-cutting preservation acceptance for workspaces, connections, custom content, extensions, automations, decisions, and pre-existing project/Distribution history. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
 - U23 completed.
 - Added `tests/preservation_support.py`, the populated synthetic member installation used by destructive-loss qualification, and verified all required state surfaces are non-empty. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
+- U24 completed.
+- Added `src/aiverse_distribution/preservation.py` and before/after acceptance proving exact canonical preservation, semantic Data preservation, approved additive migrations, and detection of destructive member-state changes. Distribution CI run `38225571349` passed the full six-job platform/Python matrix.
