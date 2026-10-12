@@ -1,0 +1,31 @@
+name: Apply Slice 4.2 test release shape fix
+
+on:
+  push:
+    branches: [safe-infra-4.2-update-gating]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: safe-infra-4.2-update-gating
+          fetch-depth: 0
+      - name: Apply guarded test fix
+        run: python tools/fix_slice_4_2_test_release_shape.py
+      - name: Commit test correction
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tests/test_infrastructure_update_gate.py
+          git commit -m "Use catalog-shaped synthetic structural releases"
+          git push origin HEAD:safe-infra-4.2-update-gating
