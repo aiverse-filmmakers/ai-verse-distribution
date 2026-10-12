@@ -5,10 +5,10 @@ Owner: AI-Verse Distribution
 Started: 2026-10-12
 Baseline Core: `core-stable-2026-10-10`
 Program size: 36 tasks
-Completed: 34
-Remaining: 2
-Progress: 94.4%
-Remaining percentage: 5.6%
+Completed: 35
+Remaining: 1
+Progress: 97.2%
+Remaining percentage: 2.8%
 
 ## Mission
 
@@ -266,8 +266,9 @@ Goal: use the new updater for a real Core release and prove the full member jour
   - Admit rollback only if the software/state contract proves it safe.
   - Evidence: `qualification/core-update-program-u34/transition-admission.json` binds the exact five-component stable source and exact candidate target, with only `ai-verse-os` changed. `src/aiverse_distribution/catalog/core_update_transitions.json`, candidate compatibility, and the candidate manifest now admit `core-stable-2026-10-10 -> core-first-run-rc1-2026-10-12` while keeping the candidate non-default and `pending-u35`. `tests/test_candidate_transition_admission.py` runs the actual catalog/transition resolver on the populated member fixture, proves the full protected member tree and both workspace Data databases survive, unchanged Brain/Memory/Skills/Data receipts remain exact, OS reconcile runs, and final health passes. Candidate -> stable rollback remains explicitly unadmitted because no exact reverse qualification exists. Distribution CI run `38232637219` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 
-- [ ] **U35 - Run full qualification and a real populated-project pilot.**
+- [x] **U35 - Run full qualification and a real populated-project pilot.**
   - CI platform matrix plus update of the owner's real current installation without deleting its state.
+  - Evidence: `qualification/core-update-program-u35/qualification.json` records the accepted exact stable -> candidate qualification. Distribution CI run `38238783665` passed Linux, macOS, and Windows for Python 3.11 and 3.12. The real owner installation pilot executed on 2026-10-12, changed only `ai-verse-os`, preserved the complete canonical member-state snapshot, and passed final status, doctor, and updater health gates. Private member content was not recorded and reverse rollback remains unadvertised/unadmitted.
 
 ## Slice 6.2 - Release
 
@@ -377,3 +378,5 @@ Next: Uyy - <next task>
 - Frozen `core-first-run-rc1-2026-10-12` as an explicit-only qualification candidate. Only AI-Verse OS advances, by three descendant commits from the stable OS pin; all other Core owners remain exactly stable. The candidate is not a channel default and still has no cross-release update or rollback admission. Distribution CI run `38231817119` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
 - U34 completed.
 - Admitted the exact `core-stable-2026-10-10 -> core-first-run-rc1-2026-10-12` forward transition with immutable evidence and populated-state preservation acceptance. Reverse rollback to stable remains unadmitted because no reverse qualification proves it safe. The candidate remains non-default and pending U35 full qualification/pilot. Distribution CI run `38232637219` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
+- U35 completed.
+- Accepted `qualification/core-update-program-u35/qualification.json` after the full six-job CI matrix and the owner's real populated installation pilot both passed. The real update changed only `ai-verse-os`, preserved member state, passed status/doctor/updater health, and recorded no private member content. Reverse rollback remains unadmitted.
