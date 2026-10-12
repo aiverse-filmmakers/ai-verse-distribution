@@ -4,25 +4,52 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Allow this qualification runner to execute directly from a checked-out
-# Distribution repository without mutating the user's global Python install.
-REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
-
-from aiverse_distribution.core_update import CoreUpdateOrchestrator
-from aiverse_distribution.preservation import (
-    require_member_state_preserved,
-    snapshot_member_state,
-)
-from aiverse_distribution.project_layout import ProjectLayout
-from aiverse_distribution.state import StateStore
-
 STABLE = "core-stable-2026-10-10"
 CANDIDATE = "core-first-run-rc1-2026-10-12"
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _recorded_stack(project: Path) -> Path:
+    identity = hashlib.sha256(str(project).encode("utf-8")).hexdigest()[:16]
+    return project.parent / ".ai-verse-tools" / identity
+
+
+def _reexec_with_recorded_python_if_needed(project: Path) -> None:
+    """Use the existing Core install's private Python when system Python is too old."""
+    if sys.version_info >= (3, 11):
+        return
+
+    stack = _recorded_stack(project)
+    receipt_path = stack / "project.json"
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise SystemExit(
+            f"Pilot refused: Python 3.11+ is required and the Core receipt is unreadable: {receipt_path}"
+        ) from exc
+
+    recorded = receipt.get("python")
+    if not isinstance(recorded, str) or not recorded:
+        raise SystemExit("Pilot refused: Core receipt does not record its private Python executable")
+    python = Path(recorded).expanduser().resolve()
+    try:
+        python.relative_to(stack.resolve())
+    except ValueError as exc:
+        raise SystemExit("Pilot refused: recorded Python is outside the private Core tool stack") from exc
+    if not python.is_file():
+        raise SystemExit(f"Pilot refused: recorded Core Python is unavailable: {python}")
+
+    print(
+        f"System Python {sys.version_info.major}.{sys.version_info.minor} is too old; "
+        "continuing with the existing Core installation's private Python...",
+        flush=True,
+    )
+    os.execv(str(python), [str(python), str(Path(__file__).resolve()), *sys.argv[1:]])
 
 
 def _digest(payload: object) -> str:
@@ -40,6 +67,19 @@ def main() -> int:
     args = parser.parse_args()
 
     project = Path(args.project).expanduser().resolve()
+    _reexec_with_recorded_python_if_needed(project)
+
+    # Import Distribution only after Python-version delegation so the runner can
+    # be launched by the macOS system Python without modifying global Python.
+    sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
+    from aiverse_distribution.core_update import CoreUpdateOrchestrator
+    from aiverse_distribution.preservation import (
+        require_member_state_preserved,
+        snapshot_member_state,
+    )
+    from aiverse_distribution.project_layout import ProjectLayout
+    from aiverse_distribution.state import StateStore
+
     layout = ProjectLayout.resolve(project)
     layout.inspect()
     state = StateStore(layout.distribution_home)
