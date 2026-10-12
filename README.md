@@ -2,21 +2,39 @@
 
 **The canonical installer and release manager for AI-Verse.**
 
-For members using Codex, Claude Code, or another coding agent, the intended experience is simple:
+For members using Codex, Claude Code, or another coding agent, the intended experience is simple.
+
+Fresh project:
 
 > Clone this locally and use its install procedure to set AI-Verse up in this project.
 
-That is enough. The repository contains the instructions the coding agent needs.
+Existing AI-Verse project:
 
-## Coding-agent installation
+> Update AI-Verse.
+
+Terminal update:
+
+```text
+aiverse update
+```
+
+That is enough. Members do not need release IDs, component SHAs, branches, prerequisite versions, installer folders, migration commands, setup commands, or doctor commands.
+
+## Install vs update
+
+**Fresh install stays one action.** Use `INSTALL.md` and the platform bootstrap. Distribution resolves the admitted Core, prepares private tools, installs the exact component revisions, runs owner setup, and verifies final health.
+
+**Existing installations use lifecycle update.** Do not delete, reset, reclone, or reinstall an existing AI-Verse project to update it. Use `aiverse update`. If the normal bootstrap is run again against a verified completed Core installation, it detects that state and routes to the same preservation-safe updater instead of starting a destructive reinstall path.
+
+Update conflicts fail closed. Local edits, ambiguous ownership, unsafe migration state, or failed health checks are preserved and reported rather than overwritten.
+
+## Coding-agent procedure
 
 - Codex and compatible agents: read `AGENTS.md`.
 - Claude Code: read `CLAUDE.md`.
-- Canonical install procedure: `INSTALL.md`.
+- Canonical install/update procedure: `INSTALL.md`.
 
-The member does **not** need to choose release IDs, component SHAs, branches, prerequisite versions, installer folders, setup commands, or doctor commands.
-
-Distribution handles those details automatically and only reports installation success after the final health checks pass.
+Distribution handles lifecycle details automatically and only reports success after the required final health checks pass.
 
 ## What gets installed
 
@@ -48,13 +66,9 @@ Codex and Claude may expose capability packages through folders named `.agents/s
 
 The OS capability resolver can discover the appropriate provider while preserving ownership, scope, generation, and verification boundaries.
 
-Distribution resolves the exact admitted immutable component revisions automatically. Internal release IDs and qualification metadata remain available for diagnostics and evidence but are not part of the normal member-facing product vocabulary.
+Distribution resolves exact admitted immutable component revisions automatically. Internal release IDs and qualification metadata remain available for diagnostics and evidence but are not part of the normal member-facing product vocabulary.
 
-The current Core is released for macOS, Linux, and Windows and carries accepted member-bootstrap, clean-machine, lineage, isolation, Data/Memory, runtime, restart/rebuild, and composed-system qualification evidence.
-
-## What the install procedure does
-
-The project install flow:
+## What the fresh-install procedure does
 
 ```text
 identify the intended project
@@ -69,6 +83,20 @@ identify the intended project
 ```
 
 After installation, AI-Verse OS lives at the project root so coding agents discover the shipped runtime instructions directly through `AGENTS.md`, `CLAUDE.md`, `AI-VERSE.yaml`, `.agents/skills/`, and `.claude/skills/`.
+
+## What the update procedure does
+
+```text
+identify the installed Core
+-> resolve only an explicitly admitted update target
+-> stage changed components only
+-> preserve user-owned and ambiguous/local content
+-> run changed owners' admitted migrations/reconcile
+-> verify status + doctor
+-> complete, or recover/roll back software safely
+```
+
+The update path is transactional and preservation-first. User-owned state is not replaced merely because Core software advances.
 
 ## Onboarding
 
@@ -89,29 +117,31 @@ python -m pip install .
 Common lifecycle commands:
 
 ```bash
-aiverse install --profile core
-aiverse setup
+aiverse update
+aiverse update --plan
 aiverse status
 aiverse doctor
 aiverse open
 ```
 
-For the member project flow, prefer `INSTALL.md` rather than manually reproducing lifecycle steps.
+Fresh installation can also be driven by the advanced lifecycle commands, but normal member projects should use `INSTALL.md` instead of manually reproducing install/setup steps.
 
 ## Safety model
 
 Distribution coordinates owner-controlled lifecycle; it does not become the source of truth for OS, Brain, Memory, Skills, Data, Gateway, Automations, Bots, Token, Dashboard, Connections, or Apps.
 
-Installation does not silently:
+Installation and update do not silently:
 
 - grant permissions;
 - transfer Brain strategic authority;
 - initialize arbitrary workspaces;
 - overwrite unrelated member files;
+- overwrite locally modified or ambiguously owned content;
 - substitute moving branches for admitted component revisions;
-- roll back canonical user state.
+- roll back canonical user state;
+- use delete/reinstall as a normal update path.
 
-The installer fails closed when the project layout, release integrity, owner lifecycle, or health state is unsafe or ambiguous.
+The lifecycle fails closed when project layout, release integrity, ownership, owner lifecycle, migration, recovery, or health state is unsafe or ambiguous.
 
 ## Profiles
 
@@ -135,5 +165,6 @@ Detailed contracts and evidence live in:
 - `docs/CORE-LINEAGE.md`
 - `docs/HISTORY.md`
 - `docs/ROADMAP.md`
+- `docs/CORE-UPDATE-PROGRAM.md`
 
 Canonical cross-system architecture contracts remain in `aiverse-filmmakers/AI-Verse-System`.
