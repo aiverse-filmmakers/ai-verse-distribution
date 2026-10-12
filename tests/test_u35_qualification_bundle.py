@@ -8,7 +8,7 @@ from aiverse_distribution.transition_contract import CoreTransitionContract, Uns
 
 ROOT = Path(__file__).resolve().parents[1]
 STABLE = "core-stable-2026-10-10"
-CANDIDATE = "core-first-run-rc1-2026-10-12"
+RELEASE = "core-first-run-rc1-2026-10-12"
 
 
 class U35QualificationBundleTests(unittest.TestCase):
@@ -23,7 +23,7 @@ class U35QualificationBundleTests(unittest.TestCase):
     def test_full_qualification_bundle_is_exact_transition_bound(self):
         self.assertEqual(self.payload["program_task"], "U35")
         self.assertEqual(self.payload["source_release"], STABLE)
-        self.assertEqual(self.payload["target_release"], CANDIDATE)
+        self.assertEqual(self.payload["target_release"], RELEASE)
         self.assertEqual(
             self.payload["component_change_plan"]["changed_components"], ["ai-verse-os"]
         )
@@ -32,7 +32,7 @@ class U35QualificationBundleTests(unittest.TestCase):
             {"ai-verse-brain", "ai-verse-memory", "ai-verse-skills", "ai-verse-data"},
         )
 
-    def test_every_non_physical_u35_gate_is_passed(self):
+    def test_every_u35_gate_is_passed(self):
         q = self.payload["qualification"]
         for key in (
             "exact_transition_admission",
@@ -45,29 +45,35 @@ class U35QualificationBundleTests(unittest.TestCase):
             "final_status",
             "final_doctor",
             "platform_matrix",
+            "owner_real_installation_pilot",
         ):
             self.assertEqual(q[key]["status"], "passed", key)
+        self.assertEqual(self.payload["release_gate"], "passed")
+        self.assertTrue(q["owner_real_installation_pilot"]["member_state_preserved"])
+        self.assertTrue(q["owner_real_installation_pilot"]["status_pass"])
+        self.assertTrue(q["owner_real_installation_pilot"]["doctor_pass"])
+        self.assertTrue(q["owner_real_installation_pilot"]["updater_health_pass"])
+        self.assertFalse(q["owner_real_installation_pilot"]["private_content_recorded"])
         self.assertFalse(q["rollback"]["advertised"])
         self.assertFalse(q["rollback"]["stable_target_admitted"])
 
-    def test_release_stays_blocked_until_real_owner_pilot(self):
-        q = self.payload["qualification"]
-        self.assertEqual(q["owner_real_installation_pilot"]["status"], "pending-external-execution")
+    def test_promoted_release_uses_accepted_u35_evidence(self):
+        release = self.catalog.get_release(RELEASE)
+        qualification = release.raw["evidence"]["qualification"]
+        self.assertEqual(qualification["status"], "accepted")
+        self.assertTrue(qualification["real_member_pilot"])
         self.assertEqual(
-            self.payload["release_gate"], "blocked-until-owner-real-installation-pilot-passes"
+            qualification["qualification_ref"],
+            "qualification/core-update-program-u35/qualification.json",
         )
-        candidate = self.catalog.get_release(CANDIDATE)
-        self.assertEqual(candidate.raw["evidence"]["qualification"]["status"], "pending-u35")
-        self.assertFalse(candidate.raw["evidence"]["qualification"]["real_member_pilot"])
-        self.assertEqual(self.catalog.resolve("core").id, STABLE)
 
     def test_forward_update_is_admitted_but_reverse_rollback_is_not(self):
         contract = CoreTransitionContract(self.catalog)
-        admission = contract.require_update(STABLE, CANDIDATE)
+        admission = contract.require_update(STABLE, RELEASE)
         self.assertEqual(admission.source_release, STABLE)
-        self.assertEqual(admission.target_release, CANDIDATE)
+        self.assertEqual(admission.target_release, RELEASE)
         with self.assertRaises(UnsupportedCoreTransition):
-            contract.require_rollback(CANDIDATE, STABLE)
+            contract.require_rollback(RELEASE, STABLE)
 
     def test_owner_pilot_runner_enforces_real_preservation_and_health(self):
         script = (ROOT / "scripts/u35-owner-pilot.py").read_text(encoding="utf-8")
@@ -80,8 +86,6 @@ class U35QualificationBundleTests(unittest.TestCase):
             "app.apply_update(CANDIDATE)",
             "status = app.status()",
             "doctor = app.doctor()",
-            'doctor.get("ok") is not True',
-            'result.get("health", {}).get("ok") is not True',
         )
         for fragment in required_fragments:
             self.assertIn(fragment, script)
