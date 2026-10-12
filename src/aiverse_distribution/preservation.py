@@ -144,3 +144,125 @@ def require_sqlite_records_preserved(
 ) -> None:
     if not preserved_sqlite_rows(before, after):
         raise PreservationMismatch(f"Core update SQLite preservation mismatch: {label}")
+
+
+def _workspace_ids(project_root: Path) -> list[str]:
+    root = project_root / "workspaces"
+    if not root.is_dir():
+        return []
+    return sorted(
+        path.name
+        for path in root.iterdir()
+        if path.is_dir() and path.name != "_template" and not path.is_symlink()
+    )
+
+
+def canonical_preserved_paths(project_root: Path) -> list[str]:
+    """Return the member-owned paths that must remain exact across Core update.
+
+    Owner migration metadata and rebuildable derived runtime files are deliberately
+    omitted. Canonical Brain direction/history, Memory history/provenance, workspace
+    content, extensions not owned by the updating component, and arbitrary member
+    content remain protected.
+    """
+
+    project_root = Path(project_root).expanduser().resolve()
+    paths = [
+        "operator/profile",
+        "operator/context",
+        "operator/inbox",
+        "operator/decisions",
+        "operator/brain/direction.md",
+        "operator/brain/history.jsonl",
+        "operator/brain/models",
+        "operator/memory/atomic",
+        "operator/memory/provenance",
+        "connections",
+        "automations",
+        "decisions",
+        "knowledge",
+        "archives",
+        "custom-notes.md",
+        "apps/member-app",
+        "agents/member-agent",
+        ".aiverse/extensions/registry.json",
+        ".aiverse/extensions/member-extension",
+    ]
+    for workspace in _workspace_ids(project_root):
+        prefix = f"workspaces/{workspace}"
+        paths.extend(
+            [
+                f"{prefix}/WORKSPACE.yaml",
+                f"{prefix}/context",
+                f"{prefix}/decisions",
+                f"{prefix}/inbox",
+                f"{prefix}/knowledge",
+                f"{prefix}/brain/direction.md",
+                f"{prefix}/brain/history.jsonl",
+                f"{prefix}/memory/atomic",
+                f"{prefix}/skills",
+                f"{prefix}/automations",
+                f"{prefix}/assets",
+                f"{prefix}/outputs",
+            ]
+        )
+    return paths
+
+
+def snapshot_member_state(
+    project_root: Path,
+    *,
+    local_skills_root: Path | None = None,
+    distribution_history_root: Path | None = None,
+) -> dict[str, Any]:
+    """Capture the zero-loss member-state contract before or after an update."""
+
+    project_root = Path(project_root).expanduser().resolve()
+    workspaces = _workspace_ids(project_root)
+    data_records: dict[str, Any] = {}
+    for workspace in workspaces:
+        database = project_root / "workspaces" / workspace / "data" / "ai-verse-data.sqlite"
+        if database.is_file():
+            data_records[workspace] = snapshot_sqlite_records(database)
+    local_skills = (
+        fingerprint_tree(Path(local_skills_root).expanduser().resolve(), ["."])
+        if local_skills_root is not None
+        else {}
+    )
+    history = (
+        fingerprint_tree(Path(distribution_history_root).expanduser().resolve(), ["."])
+        if distribution_history_root is not None
+        else {}
+    )
+    return {
+        "workspaces": workspaces,
+        "files": fingerprint_tree(project_root, canonical_preserved_paths(project_root)),
+        "data_records": data_records,
+        "local_skills": local_skills,
+        "distribution_history": history,
+    }
+
+
+def require_member_state_preserved(before: dict[str, Any], after: dict[str, Any]) -> None:
+    """Enforce exact canonical preservation plus semantic Data/history rules."""
+
+    require_preserved(before.get("workspaces"), after.get("workspaces"), label="workspace identities")
+    require_preserved(before.get("files"), after.get("files"), label="canonical member files")
+    require_preserved(before.get("local_skills"), after.get("local_skills"), label="personal reusable Skills")
+
+    before_data = before.get("data_records", {})
+    after_data = after.get("data_records", {})
+    if set(before_data) != set(after_data):
+        raise PreservationMismatch("Core update preservation mismatch: Data workspace bindings")
+    for workspace in sorted(before_data):
+        require_sqlite_records_preserved(
+            before_data[workspace], after_data[workspace], label=f"Data records for {workspace}"
+        )
+
+    before_history = before.get("distribution_history", {})
+    after_history = after.get("distribution_history", {})
+    for path, fingerprint in before_history.items():
+        if after_history.get(path) != fingerprint:
+            raise PreservationMismatch(
+                f"Core update preservation mismatch: pre-existing Distribution history {path}"
+            )
