@@ -71,15 +71,18 @@ class OneActionUpdateCliTests(unittest.TestCase):
 
     def test_u30_help_presents_update_as_one_action(self):
         parser = cli._parser()
+        top_help = parser.format_help()
+        self.assertIn("update to the newest admitted Core", top_help)
+
         update_parser = next(
             action.choices["update"]
             for action in parser._actions
             if hasattr(action, "choices") and action.choices and "update" in action.choices
         )
-        help_text = update_parser.format_help()
-        self.assertIn("update to the newest admitted Core", help_text)
-        self.assertIn("--plan", help_text)
-        self.assertNotIn("--apply", help_text)
+        update_help = update_parser.format_help()
+        self.assertIn("--plan", update_help)
+        self.assertIn("advanced exact admitted Core target", update_help)
+        self.assertNotIn("--apply", update_help)
 
 
 if __name__ == "__main__":
