@@ -19,8 +19,28 @@ def _recorded_stack(project: Path) -> Path:
     return project.parent / ".ai-verse-tools" / identity
 
 
-def _reexec_with_recorded_python_if_needed(project: Path) -> None:
-    """Use the existing Core install's recorded private Python when system Python is too old."""
+def _recorded_private_path(stack: Path, value: object, label: str) -> Path:
+    if not isinstance(value, str) or not value:
+        raise SystemExit(f"Pilot refused: Core receipt does not record its {label}")
+    path = Path(os.path.abspath(os.path.expanduser(value)))
+    try:
+        path.relative_to(stack)
+    except ValueError as exc:
+        raise SystemExit(f"Pilot refused: recorded {label} path is outside the private Core tool stack") from exc
+    if not path.is_file():
+        raise SystemExit(f"Pilot refused: recorded Core {label} is unavailable: {path}")
+    return path
+
+
+def _reexec_with_recorded_toolchain_if_needed(project: Path) -> None:
+    """Enter the existing Core launcher's exact Python/Node/npm environment.
+
+    The macOS system Python can be older than the Core minimum. The recorded Core
+    launcher is authoritative because it restores the private Node/npm PATH and
+    AIVERSE_DISTRIBUTION_NPM shim used when the installation was qualified. Running
+    the private Python directly would bypass that environment and could leak the
+    host's newer npm into preflight.
+    """
     if sys.version_info >= (3, 11):
         return
 
@@ -33,27 +53,30 @@ def _reexec_with_recorded_python_if_needed(project: Path) -> None:
             f"Pilot refused: Python 3.11+ is required and the Core receipt is unreadable: {receipt_path}"
         ) from exc
 
-    recorded = receipt.get("python")
-    if not isinstance(recorded, str) or not recorded:
-        raise SystemExit("Pilot refused: Core receipt does not record its private Python executable")
-
-    # Check containment on the recorded executable path itself, without resolving
-    # its symlink target. A private venv/bin/python path on macOS commonly points
-    # to /Library or /opt/homebrew and is still the correct recorded interpreter.
-    python = Path(os.path.abspath(os.path.expanduser(recorded)))
-    try:
-        python.relative_to(stack)
-    except ValueError as exc:
-        raise SystemExit("Pilot refused: recorded Python path is outside the private Core tool stack") from exc
-    if not python.is_file():
-        raise SystemExit(f"Pilot refused: recorded Core Python is unavailable: {python}")
+    # Check containment on recorded paths themselves rather than resolving their
+    # symlink targets. A venv/bin/python path may legitimately point to Apple's or
+    # Homebrew's interpreter while the installation-owned executable path remains
+    # inside the private stack.
+    python = _recorded_private_path(stack, receipt.get("python"), "Python executable")
+    launcher = _recorded_private_path(stack, receipt.get("launcher"), "project launcher")
 
     print(
         f"System Python {sys.version_info.major}.{sys.version_info.minor} is too old; "
-        "continuing with the existing Core installation's recorded private Python...",
+        "continuing through the existing Core launcher's private toolchain...",
         flush=True,
     )
-    os.execv(str(python), [str(python), str(Path(__file__).resolve()), *sys.argv[1:]])
+    script = str(Path(__file__).resolve())
+    os.execv(
+        str(python),
+        [
+            str(python),
+            str(launcher),
+            "--exec",
+            str(python),
+            script,
+            *sys.argv[1:],
+        ],
+    )
 
 
 def _digest(payload: object) -> str:
@@ -71,10 +94,10 @@ def main() -> int:
     args = parser.parse_args()
 
     project = Path(args.project).expanduser().resolve()
-    _reexec_with_recorded_python_if_needed(project)
+    _reexec_with_recorded_toolchain_if_needed(project)
 
-    # Import Distribution only after Python-version delegation so the runner can
-    # be launched by the macOS system Python without modifying global Python.
+    # Import Distribution only after toolchain delegation so the runner can be
+    # launched by the macOS system Python without modifying global Python/npm.
     sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
     from aiverse_distribution.core_update import CoreUpdateOrchestrator
     from aiverse_distribution.preservation import (
