@@ -4,14 +4,14 @@
   "profile": "core",
   "status": "released",
   "created_at": "2026-10-12",
-  "classification": "explicit-install-qualification-candidate",
+  "classification": "production-core-release",
   "lineage": {
     "parent": "core-stable-2026-10-10",
     "policy": "same-or-descendant"
   },
   "promotion": {
-    "default_channel": false,
-    "automatic_update": false,
+    "default_channel": true,
+    "automatic_update": true,
     "cross_release_transition_admitted": true
   },
   "runtime_requirements": {
@@ -68,14 +68,23 @@
       "update_request_ci_run": 38228297894
     },
     "qualification": {
-      "status": "pending-u35",
-      "cross_platform_populated_update": false,
-      "real_member_pilot": false
+      "status": "accepted",
+      "qualification_ref": "qualification/core-update-program-u35/qualification.json",
+      "cross_platform_populated_update": true,
+      "real_member_pilot": true,
+      "distribution_ci_run": 38238783665
+    },
+    "member_bootstrap": {
+      "status": "accepted",
+      "audit_repairs_included": true,
+      "qualification_ref": "qualification/core-update-program-u35/qualification.json",
+      "distribution_ci_run": 38238783665,
+      "real_member_pilot": true
     },
     "transition_policy": {
       "cross_release_update_admitted": true,
       "cross_release_rollback_admitted": false,
-      "admission_ref": "qualification/core-update-program-u34/transition-admission.json",
+      "admission_ref": "qualification/core-update-program-u35/qualification.json",
       "update_from": [
         "core-stable-2026-10-10",
         "core-first-run-rc1-2026-10-12"
