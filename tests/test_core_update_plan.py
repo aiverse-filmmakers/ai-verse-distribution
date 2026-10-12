@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 
 from aiverse_distribution.core_update import CoreUpdateOrchestrator
 from aiverse_distribution.entrypoint import main as installed_main
+from aiverse_distribution.recovery_orchestrator import RecoveryOrchestrator
 from aiverse_distribution.release_catalog import ComponentRef, ReleaseSet
 from aiverse_distribution.state import StateStore
 from aiverse_distribution.transition_contract import TransitionAdmission
@@ -125,13 +126,14 @@ class CoreUpdatePlanTests(unittest.TestCase):
             self.assertEqual(result["staged_components"], [])
             self.assertEqual(result["owner_updated_components"], [])
 
-    def test_installed_entrypoint_routes_cli_to_core_update_orchestrator(self):
+    def test_installed_entrypoint_routes_cli_to_recovery_aware_core_orchestrator(self):
         from aiverse_distribution import cli
 
         with patch.object(cli, "main", Mock(return_value=0)) as mocked:
             self.assertEqual(installed_main(["releases", "--json"]), 0)
             mocked.assert_called_once_with(["releases", "--json"])
-            self.assertIs(cli.Orchestrator, CoreUpdateOrchestrator)
+            self.assertIs(cli.Orchestrator, RecoveryOrchestrator)
+            self.assertTrue(issubclass(cli.Orchestrator, CoreUpdateOrchestrator))
 
 
 if __name__ == "__main__":
