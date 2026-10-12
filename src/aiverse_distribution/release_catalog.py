@@ -60,7 +60,9 @@ class Catalog:
         self.compatibility = _load("compatibility.json")
         self.release_data = _load("release_sets.json")
         self.core_lineage = _load("core_lineage.json")
+        self.core_candidates = _load("core_candidates.json")
         self._apply_core_lineage()
+        self._apply_core_candidates()
         self._validate()
 
     def _apply_core_lineage(self) -> None:
@@ -80,6 +82,19 @@ class Catalog:
             # available only by explicit release id.
             self.release_data["channels"]["core"] = current
             self.release_data["channels"]["beta"] = current
+
+    def _apply_core_candidates(self) -> None:
+        if self.core_candidates.get("schema_version") != 1:
+            raise CatalogValidationError("unsupported core-candidate schema")
+        releases = self.core_candidates.get("release_sets", [])
+        compatibility = self.core_candidates.get("compatibility", {})
+        if not isinstance(releases, list) or not isinstance(compatibility, dict):
+            raise CatalogValidationError("core-candidate release_sets and compatibility must be structured")
+        # Qualification candidates are exact explicit targets only. They are
+        # deliberately layered after the forward ledger without changing any
+        # release channel; U36 is the only task allowed to promote a candidate.
+        self.release_data["release_sets"].extend(releases)
+        self.compatibility["release_sets"].update(compatibility)
 
     def _validate(self) -> None:
         if self.profiles.get("schema_version") != 1:
