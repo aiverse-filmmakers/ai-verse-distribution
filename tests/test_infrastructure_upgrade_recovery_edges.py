@@ -4,12 +4,52 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import test_infrastructure_upgrade_apply as fixtures
+from aiverse_distribution.infrastructure_upgrade import OwnedEffectHealthState
+from aiverse_distribution.state import LifecycleRecoveryRequired, StateStore
 
 
 class InfrastructureUpgradeRecoveryEdgeTests(unittest.TestCase):
     def make_app(self, root: Path):
         helper = fixtures.InfrastructureUpgradeApplyTests(methodName="runTest")
         return helper.make_app(root)
+
+    def test_owned_effect_health_view_hides_only_exact_marker_and_cannot_mutate(self):
+        with tempfile.TemporaryDirectory() as td:
+            store = StateStore(Path(td) / "distribution")
+            store.write(
+                {
+                    "schema_version": 1,
+                    "release_set_id": "core-current",
+                    "profile": "core",
+                    "root": str(Path(td) / "AI-Verse"),
+                    "state": "setup",
+                    "components": {},
+                },
+                archive_previous=False,
+            )
+            with store.lifecycle_transaction():
+                marker = store.begin_effect(
+                    "infrastructure-upgrade:core-current:fixture",
+                    metadata={"journal_token": "fixture"},
+                )
+                self.assertIsNotNone(store.load().get("_pending_lifecycle"))
+                self.assertIsNotNone(store.pending_effect())
+
+                view = OwnedEffectHealthState(store, marker)
+                verified = view.load()
+                self.assertNotIn("_pending_lifecycle", verified)
+                self.assertIsNone(view.pending_effect())
+                self.assertIsNotNone(store.pending_effect())
+                with self.assertRaises(LifecycleRecoveryRequired):
+                    view.write(verified, archive_previous=False)
+
+                wrong = dict(marker)
+                wrong["token"] = "not-the-owner"
+                with self.assertRaises(LifecycleRecoveryRequired):
+                    OwnedEffectHealthState(store, wrong).load()
+
+                store.commit_effect(verified, marker, archive_previous=False)
+                self.assertIsNone(store.pending_effect())
 
     def test_failed_final_health_never_commits_success(self):
         with tempfile.TemporaryDirectory() as td:
