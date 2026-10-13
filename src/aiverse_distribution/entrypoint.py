@@ -55,18 +55,25 @@ def _experience_main(command: str, argv: list[str]) -> int:
         description=(
             "Check the whole supported AI-Verse installation without changing it."
             if command == "doctor"
-            else "Preview safe structural setup improvements without changing anything."
+            else "Preview safe setup improvements, or apply them only with explicit --apply intent."
         ),
     )
+    if command == "upgrade":
+        parser.add_argument("--apply", action="store_true", help="apply the exact verified setup upgrade")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     app = ExperienceOrchestrator()
     try:
-        payload = app.doctor_overview() if command == "doctor" else app.upgrade_plan()
+        if command == "doctor":
+            payload = app.doctor_overview()
+        elif args.apply:
+            payload = app.upgrade_apply()
+        else:
+            payload = app.upgrade_plan()
         emit_experience(payload, args.json)
         if command == "doctor":
             return 0 if payload.get("ok") is True else 1
-        return 1 if payload.get("state") == "BLOCKED/REVIEW" else 0
+        return 1 if payload.get("state") in {"BLOCKED/REVIEW", "RECOVERY_REQUIRED", "REPLAN_REQUIRED"} else 0
     except Exception as exc:
         if not isinstance(exc, (DistributionError, ProcessError, RuntimeError, LifecycleRecoveryRequired)):
             raise

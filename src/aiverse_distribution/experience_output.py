@@ -11,8 +11,29 @@ def format_experience(payload: Dict[str, Any]) -> Optional[str]:
     if not isinstance(view, dict):
         return None
     kind = view.get("kind")
-    if kind not in {"doctor", "upgrade"}:
+    if kind not in {"doctor", "upgrade", "upgrade-apply"}:
         return None
+
+    if kind == "upgrade-apply":
+        healthy = "YES" if view.get("healthy") is True else "NO"
+        preserved = "YES" if view.get("preserved") is True else "NO"
+        restore = "YES" if view.get("restore_available") is True else "NO"
+        improved = int(view.get("improved", 0))
+        message = str(view.get("message") or "AI-Verse could not confirm the result.")
+        recommended = str(view.get("recommended") or "Review AI-Verse")
+        return "\n".join(
+            [
+                "AI-Verse Upgrade",
+                "",
+                message,
+                f"Improvements applied: {improved}",
+                f"Your existing setup preserved: {preserved}",
+                f"Healthy: {healthy}",
+                f"Recovery point available: {restore}",
+                "",
+                f"Recommended: {recommended}",
+            ]
+        )
 
     healthy = "YES" if view.get("healthy") is True else "NO"
     optional = int(view.get("safe_improvements", 0))
