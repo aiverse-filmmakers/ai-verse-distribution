@@ -90,8 +90,11 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     values = list(argv) if argv is not None else list(sys.argv[1:])
     if values and values[0] == "restore":
         return _restore_main(values[1:])
-    if values and values[0] in {"doctor", "upgrade"}:
-        return _experience_main(values[0], values[1:])
+    if values and values[0] == "upgrade":
+        return _experience_main("upgrade", values[1:])
+    if values and values[0] == "doctor" and "--component" not in values[1:]:
+        return _experience_main("doctor", values[1:])
 
+    # Component-scoped doctor remains an expert/internal compatibility surface.
     cli.Orchestrator = RecoveryOrchestrator
     return cli.main(values)
