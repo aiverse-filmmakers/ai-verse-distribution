@@ -5,8 +5,9 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from aiverse_distribution import entrypoint
+from aiverse_distribution import cli, entrypoint
 from aiverse_distribution.experience_orchestrator import ExperienceOrchestrator
+from aiverse_distribution.recovery_orchestrator import RecoveryOrchestrator
 from aiverse_distribution.state import StateStore
 
 
@@ -78,6 +79,15 @@ class ExperienceEntrypointTests(unittest.TestCase):
         self.assertEqual(code, 1)
         app.doctor_overview.assert_called_once_with()
         self.assertIn("Healthy: NO", output.getvalue())
+
+    def test_component_doctor_remains_expert_compatibility_surface(self):
+        args = ["doctor", "--component", "ai-verse-os", "--json"]
+        with patch.object(cli, "Orchestrator", cli.Orchestrator):
+            with patch.object(cli, "main", return_value=0) as cli_main:
+                code = entrypoint.main(args)
+                self.assertIs(cli.Orchestrator, RecoveryOrchestrator)
+        self.assertEqual(code, 0)
+        cli_main.assert_called_once_with(args)
 
     def test_compatible_upgrade_plan_reports_no_structural_change(self):
         with tempfile.TemporaryDirectory() as td:
