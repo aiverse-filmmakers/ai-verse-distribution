@@ -143,13 +143,10 @@ class ExperienceOverviewTests(unittest.TestCase):
     def test_pending_lifecycle_blocks_upgrade_preview_without_mutation(self):
         with tempfile.TemporaryDirectory() as td:
             app, store, gate = self.make_app(Path(td), infrastructure("COMPATIBLE"))
-            lock = store.load()
-            lock["_pending_lifecycle"] = {
-                "operation_key": "update:fixture",
-                "started_at": "2026-10-13T00:00:00Z",
-            }
-            store.write(lock, archive_previous=False)
+            with store.lifecycle_transaction():
+                store.begin_effect("update:fixture", metadata={"test": True})
             before = copy.deepcopy(store.load())
+            self.assertIn("_pending_lifecycle", before)
             result = app.upgrade_plan()
             self.assertEqual(result["state"], BLOCKED)
             self.assertEqual(result["member_view"]["needs_review"], 1)
