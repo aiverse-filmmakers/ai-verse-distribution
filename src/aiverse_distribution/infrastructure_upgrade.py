@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .release_catalog import DistributionError
-from .state import now_iso
+from .state import LifecycleRecoveryRequired, now_iso
 
 
 UPGRADE_JOURNAL_SCHEMA = "aiverse-infrastructure-upgrade-journal/v1"
@@ -72,6 +72,77 @@ def require_owner_result(
             f"{owner}:{kind} did not return verified successful evidence"
         )
     return dict(result)
+
+
+class OwnedEffectHealthState:
+    """Read-only StateStore view for health checks inside one exact owned effect.
+
+    Normal Distribution status/doctor deliberately report recovery-required while
+    any owner effect is pending. During Slice 4.4 final verification the pending
+    marker must remain durable until the receipt commit, so this wrapper hides
+    only the exact marker owned by the current lifecycle transaction. It never
+    deletes or rewrites that marker and refuses every state mutation method.
+    """
+
+    def __init__(self, state: Any, effect: Dict[str, Any]):
+        self._state = state
+        self._effect = dict(effect)
+
+    def _verified_lock(self) -> Dict[str, Any]:
+        if int(getattr(self._state, "_lifecycle_depth", 0)) <= 0:
+            raise LifecycleRecoveryRequired(
+                "owned infrastructure health verification requires the active lifecycle transaction"
+            )
+        visible = self._state.load()
+        if not isinstance(visible, dict):
+            raise LifecycleRecoveryRequired(
+                "owned infrastructure health verification cannot find the installed receipt"
+            )
+        pending = visible.get("_pending_lifecycle")
+        if not isinstance(pending, dict):
+            raise LifecycleRecoveryRequired(
+                "owned infrastructure health verification cannot find its pending owner effect"
+            )
+        for key in ("token", "operation_key", "base_generation", "metadata"):
+            if pending.get(key) != self._effect.get(key):
+                raise LifecycleRecoveryRequired(
+                    "owned infrastructure health verification no longer owns the pending lifecycle effect"
+                )
+        receipt_generation = visible.get("_receipt_generation", 0)
+        if (
+            isinstance(receipt_generation, bool)
+            or not isinstance(receipt_generation, int)
+            or receipt_generation != pending.get("base_generation")
+        ):
+            raise LifecycleRecoveryRequired(
+                "installed receipt changed before infrastructure health verification completed"
+            )
+        raw = dict(visible)
+        raw.pop("_pending_lifecycle", None)
+        return raw
+
+    def load(self) -> Dict[str, Any]:
+        return self._verified_lock()
+
+    def pending_effect(self) -> None:
+        self._verified_lock()
+        return None
+
+    @staticmethod
+    def _blocked_mutation(*args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        raise LifecycleRecoveryRequired(
+            "owned infrastructure health verification is read-only"
+        )
+
+    write = _blocked_mutation
+    update = _blocked_mutation
+    begin_effect = _blocked_mutation
+    commit_effect = _blocked_mutation
+    lifecycle_transaction = _blocked_mutation
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._state, name)
 
 
 class InfrastructureUpgradeJournal:
