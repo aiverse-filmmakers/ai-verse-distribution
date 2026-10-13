@@ -82,6 +82,7 @@ class ExperienceOverviewTests(unittest.TestCase):
         app = ExperienceOrchestrator(
             state=store,
             catalog=catalog,
+            transition_contract=Mock(),
             infrastructure_gate=gate,
         )
         return app, store, gate
