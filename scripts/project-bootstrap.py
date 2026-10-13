@@ -13,6 +13,14 @@ from aiverse_distribution.project_routing import (
 from aiverse_distribution.cli import main
 
 
+# Help is a parser-only request. It must not inspect, classify, install, update,
+# or otherwise depend on the current working directory being an empty project.
+# This also keeps the private first-stage Python smoke test side-effect free.
+if any(value in {"-h", "--help"} for value in sys.argv[1:]):
+    raise SystemExit(
+        main(["project-init", "--distribution-source", str(source), *sys.argv[1:]])
+    )
+
 layout, release_set = bootstrap_route_args(sys.argv[1:])
 route = plan_existing_core_update(layout, source, release_set=release_set)
 if route is not None:
