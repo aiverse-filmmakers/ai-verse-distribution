@@ -41,8 +41,48 @@ def _restore_main(argv: list[str]) -> int:
         return 2
 
 
+def _experience_main(command: str, argv: list[str]) -> int:
+    from . import cli
+    from .experience_orchestrator import ExperienceOrchestrator
+    from .experience_output import emit_experience
+    from .process import ProcessError
+    from .redaction import sanitize_text
+    from .release_catalog import DistributionError
+    from .state import LifecycleRecoveryRequired
+
+    parser = argparse.ArgumentParser(
+        prog=f"aiverse {command}",
+        description=(
+            "Check the whole supported AI-Verse installation without changing it."
+            if command == "doctor"
+            else "Preview safe structural setup improvements without changing anything."
+        ),
+    )
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args(argv)
+    app = ExperienceOrchestrator()
+    try:
+        payload = app.doctor_overview() if command == "doctor" else app.upgrade_plan()
+        emit_experience(payload, args.json)
+        if command == "doctor":
+            return 0 if payload.get("ok") is True else 1
+        return 1 if payload.get("state") == "BLOCKED/REVIEW" else 0
+    except Exception as exc:
+        if not isinstance(exc, (DistributionError, ProcessError, RuntimeError, LifecycleRecoveryRequired)):
+            raise
+        code = getattr(exc, "code", "DISTRIBUTION_FAILED")
+        payload = {"error": code, "message": str(exc)}
+        if isinstance(exc, ProcessError):
+            payload["command"] = exc.argv
+            payload["returncode"] = exc.returncode
+            payload["stdout"] = sanitize_text(exc.stdout)
+            payload["stderr"] = sanitize_text(exc.stderr)
+        cli._emit(payload, args.json)
+        return 2
+
+
 def main(argv: Optional[Iterable[str]] = None) -> int:
-    """Installed `aiverse` entrypoint with preservation-safe update and restore."""
+    """Installed `aiverse` entrypoint with preservation-safe lifecycle UX."""
 
     from . import cli
     from .recovery_orchestrator import RecoveryOrchestrator
@@ -50,6 +90,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     values = list(argv) if argv is not None else list(sys.argv[1:])
     if values and values[0] == "restore":
         return _restore_main(values[1:])
+    if values and values[0] in {"doctor", "upgrade"}:
+        return _experience_main(values[0], values[1:])
 
     cli.Orchestrator = RecoveryOrchestrator
     return cli.main(values)
