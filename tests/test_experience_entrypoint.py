@@ -111,6 +111,7 @@ class ExperienceEntrypointTests(unittest.TestCase):
             app = ExperienceOrchestrator(
                 state=store,
                 catalog=catalog,
+                transition_contract=Mock(),
                 infrastructure_gate=gate,
             )
             result = app.upgrade_plan()
