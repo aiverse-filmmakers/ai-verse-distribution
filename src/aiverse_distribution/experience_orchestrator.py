@@ -15,6 +15,7 @@ from .infrastructure_gate import (
 from .infrastructure_upgrade import (
     InfrastructureOwnerExecutor,
     InfrastructureUpgradeJournal,
+    OwnedEffectHealthState,
     canonical_sha256,
     require_owner_result,
 )
@@ -498,6 +499,24 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
             and completed.get("release_set_id") == journal["release_set_id"]
         )
 
+    def _final_health_for_owned_effect(
+        self,
+        journal: Dict[str, Any],
+        marker: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Verify real owner health without globally hiding recovery ownership."""
+
+        original_state = self.state
+        self.state = OwnedEffectHealthState(original_state, marker)
+        try:
+            return require_final_health(
+                target_release=journal["release_set_id"],
+                status=self.status(),
+                doctor=self.doctor(),
+            )
+        finally:
+            self.state = original_state
+
     def _resume_upgrade(self, journal: Dict[str, Any], *, owner_recovery: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         lock = self.state.load()
         if lock is None:
@@ -550,11 +569,7 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
 
         try:
             improved = self._run_execution_plan(journal, root=str(lock["root"]))
-            health = require_final_health(
-                target_release=journal["release_set_id"],
-                status=self.status(),
-                doctor=self.doctor(),
-            )
+            health = self._final_health_for_owned_effect(journal, marker)
             retained = self.last_known_good.load_current()
             if retained is None or retained[0].get("generation_id") != journal["lkg_generation_id"]:
                 raise LifecycleRecoveryRequired(
