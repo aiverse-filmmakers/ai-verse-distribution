@@ -1,0 +1,85 @@
+name: Safe Infrastructure Convergence
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: safe-infrastructure-convergence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  convergence-contract:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 50
+    env:
+      AIVERSE_OS_ROOT: ${{ github.workspace }}/.qualification/AI-Verse-OS
+      AIVERSE_SKILLS_ROOT: ${{ github.workspace }}/.qualification/AI-Verse-Skills
+    steps:
+      - name: Checkout Distribution
+        uses: actions/checkout@v4
+
+      - name: Checkout frozen OS owner
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-OS
+          ref: 470ad89e6b96d898161dee36d4e4fa8064dd6a8d
+          path: .qualification/AI-Verse-OS
+
+      - name: Checkout frozen Skills owner
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Skills
+          ref: d4a02888ba8d83c4a15ce1b538ffdafaaf83bee1
+          path: .qualification/AI-Verse-Skills
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.23.3"
+
+      - name: Install Distribution
+        run: python -m pip install .
+
+      - name: Exact real-transition and owner-boundary contract
+        run: python -m unittest discover -s tests -p "test_safe_infrastructure_convergence_contract.py" -v
+
+      - name: Existing exact U35 transition evidence
+        run: |
+          python -m unittest discover -s tests -p "test_u35_qualification_bundle.py" -v
+          python -m unittest discover -s tests -p "test_core_first_run_candidate.py" -v
+
+      - name: Runtime lifecycle convergence
+        run: |
+          python -m unittest discover -s tests -p "test_experience_entrypoint.py" -v
+          python -m unittest discover -s tests -p "test_adapters.py" -v
+
+      - name: Owner-native Workspace and promotion qualification
+        if: runner.os == 'Linux' && matrix.python == '3.11'
+        working-directory: .qualification/AI-Verse-OS
+        shell: bash
+        run: |
+          node scripts/test-workspace-infrastructure.mjs
+          node scripts/test-capability-placement.mjs
+          node scripts/test-capability-promotion.mjs
+          node scripts/test-capability-resolver-core.mjs
+
+      - name: Pin tested npm for real Core convergence
+        if: runner.os == 'Linux' && matrix.python == '3.11'
+        run: npm install --global npm@10.9.2
+
+      - name: Real stable Core to current convergence, owner promotion and restore
+        if: runner.os == 'Linux' && matrix.python == '3.11'
+        run: python scripts/safe-infra-52-real-convergence.py
