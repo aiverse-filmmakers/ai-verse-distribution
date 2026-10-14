@@ -14,6 +14,7 @@ from aiverse_distribution.state import StateStore
 
 STABLE = "core-stable-2026-10-10"
 CURRENT = "core-first-run-rc1-2026-10-12"
+OWNER_CONTRACT_REF = "470ad89e6b96d898161dee36d4e4fa8064dd6a8d"
 SOURCE_QUALIFIED_ID = "workspace:alpha:transcript-book"
 TARGET_QUALIFIED_ID = "local:transcript-book"
 
@@ -55,11 +56,27 @@ def write_capability(root: Path) -> Path:
     return package
 
 
-def owner_request(root: Path, payload: dict) -> dict:
-    cli = root / "scripts" / "capability-resolver-cli.mjs"
-    require(cli.is_file(), "candidate OS does not expose the admitted capability resolver CLI")
+def owner_source_root(project_root: Path) -> Path:
+    value = os.environ.get("AIVERSE_OS_ROOT")
+    if not value:
+        return project_root
+    root = Path(value).resolve()
+    require(root.is_dir(), "frozen owner source checkout is missing")
+    require(git_head(root) == OWNER_CONTRACT_REF, "frozen owner source checkout drifted from Slice 5.2 ref")
+    return root
+
+
+def owner_request(project_root: Path, payload: dict) -> dict:
+    # The released Core OS revision is intentionally left untouched. Capability
+    # promotion is qualified through the exact frozen current owner source, which
+    # operates on the installed project root through its public JSON CLI. This
+    # proves owner-defined convergence without pretending later owner-source
+    # functionality is already part of the shipped Core release.
+    source_root = owner_source_root(project_root)
+    cli = source_root / "scripts" / "capability-resolver-cli.mjs"
+    require(cli.is_file(), "frozen owner source does not expose the capability resolver CLI")
     result = subprocess.run(
-        ["node", str(cli), "--root", str(root)],
+        ["node", str(cli), "--root", str(project_root)],
         input=json.dumps(payload),
         text=True,
         stdout=subprocess.PIPE,
@@ -168,6 +185,13 @@ def main() -> int:
             require(git_head(fresh_project) == expected_os, "fresh OS checkout does not match the current contract")
             os.environ["AI_VERSE_LOCAL_SKILLS_ROOT"] = str(local_skills)
 
+            owner_root = owner_source_root(project)
+            owner_descriptor = json.loads(
+                (owner_root / "release" / "component-release.json").read_text(encoding="utf-8")
+            )
+            require(owner_descriptor.get("release_status") == "accepted", "frozen owner descriptor is not accepted")
+            require(owner_descriptor.get("revision") == expected_os, "frozen owner descriptor does not bind the shipped current OS revision")
+
             placement = owner_request(
                 project,
                 {
@@ -181,7 +205,7 @@ def main() -> int:
             )
             require(placement.get("status") == "planned", "owner placement recommendation was not planned")
             require(placement.get("target_qualified_id") == TARGET_QUALIFIED_ID, "owner placement target is not personal/local")
-            require(placement.get("promotion", {}).get("required") is True, "owner placement did not require the admitted promotion")
+            require(placement.get("promotion", {}).get("required") is True, "owner placement did not require the owner-defined promotion")
             require(placement.get("promotion", {}).get("qualified_identity_preserved") is False, "promotion incorrectly claims qualified identity continuity")
 
             promotion_plan = owner_request(
@@ -278,7 +302,11 @@ def main() -> int:
                 "software_transition": "real-admitted",
                 "member_state_preserved_across_update": True,
                 "fresh_vs_upgraded_component_contracts_match": True,
+                "released_os_revision": expected_os,
+                "owner_contract_source_ref": OWNER_CONTRACT_REF,
+                "owner_contract_descriptor_revision": owner_descriptor.get("revision"),
                 "owner_mutation": "workspace-to-local-capability-promotion",
+                "owner_mutation_qualified_from_frozen_owner_source": True,
                 "qualified_identity_preserved": False,
                 "compatibility_mapping_verified": True,
                 "cross_workspace_consumer_verified": True,
