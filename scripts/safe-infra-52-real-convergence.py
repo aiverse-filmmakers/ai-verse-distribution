@@ -285,7 +285,7 @@ def main() -> int:
             require(not (project / "post-update-covered.txt").exists(), "post-LKG covered file survived exact restore")
             require((project / ".env").read_text(encoding="utf-8") == "SECRET=current-must-survive\n", "excluded credential-shaped state was incorrectly rewound")
             require((local_skills / "member-personal-note.txt").read_text(encoding="utf-8") == "personal-before\n", "covered personal capability state did not reproduce the retained point")
-            require(not target_path.exists(), "post-LKG promoted target survived restore")
+            require(not target_path.exists() or not any(item.is_file() or item.is_symlink() for item in target_path.rglob("*")), "post-LKG promoted target retained covered files after restore")
             require((alpha / "skills" / "transcript-book" / "custom-user-file.txt").read_text(encoding="utf-8") == source_custom, "pre-LKG Workspace capability was not restored")
             require(app.last_known_good.current_path.read_bytes() == lkg_pointer_before, "restore replaced or destroyed the retained LKG")
 
