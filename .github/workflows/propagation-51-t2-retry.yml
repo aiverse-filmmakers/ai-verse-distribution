@@ -1,0 +1,144 @@
+name: Propagation Slice 5.1 T2 Retry
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/propagation-51-t2-retry.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-t2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Wire candidate admission gate
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          root = Path('.')
+
+          catalog_path = root / 'src/aiverse_distribution/catalog/core_candidates.json'
+          catalog = json.loads(catalog_path.read_text(encoding='utf-8'))
+          if catalog.get('schema_version') != 1:
+              raise SystemExit('unexpected core-candidate schema')
+          if 'candidate_evidence' in catalog:
+              raise SystemExit('candidate_evidence already exists; refusing duplicate T2 patch')
+          catalog['candidate_evidence'] = {}
+          catalog_path.write_text(json.dumps(catalog, indent=2) + '\n', encoding='utf-8')
+
+          release_path = root / 'src/aiverse_distribution/release_catalog.py'
+          release = release_path.read_text(encoding='utf-8')
+          import_anchor = 'from typing import Any, Dict, Iterable, List, Optional\n\n\n_SHA40'
+          import_replacement = (
+              'from typing import Any, Dict, Iterable, List, Optional\n\n'
+              'from .candidate_admission import CandidateAdmissionError, validate_candidate_overlay_bindings\n\n\n'
+              '_SHA40'
+          )
+          if release.count(import_anchor) != 1:
+              raise SystemExit(f'release catalog import anchor count={release.count(import_anchor)}')
+          release = release.replace(import_anchor, import_replacement, 1)
+          start = release.find('    def _apply_core_candidates(self) -> None:\n')
+          end = release.find('\n    def _validate(self) -> None:\n', start)
+          if start < 0 or end < 0:
+              raise SystemExit(f'candidate function boundaries invalid start={start} end={end}')
+          new_block = (
+              '    def _apply_core_candidates(self) -> None:\n'
+              '        try:\n'
+              '            validate_candidate_overlay_bindings(self.core_candidates)\n'
+              '        except CandidateAdmissionError as exc:\n'
+              '            raise CatalogValidationError(str(exc)) from exc\n'
+              '        releases = self.core_candidates.get("release_sets", [])\n'
+              '        compatibility = self.core_candidates.get("compatibility", {})\n'
+              '        # Qualification candidates are exact explicit targets only. Every\n'
+              '        # candidate is evidence-bound before it can enter this overlay.\n'
+              '        # Promoted candidates are removed here and appended through the\n'
+              '        # forward Core promotion ledger instead.\n'
+              '        self.release_data["release_sets"].extend(releases)\n'
+              '        self.compatibility["release_sets"].update(compatibility)\n'
+          )
+          release = release[:start] + new_block + release[end:]
+          release_path.write_text(release, encoding='utf-8')
+
+          ci_path = root / '.github/workflows/ci.yml'
+          ci = ci_path.read_text(encoding='utf-8')
+          if 'Candidate admission gate' in ci:
+              raise SystemExit('candidate admission CI gate already exists')
+          ci_anchor = '      - name: Unit tests\n        run: python -m unittest discover -s tests -p "test_*.py" -v\n'
+          ci_gate = (
+              '      - name: Candidate admission gate\n'
+              "        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'\n"
+              '        env:\n'
+              '          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n'
+              '        run: python scripts/validate-candidate-admission.py\n'
+              '      - name: Unit tests\n'
+              '        run: python -m unittest discover -s tests -p "test_*.py" -v\n'
+          )
+          if ci.count(ci_anchor) != 1:
+              raise SystemExit(f'Distribution CI unit anchor count={ci.count(ci_anchor)}')
+          ci = ci.replace(ci_anchor, ci_gate, 1)
+          ci_path.write_text(ci, encoding='utf-8')
+
+          docs_path = root / 'docs/CANDIDATE-EVIDENCE-CONTRACT.md'
+          docs = docs_path.read_text(encoding='utf-8')
+          old_boundary = 'This contract defines the frozen snapshot boundary only. Candidate-catalog/admission integration is a separate step.'
+          new_boundary = 'This contract defines the frozen snapshot boundary. The source-side candidate catalog/admission gate consumes it without transferring authority into this file.'
+          if docs.count(old_boundary) != 1:
+              raise SystemExit(f'candidate contract boundary count={docs.count(old_boundary)}')
+          docs = docs.replace(old_boundary, new_boundary, 1)
+          old_validation = 'The validator intentionally performs no GitHub/network lookup and does not add a candidate to the catalog. External evidence existence, Registry/profile eligibility, live ref comparison and candidate admission are enforced by the later admission integration.'
+          new_validation = 'The structural validator intentionally performs no GitHub/network lookup and does not add a candidate to the catalog. External evidence existence, Registry/profile eligibility, exact State/descriptor/native-CI binding and candidate admission are enforced by `scripts/validate-candidate-admission.py` and the evidence-bound candidate overlay.'
+          if docs.count(old_validation) != 1:
+              raise SystemExit(f'candidate contract validation paragraph count={docs.count(old_validation)}')
+          docs = docs.replace(old_validation, new_validation, 1)
+          insertion = '''
+
+          ## Candidate catalog and admission integration
+
+          `src/aiverse_distribution/catalog/core_candidates.json` carries a `candidate_evidence` map keyed by candidate ID. The key set must exactly equal the explicit candidate release-set IDs. Each binding names only `qualification/<candidate-id>/candidate-evidence.json` plus its lowercase SHA-256 digest.
+
+          The packaged runtime catalog verifies this one-to-one binding before loading any explicit Core qualification candidate. The source-side admission gate then verifies the bound evidence against exact immutable external sources: the frozen candidate definition, System governance inputs, canonical Registry, scoped Repository State, owner descriptors and their successful exact-revision native workflow runs, compatibility inputs, dependency locks/toolchain requirements and relevant open drift.
+
+          Registry profile eligibility is hierarchical: Core owners may participate in Core, Agent or Full composition; Agent owners may participate in Agent or Full; Full owners may participate only in Full. A component must still be active, Distribution-shipped, use the canonical descriptor path, sit inside the frozen scoped State refresh, and expose exact accepted owner evidence for the candidate revision.
+
+          Intersecting open `BLOCKING` drift fails admission. WARNING/INFO drift remains visible and frozen but does not become a second policy database. Hard-coded Distribution adapter knowledge remains trusted argv/orchestration routing only and is never used as owner-acceptance evidence.
+
+          Historical released sets and promotion records are not retrofitted through this gate. The integration applies only to future entries in the explicit candidate overlay.
+          '''.replace('          ', '')
+          terminal = '\nNo member payload, promotion/channel state, runtime state, user-owned state or secrets belong in this file.\n'
+          if docs.count(terminal) != 1:
+              raise SystemExit(f'candidate contract terminal count={docs.count(terminal)}')
+          docs = docs.replace(terminal, insertion + terminal, 1)
+          docs_path.write_text(docs, encoding='utf-8')
+
+      - name: Focused T2 validation
+        run: |
+          set -euo pipefail
+          chmod +x scripts/validate-candidate-admission.py
+          python -m pip install .
+          python -m unittest discover -s tests -p "test_candidate_admission.py" -v
+          python scripts/validate-candidate-admission.py
+
+      - name: Commit T2 integration
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 381ead50a9a4d790af945f4d95d268c65ed94060 HEAD
+          remote_head="$(git ls-remote origin refs/heads/main | cut -f1)"
+          test "$remote_head" = "$GITHUB_SHA"
+          rm .github/workflows/propagation-51-t2-apply.yml
+          rm .github/workflows/propagation-51-t2-retry.yml
+          git config user.name "AI-VERSE"
+          git config user.email "hello@bogdanpascal.com"
+          git add -A
+          git diff --cached --quiet && { echo 'No T2 changes'; exit 1; }
+          git commit -m "Integrate candidate evidence admission gate"
+          git push origin HEAD:main
