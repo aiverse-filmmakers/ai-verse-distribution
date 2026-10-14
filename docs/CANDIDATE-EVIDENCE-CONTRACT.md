@@ -20,7 +20,7 @@ owner accepts exact component revision
 -> later release qualification/promotion
 ```
 
-This contract defines the frozen snapshot boundary only. Candidate-catalog/admission integration is a separate step.
+This contract defines the frozen snapshot boundary. The source-side candidate catalog/admission gate consumes it without transferring authority into this file.
 
 ## Required bindings
 
@@ -102,6 +102,19 @@ If any bound input changes, including a component revision, descriptor, owner ev
 - scoped State/drift digest binding;
 - explicit non-authority flags.
 
-The validator intentionally performs no GitHub/network lookup and does not add a candidate to the catalog. External evidence existence, Registry/profile eligibility, live ref comparison and candidate admission are enforced by the later admission integration.
+The structural validator intentionally performs no GitHub/network lookup and does not add a candidate to the catalog. External evidence existence, Registry/profile eligibility, exact State/descriptor/native-CI binding and candidate admission are enforced by `scripts/validate-candidate-admission.py` and the evidence-bound candidate overlay.
+
+
+## Candidate catalog and admission integration
+
+`src/aiverse_distribution/catalog/core_candidates.json` carries a `candidate_evidence` map keyed by candidate ID. The key set must exactly equal the explicit candidate release-set IDs. Each binding names only `qualification/<candidate-id>/candidate-evidence.json` plus its lowercase SHA-256 digest.
+
+The packaged runtime catalog verifies this one-to-one binding before loading any explicit Core qualification candidate. The source-side admission gate then verifies the bound evidence against exact immutable external sources: the frozen candidate definition, System governance inputs, canonical Registry, scoped Repository State, owner descriptors and their successful exact-revision native workflow runs, compatibility inputs, dependency locks/toolchain requirements and relevant open drift.
+
+Registry profile eligibility is hierarchical: Core owners may participate in Core, Agent or Full composition; Agent owners may participate in Agent or Full; Full owners may participate only in Full. A component must still be active, Distribution-shipped, use the canonical descriptor path, sit inside the frozen scoped State refresh, and expose exact accepted owner evidence for the candidate revision.
+
+Intersecting open `BLOCKING` drift fails admission. WARNING/INFO drift remains visible and frozen but does not become a second policy database. Hard-coded Distribution adapter knowledge remains trusted argv/orchestration routing only and is never used as owner-acceptance evidence.
+
+Historical released sets and promotion records are not retrofitted through this gate. The integration applies only to future entries in the explicit candidate overlay.
 
 No member payload, promotion/channel state, runtime state, user-owned state or secrets belong in this file.

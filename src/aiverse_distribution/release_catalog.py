@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from importlib import resources
 from typing import Any, Dict, Iterable, List, Optional
 
+from .candidate_admission import CandidateAdmissionError, validate_candidate_overlay_bindings
+
 
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -104,14 +106,15 @@ class Catalog:
             self.release_data["channels"]["beta"] = current
 
     def _apply_core_candidates(self) -> None:
-        if self.core_candidates.get("schema_version") != 1:
-            raise CatalogValidationError("unsupported core-candidate schema")
+        try:
+            validate_candidate_overlay_bindings(self.core_candidates)
+        except CandidateAdmissionError as exc:
+            raise CatalogValidationError(str(exc)) from exc
         releases = self.core_candidates.get("release_sets", [])
         compatibility = self.core_candidates.get("compatibility", {})
-        if not isinstance(releases, list) or not isinstance(compatibility, dict):
-            raise CatalogValidationError("core-candidate release_sets and compatibility must be structured")
-        # Qualification candidates are exact explicit targets only. Promoted
-        # candidates are removed from this overlay and appended through the
+        # Qualification candidates are exact explicit targets only. Every
+        # candidate is evidence-bound before it can enter this overlay.
+        # Promoted candidates are removed here and appended through the
         # forward Core promotion ledger instead.
         self.release_data["release_sets"].extend(releases)
         self.compatibility["release_sets"].update(compatibility)
