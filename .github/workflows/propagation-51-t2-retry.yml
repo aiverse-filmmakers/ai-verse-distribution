@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Wire candidate admission gate
+      - name: Wire non-workflow candidate admission surfaces
         shell: python
         run: |
           from pathlib import Path
@@ -69,25 +69,6 @@ jobs:
           release = release[:start] + new_block + release[end:]
           release_path.write_text(release, encoding='utf-8')
 
-          ci_path = root / '.github/workflows/ci.yml'
-          ci = ci_path.read_text(encoding='utf-8')
-          if 'Candidate admission gate' in ci:
-              raise SystemExit('candidate admission CI gate already exists')
-          ci_anchor = '      - name: Unit tests\n        run: python -m unittest discover -s tests -p "test_*.py" -v\n'
-          ci_gate = (
-              '      - name: Candidate admission gate\n'
-              "        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'\n"
-              '        env:\n'
-              '          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n'
-              '        run: python scripts/validate-candidate-admission.py\n'
-              '      - name: Unit tests\n'
-              '        run: python -m unittest discover -s tests -p "test_*.py" -v\n'
-          )
-          if ci.count(ci_anchor) != 1:
-              raise SystemExit(f'Distribution CI unit anchor count={ci.count(ci_anchor)}')
-          ci = ci.replace(ci_anchor, ci_gate, 1)
-          ci_path.write_text(ci, encoding='utf-8')
-
           docs_path = root / 'docs/CANDIDATE-EVIDENCE-CONTRACT.md'
           docs = docs_path.read_text(encoding='utf-8')
           old_boundary = 'This contract defines the frozen snapshot boundary only. Candidate-catalog/admission integration is a separate step.'
@@ -123,22 +104,19 @@ jobs:
       - name: Focused T2 validation
         run: |
           set -euo pipefail
-          chmod +x scripts/validate-candidate-admission.py
           python -m pip install .
           python -m unittest discover -s tests -p "test_candidate_admission.py" -v
           python scripts/validate-candidate-admission.py
 
-      - name: Commit T2 integration
+      - name: Commit non-workflow T2 integration
         run: |
           set -euo pipefail
           git merge-base --is-ancestor 381ead50a9a4d790af945f4d95d268c65ed94060 HEAD
           remote_head="$(git ls-remote origin refs/heads/main | cut -f1)"
           test "$remote_head" = "$GITHUB_SHA"
-          rm .github/workflows/propagation-51-t2-apply.yml
-          rm .github/workflows/propagation-51-t2-retry.yml
           git config user.name "AI-VERSE"
           git config user.email "hello@bogdanpascal.com"
-          git add -A
-          git diff --cached --quiet && { echo 'No T2 changes'; exit 1; }
-          git commit -m "Integrate candidate evidence admission gate"
+          git add src/aiverse_distribution/catalog/core_candidates.json src/aiverse_distribution/release_catalog.py docs/CANDIDATE-EVIDENCE-CONTRACT.md
+          git diff --cached --quiet && { echo 'No T2 non-workflow changes'; exit 1; }
+          git commit -m "Integrate candidate evidence into catalog admission"
           git push origin HEAD:main
