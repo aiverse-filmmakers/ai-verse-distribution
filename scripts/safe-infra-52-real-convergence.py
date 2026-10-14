@@ -73,6 +73,23 @@ def owner_request(root: Path, payload: dict) -> dict:
     return json.loads(result.stdout)
 
 
+def component_contract(lock: dict) -> dict[str, tuple[str | None, str | None]]:
+    components = lock.get("components") or {}
+    return {
+        component_id: (receipt.get("repository"), receipt.get("revision"))
+        for component_id, receipt in sorted(components.items())
+        if isinstance(component_id, str) and isinstance(receipt, dict)
+    }
+
+
+def git_head(root: Path) -> str:
+    return subprocess.check_output(
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        text=True,
+        encoding="utf-8",
+    ).strip()
+
+
 def main() -> int:
     if shutil.which("git") is None or shutil.which("node") is None or shutil.which("npm") is None:
         raise RuntimeError("git, node and npm are required for the real convergence qualification")
@@ -113,7 +130,10 @@ def main() -> int:
             require(plan.get("changed_components") == ["ai-verse-os"], "real transition must change only ai-verse-os")
 
             updated = app.apply_update(CURRENT)
-            require(updated.get("release_set_id") == CURRENT, "real update did not reach the admitted current release")
+            updated_lock = state.load() or {}
+            require(updated.get("to") == CURRENT, "real update result did not identify the admitted target")
+            require(updated_lock.get("release_set_id") == CURRENT, "authoritative Distribution receipt did not reach the admitted current release")
+            require(app.status().get("release_set_id") == CURRENT, "post-update status does not report the current release")
             require(updated.get("last_known_good", {}).get("generation_id", "").startswith("lkg-"), "real update did not retain a pre-action LKG")
             require(updated.get("health", {}).get("ok") is True, "real update final health did not pass")
 
@@ -123,6 +143,30 @@ def main() -> int:
                 distribution_history_root=history,
             )
             require_member_state_preserved(before, after_update)
+
+            # Compare the upgraded historical installation with an independently
+            # installed fresh copy of the exact same current release. This compares
+            # package-owned source/revision contracts, while intentionally not
+            # requiring historical member state to equal a clean installation.
+            fresh_project = base / "AI-Verse-fresh-current"
+            fresh_state = StateStore(base / "fresh-distribution-state")
+            fresh_local_skills = base / "fresh-local-skills"
+            fresh_local_skills.mkdir(parents=True)
+            os.environ["AI_VERSE_LOCAL_SKILLS_ROOT"] = str(fresh_local_skills)
+            fresh_app = RecoveryOrchestrator(state=fresh_state)
+            fresh_installed = fresh_app.install(
+                profile="core",
+                root=fresh_project,
+                release_set_id=CURRENT,
+            )
+            require(fresh_installed.get("release_set_id") == CURRENT, "fresh current install did not lock the admitted current release")
+            fresh_lock = fresh_state.load() or {}
+            require(fresh_lock.get("release_set_id") == CURRENT, "fresh current receipt is not bound to the admitted current release")
+            require(component_contract(fresh_lock) == component_contract(updated_lock), "fresh and upgraded component contracts diverged")
+            expected_os = component_contract(updated_lock)["ai-verse-os"][1]
+            require(git_head(project) == expected_os, "upgraded OS checkout does not match the current contract")
+            require(git_head(fresh_project) == expected_os, "fresh OS checkout does not match the current contract")
+            os.environ["AI_VERSE_LOCAL_SKILLS_ROOT"] = str(local_skills)
 
             placement = owner_request(
                 project,
@@ -233,6 +277,7 @@ def main() -> int:
                 "updated_release": CURRENT,
                 "software_transition": "real-admitted",
                 "member_state_preserved_across_update": True,
+                "fresh_vs_upgraded_component_contracts_match": True,
                 "owner_mutation": "workspace-to-local-capability-promotion",
                 "qualified_identity_preserved": False,
                 "compatibility_mapping_verified": True,
