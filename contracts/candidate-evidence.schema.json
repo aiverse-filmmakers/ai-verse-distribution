@@ -1,0 +1,435 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aiverse-filmmakers/ai-verse-distribution/contracts/candidate-evidence.schema.json",
+  "title": "AI-Verse Distribution Candidate Evidence",
+  "description": "Immutable qualification snapshot binding one explicit Distribution candidate to exact external owner/System evidence. Evidence only, never a second Registry, Repository State, owner-acceptance or release-admission authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "candidate_id",
+    "profile",
+    "distribution",
+    "system",
+    "registry",
+    "repository_state",
+    "components",
+    "compatibility",
+    "toolchain",
+    "drift",
+    "authority"
+  ],
+  "properties": {
+    "schema": {
+      "const": "aiverse.distribution-candidate-evidence/v1"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+    },
+    "profile": {
+      "enum": [
+        "core",
+        "agent",
+        "full",
+        "custom"
+      ]
+    },
+    "distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "candidate_revision",
+        "candidate_definition"
+      ],
+      "properties": {
+        "repository": {
+          "const": "aiverse-filmmakers/ai-verse-distribution"
+        },
+        "candidate_revision": {
+          "$ref": "#/$defs/sha40"
+        },
+        "candidate_definition": {
+          "$ref": "#/$defs/bound_input"
+        }
+      }
+    },
+    "system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "revision",
+        "governance_contracts"
+      ],
+      "properties": {
+        "repository": {
+          "const": "aiverse-filmmakers/AI-Verse-System"
+        },
+        "revision": {
+          "$ref": "#/$defs/sha40"
+        },
+        "governance_contracts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/bound_input"
+          }
+        }
+      }
+    },
+    "registry": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/system_input"
+        }
+      ],
+      "properties": {
+        "path": {
+          "const": "governance/repository-registry.json"
+        }
+      }
+    },
+    "repository_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "revision",
+        "path",
+        "sha256",
+        "scope",
+        "repositories"
+      ],
+      "properties": {
+        "repository": {
+          "const": "aiverse-filmmakers/AI-Verse-System"
+        },
+        "revision": {
+          "$ref": "#/$defs/sha40"
+        },
+        "path": {
+          "const": "governance/repository-state.json"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "scope": {
+          "enum": [
+            "component",
+            "core",
+            "agent",
+            "full",
+            "global"
+          ]
+        },
+        "repositories": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+          }
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "repository",
+          "revision",
+          "descriptor",
+          "owner_acceptance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^ai-verse-[a-z0-9-]+$"
+          },
+          "repository": {
+            "type": "string",
+            "pattern": "^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\\.git)?$"
+          },
+          "revision": {
+            "$ref": "#/$defs/sha40"
+          },
+          "descriptor": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "source_revision",
+              "sha256",
+              "declared_revision",
+              "release_status"
+            ],
+            "properties": {
+              "path": {
+                "const": "release/component-release.json"
+              },
+              "source_revision": {
+                "$ref": "#/$defs/sha40"
+              },
+              "sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "declared_revision": {
+                "$ref": "#/$defs/sha40"
+              },
+              "release_status": {
+                "const": "accepted"
+              }
+            }
+          },
+          "owner_acceptance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "accepted_revision",
+              "evidence_revision",
+              "workflow",
+              "run_id",
+              "result"
+            ],
+            "properties": {
+              "kind": {
+                "const": "component-release-descriptor-native-ci"
+              },
+              "accepted_revision": {
+                "$ref": "#/$defs/sha40"
+              },
+              "evidence_revision": {
+                "$ref": "#/$defs/sha40"
+              },
+              "workflow": {
+                "type": "string",
+                "minLength": 1
+              },
+              "run_id": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "result": {
+                "const": "success"
+              }
+            }
+          }
+        }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authority",
+        "inputs"
+      ],
+      "properties": {
+        "authority": {
+          "const": "owner-descriptors-and-distribution-compatibility"
+        },
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/bound_input"
+          }
+        }
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime_requirements",
+        "dependency_locks"
+      ],
+      "properties": {
+        "runtime_requirements": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        },
+        "dependency_locks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/bound_input"
+          }
+        }
+      }
+    },
+    "drift": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state_sha256",
+        "records"
+      ],
+      "properties": {
+        "state_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "severity",
+              "scope",
+              "intersects_candidate"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "severity": {
+                "enum": [
+                  "INFO",
+                  "WARNING",
+                  "BLOCKING"
+                ]
+              },
+              "scope": {
+                "enum": [
+                  "component",
+                  "Core",
+                  "Agent",
+                  "Full",
+                  "global"
+                ]
+              },
+              "intersects_candidate": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "immutable_snapshot_only",
+        "registry_authority",
+        "repository_state_authority",
+        "owner_acceptance_authority",
+        "release_admission_authority",
+        "live_health_authority",
+        "member_state_authority"
+      ],
+      "properties": {
+        "immutable_snapshot_only": {
+          "const": true
+        },
+        "registry_authority": {
+          "const": false
+        },
+        "repository_state_authority": {
+          "const": false
+        },
+        "owner_acceptance_authority": {
+          "const": false
+        },
+        "release_admission_authority": {
+          "const": false
+        },
+        "live_health_authority": {
+          "const": false
+        },
+        "member_state_authority": {
+          "const": false
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha40": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "bound_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "revision",
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "revision": {
+          "$ref": "#/$defs/sha40"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "system_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "revision",
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "repository": {
+          "const": "aiverse-filmmakers/AI-Verse-System"
+        },
+        "revision": {
+          "$ref": "#/$defs/sha40"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}
