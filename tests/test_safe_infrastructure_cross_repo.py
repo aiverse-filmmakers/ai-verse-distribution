@@ -60,7 +60,7 @@ class SafeInfrastructureCrossRepoTests(unittest.TestCase):
         self.assertIn("disposition: 'BLOCKED/REVIEW'", workspace_detector)
         self.assertIn("workspace-slot-symlink", workspace_detector)
         self.assertIn("workspace-manifest-missing", workspace_detector)
-        self.assertIn("workspace-manifest-id-mismatch", workspace_detector)
+        self.assertIn("workspace-id-slot-mismatch", workspace_detector)
         self.assertNotIn("renameSync", workspace_detector)
         self.assertNotIn("copyFileSync", workspace_detector)
 
