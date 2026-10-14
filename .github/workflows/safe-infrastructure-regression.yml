@@ -47,7 +47,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install Distribution
         run: python -m pip install .
@@ -74,10 +74,17 @@ jobs:
           python -m unittest discover -s tests -p "test_safe_infrastructure_transition_contract.py" -v
 
       - name: OS Workspace infrastructure owner contract
+        if: runner.os == 'Linux'
         working-directory: .qualification/AI-Verse-OS
-        run: node scripts/test-workspace-infrastructure.mjs
+        shell: bash
+        run: |
+          node --check scripts/workspace-infrastructure.mjs
+          node scripts/test-workspace-owner.mjs
+          node scripts/test-workspace-infrastructure.mjs
+          test -z "$(git status --porcelain)"
 
       - name: OS capability placement and promotion owner contracts
+        if: runner.os == 'Linux'
         working-directory: .qualification/AI-Verse-OS
         shell: bash
         run: |
@@ -87,6 +94,7 @@ jobs:
           node scripts/test-adapter-sync.mjs
 
       - name: Skills registry and managed-generation tests
+        if: runner.os == 'Linux'
         working-directory: .qualification/AI-Verse-Skills
         shell: bash
         run: |
