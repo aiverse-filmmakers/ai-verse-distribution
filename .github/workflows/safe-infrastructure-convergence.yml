@@ -61,6 +61,11 @@ jobs:
           python -m unittest discover -s tests -p "test_u35_qualification_bundle.py" -v
           python -m unittest discover -s tests -p "test_core_first_run_candidate.py" -v
 
+      - name: Runtime lifecycle convergence
+        run: |
+          python -m unittest discover -s tests -p "test_experience_entrypoint.py" -v
+          python -m unittest discover -s tests -p "test_adapters.py" -v
+
       - name: Owner-native Workspace and promotion qualification
         if: runner.os == 'Linux' && matrix.python == '3.11'
         working-directory: .qualification/AI-Verse-OS
