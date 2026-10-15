@@ -1,0 +1,45 @@
+name: Propagation Slice 5.2 T2 Apply Deterministic
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/propagation-52-t2-apply-v6.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-t2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Apply exact T2 patch
+        run: python scripts/propagation_52_t2_apply_temp.py
+      - name: Compile changed Python
+        run: python -m py_compile src/aiverse_distribution/core_update.py src/aiverse_distribution/generated_refresh.py src/aiverse_distribution/project_install.py tests/test_lifecycle_payload_wiring.py
+      - name: Install Distribution
+        run: python -m pip install .
+      - name: Run focused T2 wiring tests
+        run: python -m unittest tests.test_lifecycle_payload_wiring tests.test_project_install tests.test_generated_refresh -v
+      - name: Run full unit suite
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+      - name: Verify T2-only product diff
+        run: |
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' docs/MEMBER-PAYLOAD-GUARD.md src/aiverse_distribution/core_update.py src/aiverse_distribution/generated_refresh.py src/aiverse_distribution/project_install.py tests/test_lifecycle_payload_wiring.py | sort)"
+          ! grep -q "require_mutation_permitted" src/aiverse_distribution/generated_refresh.py
+          grep -q "build_structured_payload_evidence" src/aiverse_distribution/project_install.py
+          grep -q "LifecycleVerb.ROLLBACK" src/aiverse_distribution/core_update.py
+      - name: Commit Slice 5.2 T2 wiring
+        run: |
+          git config user.name "AI-VERSE"
+          git config user.email "hello@bogdanpascal.com"
+          git add docs/MEMBER-PAYLOAD-GUARD.md src/aiverse_distribution/core_update.py src/aiverse_distribution/generated_refresh.py src/aiverse_distribution/project_install.py tests/test_lifecycle_payload_wiring.py
+          git commit -m "Wire lifecycle member payload guard"
+          git push origin HEAD:main
