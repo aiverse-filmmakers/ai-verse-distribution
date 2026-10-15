@@ -49,3 +49,37 @@ one product CLI
 ```
 
 It is not a component-engine monorepo and not a replacement for the historical source repositories.
+
+## 2026-10-12 to 2026-10-15: Safe Infrastructure lifecycle
+
+The Safe Infrastructure Upgrade, Convergence and Recovery program expanded the existing Distribution lifecycle without moving component ownership into Distribution.
+
+The final whole-install contract now separates:
+
+```text
+software update
+structural upgrade
+whole-install doctor
+Last-Known-Good recovery
+whole-install restore
+```
+
+Key outcomes:
+
+- `aiverse update` remains the normal mutating software-update route and `aiverse update --plan` remains its read-only preview;
+- normal software update does not silently perform optional structural convergence;
+- `aiverse doctor` provides one aggregate whole-install truth while owner checks remain authoritative underneath it;
+- `aiverse upgrade` previews owner-published structural state and `aiverse upgrade --apply` is the explicit structural mutation path;
+- every mutating admitted update/upgrade is protected by one rotating verification-first whole-install Last-Known-Good recovery point;
+- `aiverse restore` previews that retained point and `aiverse restore --apply` explicitly restores declared covered state;
+- recovery coverage is explicit through CAPTURE / RECONSTRUCT / REBUILD / EXTERNAL-EXCLUDED classes rather than a blind whole-folder copy promise;
+- unsupported historical nested Workspace layouts remain blocked/review and are not automatically relocated;
+- the OS owner supplies the explicit Workspace-to-personal capability promotion transaction, including qualified identity change, compatibility repair and idempotent replay;
+- supported runtime adapters converge on one Distribution lifecycle instead of creating separate update/doctor/restore implementations;
+- permanent `Safe Infrastructure Regression` and `Safe Infrastructure Convergence` workflows now qualify the protected lifecycle across the supported matrix.
+
+The program also exercised a real older admitted Core installation through a real admitted update, compared the result with a fresh install of the same current release, ran the frozen OS capability-promotion contract against the upgraded installation, and restored the retained pre-update recovery point.
+
+The canonical handoff is `docs/SAFE-INFRASTRUCTURE-LIFECYCLE.md`.
+
+This lifecycle completion does not mean all Distribution roadmap work is complete. Full-profile work and separately owned acceptance defects remain governed by their own evidence and release gates.
