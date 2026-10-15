@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import test_core_promotion as core_promotion_fixtures
 from aiverse_distribution.core_promotion import (
     SYSTEM_SYNC_DEBT,
     CorePromotionError,
@@ -18,7 +19,7 @@ from aiverse_distribution.whole_product_qualification import (
 
 from test_candidate_admission import exact_fixture
 from test_candidate_admission_regressions import _rebind_state
-from test_core_promotion import CURRENT, DISTRIBUTION, CorePromotionTests, _write
+from test_core_promotion import CURRENT, DISTRIBUTION, _write
 from test_whole_product_qualification import (
     _candidate_evidence,
     _valid_composed,
@@ -48,7 +49,7 @@ class PromotionQualificationRegressionTests(unittest.TestCase):
         )
 
     def promotion_fixture(self, candidate_id="core-t3-qualified", *, debt=False):
-        helper = CorePromotionTests(
+        helper = core_promotion_fixtures.CorePromotionTests(
             methodName="test_non_passing_whole_product_qualification_cannot_promote"
         )
         self.addCleanup(helper.doCleanups)
@@ -348,7 +349,7 @@ class PromotionQualificationRegressionTests(unittest.TestCase):
         self.assertEqual(result["mode"], "normal")
 
     def test_debt_reconciliation_fails_while_carried_repository_is_still_debt(self):
-        helper = CorePromotionTests(
+        helper = core_promotion_fixtures.CorePromotionTests(
             methodName="test_emergency_promotion_carries_only_explicit_system_sync_debt_and_reconciles"
         )
         self.addCleanup(helper.doCleanups)
