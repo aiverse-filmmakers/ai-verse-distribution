@@ -28,13 +28,33 @@ That is enough. Members do not need release IDs, component SHAs, branches, prere
 
 Update conflicts fail closed. Local edits, ambiguous ownership, unsafe migration state, or failed health checks are preserved and reported rather than overwritten.
 
+## Member lifecycle
+
+The installed `aiverse` command exposes one whole-install lifecycle surface:
+
+```text
+aiverse update            # apply the newest explicitly admitted software update
+aiverse update --plan     # preview that software update without changing anything
+aiverse doctor            # check the whole supported installation
+aiverse upgrade           # preview optional/required structural convergence
+aiverse upgrade --apply   # explicitly apply the exact verified structural plan
+aiverse restore           # preview the single verified Last-Known-Good recovery point
+aiverse restore --apply   # explicitly restore that verified recovery point
+aiverse status            # show current owner-backed installation state
+aiverse open              # show the installed root and use handoff
+```
+
+`aiverse update` never silently performs optional structural work. Structural change stays behind `aiverse upgrade --apply`. Restore stays preview-first and requires `--apply` to mutate state.
+
+Normal member output is deliberately plain English. Repository paths, infrastructure generations, migration recipes, exact release IDs, compatibility receipts, and recovery internals remain diagnostic evidence rather than knowledge the member must supply.
+
 ## Coding-agent procedure
 
 - Codex and compatible agents: read `AGENTS.md`.
 - Claude Code: read `CLAUDE.md`.
-- Canonical install/update procedure: `INSTALL.md`.
+- Canonical install/update/lifecycle procedure: `INSTALL.md`.
 
-Distribution handles lifecycle details automatically and only reports success after the required final health checks pass.
+Distribution handles whole-install lifecycle details automatically and only reports success after the required final health checks pass.
 
 ## What gets installed
 
@@ -42,11 +62,11 @@ Members install **AI-Verse Core**.
 
 Core contains:
 
-- **AI-Verse OS** — the operating layer, including the small set of OS-owned **System Capabilities** used for onboarding, workspace organization, migration, linking, auditing, improvement, and OS-native tools.
-- **Brain** — goals, strategy, intent, priorities, and direction ownership.
-- **Memory** — durable historical context and recall.
-- **Skills Library** (`AI-Verse-Skills`) — the separate reusable task/professional capability library, including the full admitted Skills profile.
-- **Data** — structured current operational truth.
+- **AI-Verse OS** - the operating layer, including the small set of OS-owned **System Capabilities** used for onboarding, workspace organization, migration, linking, auditing, improvement, and OS-native tools.
+- **Brain** - goals, strategy, intent, priorities, and direction ownership.
+- **Memory** - durable historical context and recall.
+- **Skills Library** (`AI-Verse-Skills`) - the separate reusable task/professional capability library, including the full admitted Skills profile.
+- **Data** - structured current operational truth.
 
 ### System Capabilities vs Skills Library
 
@@ -98,6 +118,14 @@ identify the installed Core
 
 The update path is transactional and preservation-first. User-owned state is not replaced merely because Core software advances.
 
+## Lifecycle ownership
+
+Distribution owns the one-product, whole-install layer: compatible release selection, update orchestration, aggregate doctor, structural-upgrade coordination, the rotating Last-Known-Good recovery point, and whole-install restore.
+
+Component owners remain authoritative for their own component semantics. Distribution calls owner lifecycle/health/migration contracts instead of reimplementing them. OS remains authoritative for Workspace structure, capability placement/promotion and OS-local lifecycle. AI-Verse-Skills remains authoritative for managed Skills generations and its own component lifecycle.
+
+See `docs/SAFE-INFRASTRUCTURE-LIFECYCLE.md` for the frozen handoff and qualification boundary.
+
 ## Onboarding
 
 Onboarding is progressive rather than a mandatory installation questionnaire.
@@ -114,15 +142,7 @@ Install the CLI from this repository:
 python -m pip install .
 ```
 
-Common lifecycle commands:
-
-```bash
-aiverse update
-aiverse update --plan
-aiverse status
-aiverse doctor
-aiverse open
-```
+The `aiverse` executable is bound to `aiverse_distribution.entrypoint:main`, which supplies the whole-install `doctor`, `upgrade`, and `restore` member surfaces before routing component-compatible commands through the core CLI.
 
 Fresh installation can also be driven by the advanced lifecycle commands, but normal member projects should use `INSTALL.md` instead of manually reproducing install/setup steps.
 
@@ -130,7 +150,7 @@ Fresh installation can also be driven by the advanced lifecycle commands, but no
 
 Distribution coordinates owner-controlled lifecycle; it does not become the source of truth for OS, Brain, Memory, Skills, Data, Gateway, Automations, Bots, Token, Dashboard, Connections, or Apps.
 
-Installation and update do not silently:
+Installation, update, upgrade, and restore do not silently:
 
 - grant permissions;
 - transfer Brain strategic authority;
@@ -138,20 +158,22 @@ Installation and update do not silently:
 - overwrite unrelated member files;
 - overwrite locally modified or ambiguously owned content;
 - substitute moving branches for admitted component revisions;
-- roll back canonical user state;
+- roll back canonical user state outside the declared recovery contract;
+- relocate unsupported Workspace structures;
+- perform optional structural change during ordinary software update;
 - use delete/reinstall as a normal update path.
 
 The lifecycle fails closed when project layout, release integrity, ownership, owner lifecycle, migration, recovery, or health state is unsafe or ambiguous.
 
 ## Profiles
 
-**Core** — OS + Brain + Memory + Skills Library + Data. This is the current recommended member project install.
+**Core** - OS + Brain + Memory + Skills Library + Data. This is the current recommended member project install.
 
-**Agent** — Core + Gateway + Automations + Multiple Bots + Token. Managed separately from the direct Codex/Claude member-project Core path.
+**Agent** - Core + Gateway + Automations + Multiple Bots + Token. Managed separately from the direct Codex/Claude member-project Core path.
 
-**Full** — Agent + Connections + Dashboard + Apps when a compatible Full release is admitted.
+**Full** - Agent + Connections + Dashboard + Apps when a compatible Full release is admitted.
 
-**Custom** — explicit component selection from one compatible admitted release set.
+**Custom** - explicit component selection from one compatible admitted release set.
 
 ## Architecture and qualification
 
@@ -163,6 +185,8 @@ Detailed contracts and evidence live in:
 - `docs/RELEASE-SET-CONTRACT.md`
 - `docs/ACCEPTANCE.md`
 - `docs/CORE-LINEAGE.md`
+- `docs/SAFE-INFRASTRUCTURE-LIFECYCLE.md`
+- `docs/LAST-KNOWN-GOOD-RECOVERY.md`
 - `docs/HISTORY.md`
 - `docs/ROADMAP.md`
 - `docs/CORE-UPDATE-PROGRAM.md`
