@@ -1,7 +1,7 @@
 # AI-Verse Distribution Roadmap
 
-**Status:** Core and Agent Distribution accepted; repaired Core forward baseline admitted  
-**Updated:** 2026-10-06
+**Status:** Core and Agent Distribution accepted; Safe Infrastructure lifecycle qualified; Full profile remains future work  
+**Updated:** 2026-10-15
 
 ## Phase 0: Reset and contract
 
@@ -22,7 +22,7 @@
 
 ## Phase 2: Unified CLI
 
-Implemented:
+Implemented member/advanced lifecycle surfaces include:
 
 ```text
 aiverse install
@@ -31,6 +31,12 @@ aiverse onboard
 aiverse status
 aiverse doctor
 aiverse component ...
+aiverse update
+aiverse update --plan
+aiverse upgrade
+aiverse upgrade --apply
+aiverse restore
+aiverse restore --apply
 aiverse open
 aiverse support-bundle
 ```
@@ -40,9 +46,11 @@ aiverse support-bundle
 - [x] trusted owner lifecycle adapter boundary;
 - [x] Core exact install;
 - [x] Core owner setup;
-- [x] live Core status/doctor;
+- [x] live whole-install status/doctor;
 - [x] explicit onboarding handoff;
-- [x] recoverable Distribution lock.
+- [x] recoverable Distribution lock;
+- [x] preview-first structural-upgrade surface;
+- [x] preview-first Last-Known-Good restore surface.
 
 ## Phase 3: Update and rollback
 
@@ -57,7 +65,7 @@ aiverse support-bundle
 - [x] owner-preserved state rule;
 - [x] explicit no-Brain-handover/no-permission-grant facts.
 
-The catalog preserves the historical first-member Core and September public-beta Core sets. The current default Core is `core-repaired-public-beta-2026-10-06`. No cross-version transition is currently admitted between these sets. Historical sets are frozen reproducibility evidence, not asserted upgrade sources for the current product. Any future Core update or rollback edge must exercise that exact transition in CI before the edge is admitted.
+Historical release sets remain frozen reproducibility evidence. Transition authority is exact-edge and evidence-bound rather than implied by chronology. The Safe Infrastructure qualification later exercised the real admitted `core-stable-2026-10-10` -> `core-first-run-rc1-2026-10-12` transition. The current catalog and transition contracts remain authoritative for what is actually admitted at any later point in time.
 
 ## Phase 4: Core clean-machine acceptance
 
@@ -70,7 +78,7 @@ The catalog preserves the historical first-member Core and September public-beta
 - [x] same-set update;
 - [x] open/use handoff;
 - [x] repaired five-component Core qualified through member-project bootstrap on Ubuntu, macOS and Windows;
-- [x] public admitted-Core bootstrap path added;
+- [x] public admitted-Core bootstrap path added.
 
 Remote workflow results are release evidence only after GitHub Actions completes successfully on the implementation PR.
 
@@ -109,6 +117,32 @@ The complete immutable Agent public beta is released as `agent-public-beta-2026-
 
 The immutable Agent release and its later explicit-install candidates have passed the required cross-platform qualification gates. The current release catalog remains the authority for exact refs and status; the Full profile remains blocked by unreleased Connections, Dashboard and Apps.
 
+## Phase 5.1: Safe Infrastructure lifecycle
+
+The cross-repository Safe Infrastructure program adds preservation-safe whole-install convergence and recovery without changing component ownership.
+
+- [x] separate normal software update from optional/required structural upgrade;
+- [x] whole-install aggregate `aiverse doctor` over owner-native checks;
+- [x] read-only `aiverse upgrade` and explicit `aiverse upgrade --apply`;
+- [x] exact-plan revalidation and resumable owner-operation orchestration;
+- [x] one rotating verification-first Last-Known-Good recovery point;
+- [x] read-only `aiverse restore` and explicit `aiverse restore --apply`;
+- [x] explicit CAPTURE / RECONSTRUCT / REBUILD / EXTERNAL-EXCLUDED recovery truth;
+- [x] Workspace generation detection without invented relocation;
+- [x] owner-defined Workspace-to-personal capability promotion with explicit identity change and compatibility repair;
+- [x] permanent cross-repo destructive-negative regression gate;
+- [x] real old-install -> admitted-current convergence, fresh-current comparison and restore qualification;
+- [x] supported runtime adapters converge on the same lifecycle contract;
+- [x] member/coding-agent lifecycle handoff documented in `docs/SAFE-INFRASTRUCTURE-LIFECYCLE.md`.
+
+This phase closes the Safe Infrastructure lifecycle program only. It does not mark unrelated Distribution work complete and does not waive separate acceptance defects owned by other programs.
+
+Permanent lifecycle qualification is carried by:
+
+- `Distribution CI`;
+- `Safe Infrastructure Regression`;
+- `Safe Infrastructure Convergence`.
+
 ## Phase 6: Full profile
 
 After Agent plus Connections, Dashboard and Apps are released:
@@ -130,3 +164,5 @@ A profile becomes released only when Distribution has:
 4. clean-machine acceptance on the claimed platforms;
 5. truthful System documentation;
 6. for a forward Core release, successful protected-component lineage ancestry checks.
+
+Safe Infrastructure qualification does not broaden release-set admission authority. New software transitions still require exact transition evidence, and new structural changes still require owner-published structural authority.
