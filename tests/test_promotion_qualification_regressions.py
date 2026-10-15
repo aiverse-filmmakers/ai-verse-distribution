@@ -7,6 +7,7 @@ from pathlib import Path
 from aiverse_distribution.core_promotion import (
     SYSTEM_SYNC_DEBT,
     CorePromotionError,
+    apply_core_promotion,
     plan_core_promotion,
     reconcile_system_sync_debt,
 )
@@ -17,12 +18,7 @@ from aiverse_distribution.whole_product_qualification import (
 
 from test_candidate_admission import exact_fixture
 from test_candidate_admission_regressions import _rebind_state
-from test_core_promotion import (
-    CURRENT,
-    DISTRIBUTION,
-    CorePromotionTests,
-    _write,
-)
+from test_core_promotion import CURRENT, DISTRIBUTION, CorePromotionTests, _write
 from test_whole_product_qualification import (
     _candidate_evidence,
     _valid_composed,
@@ -58,6 +54,18 @@ class PromotionQualificationRegressionTests(unittest.TestCase):
         self.addCleanup(helper.doCleanups)
         return helper.fixture(candidate_id, debt=debt)
 
+    def assert_composed_gate_rejected(self, gate):
+        root, candidate_id, resolver, _, preservation, composed = self.qualification_fixture()
+        composed = copy.deepcopy(composed)
+        composed["platforms"]["linux"][gate] = "fail"
+        with self.assertRaisesRegex(
+            WholeProductQualificationError,
+            f"composed linux gate {gate} did not pass",
+        ):
+            build_whole_product_qualification(
+                root, candidate_id, preservation, composed, resolver=resolver
+            )
+
     def test_exact_qualified_inputs_plan_promotion_without_mutating_live_surfaces(self):
         root, candidate_id, qualification_ref, registry, state, _ = self.promotion_fixture()
         promotions_path = root / "src/aiverse_distribution/catalog/core_promotions.json"
@@ -81,40 +89,13 @@ class PromotionQualificationRegressionTests(unittest.TestCase):
         self.assertFalse((root / "qualification" / candidate_id / "promotion.json").exists())
 
     def test_clean_machine_clean_install_failure_blocks_qualification(self):
-        root, candidate_id, resolver, _, preservation, composed = self.qualification_fixture()
-        composed = copy.deepcopy(composed)
-        composed["platforms"]["linux"]["clean_install"] = "fail"
-        with self.assertRaisesRegex(
-            WholeProductQualificationError,
-            "composed linux gate clean_install did not pass",
-        ):
-            build_whole_product_qualification(
-                root, candidate_id, preservation, composed, resolver=resolver
-            )
+        self.assert_composed_gate_rejected("clean_install")
 
     def test_clean_machine_status_failure_blocks_qualification(self):
-        root, candidate_id, resolver, _, preservation, composed = self.qualification_fixture()
-        composed = copy.deepcopy(composed)
-        composed["platforms"]["linux"]["status"] = "fail"
-        with self.assertRaisesRegex(
-            WholeProductQualificationError,
-            "composed linux gate status did not pass",
-        ):
-            build_whole_product_qualification(
-                root, candidate_id, preservation, composed, resolver=resolver
-            )
+        self.assert_composed_gate_rejected("status")
 
     def test_clean_machine_health_failure_blocks_qualification(self):
-        root, candidate_id, resolver, _, preservation, composed = self.qualification_fixture()
-        composed = copy.deepcopy(composed)
-        composed["platforms"]["linux"]["health"] = "fail"
-        with self.assertRaisesRegex(
-            WholeProductQualificationError,
-            "composed linux gate health did not pass",
-        ):
-            build_whole_product_qualification(
-                root, candidate_id, preservation, composed, resolver=resolver
-            )
+        self.assert_composed_gate_rejected("health")
 
     def test_member_payload_collision_failure_blocks_qualification(self):
         root, candidate_id, resolver, _, preservation, composed = self.qualification_fixture()
@@ -199,7 +180,7 @@ class PromotionQualificationRegressionTests(unittest.TestCase):
                     "id": drift_id,
                     "status": "open",
                     "severity": "BLOCKING",
-                    "scope": "Global",
+                    "scope": "global",
                     "repository_ids": [],
                 }
             ]
@@ -213,7 +194,7 @@ class PromotionQualificationRegressionTests(unittest.TestCase):
                 {
                     "id": drift_id,
                     "severity": "BLOCKING",
-                    "scope": "Global",
+                    "scope": "global",
                     "intersects_candidate": True,
                 }
             ],
@@ -374,7 +355,6 @@ class PromotionQualificationRegressionTests(unittest.TestCase):
         root, candidate_id, qualification_ref, registry, state, _ = helper.fixture(
             "core-t3-debt-still-open", debt=True
         )
-        from aiverse_distribution.core_promotion import apply_core_promotion
 
         result = apply_core_promotion(
             root,
