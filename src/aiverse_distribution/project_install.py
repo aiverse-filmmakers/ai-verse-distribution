@@ -8,10 +8,17 @@ import shlex
 import subprocess
 from pathlib import Path
 
+from .lifecycle_payload import (
+    LifecycleVerb,
+    build_project_file_evidence,
+    build_structured_payload_evidence,
+    require_payload_mutation,
+)
 from .process import run
 from .project_bootstrap import _write_json, claim, prepare_tools
 from .project_layout import ProjectLayout
 from .release_catalog import Catalog, DistributionError
+from .update_safety import MutationOperation, MutationRoute, OwnershipClass
 
 
 def _append_git_config(environment, entries) -> None:
@@ -55,37 +62,178 @@ def select_member_release(catalog: Catalog, release_set: str | None = None):
 
 
 def _write_owned(layout: ProjectLayout, path: Path, text: str, receipt: dict) -> None:
-    """Replace only unchanged files previously recorded as bootstrap-owned."""
+    """Publish only receipt-bound bootstrap bytes through the shared payload guard."""
     key = str(path)
     files = receipt.setdefault("owned_files", {})
-    pending_digest = receipt.setdefault("pending_files", {}).get(key)
+    pending_files = receipt.setdefault("pending_files", {})
+    pending_digest = pending_files.get(key)
     if path.is_symlink():
         raise DistributionError(f"Bootstrap file must not be a symlink: {path}")
-    if path.exists():
+    existed = path.exists()
+    if existed:
         actual = hashlib.sha256(path.read_bytes()).hexdigest()
         if files.get(key) != actual and pending_digest != actual:
-            raise DistributionError(f"Preserving an existing or locally edited file: {path}")
+            raise DistributionError(
+                f"Preserving an existing or locally edited file: {path}"
+            )
     path.parent.mkdir(parents=True, exist_ok=True)
-    # Record pending bytes before the replace; an interrupted write remains
-    # identifiable as ours rather than becoming unclaimed member content.
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    receipt["pending_files"][key] = digest
-    _write_json(layout.receipt, receipt)
+    operation = (
+        MutationOperation.REPLACE if existed else MutationOperation.CREATE
+    )
+    if operation is MutationOperation.CREATE:
+        pending_files[key] = digest
+        _write_json(layout.receipt, receipt)
+    evidence = build_project_file_evidence(
+        layout,
+        path,
+        lifecycle=LifecycleVerb.INSTALL,
+        operation=operation,
+        lifecycle_admitted=True,
+        owner_authorized=True,
+        planned_sha256=(
+            digest if operation is MutationOperation.CREATE else None
+        ),
+        receipt=receipt,
+    )
+    require_payload_mutation(evidence)
+    if operation is MutationOperation.REPLACE:
+        pending_files[key] = digest
+        _write_json(layout.receipt, receipt)
+
     pending = path.with_name(path.name + ".bootstrap-pending")
     if pending.is_symlink():
-        raise DistributionError(f"Preserving an existing pending file: {pending}")
+        raise DistributionError(
+            f"Preserving an existing pending file: {pending}"
+        )
     if pending.exists():
-        if pending_digest != digest or hashlib.sha256(pending.read_bytes()).hexdigest() != digest:
-            raise DistributionError(f"Preserving an existing pending file: {pending}")
+        if (
+            pending_digest != digest
+            or hashlib.sha256(pending.read_bytes()).hexdigest() != digest
+        ):
+            raise DistributionError(
+                f"Preserving an existing pending file: {pending}"
+            )
     else:
-        with pending.open("x", encoding="utf-8", newline="\n") as handle:
+        with pending.open(
+            "x", encoding="utf-8", newline="\n"
+        ) as handle:
             handle.write(text)
             handle.flush()
             os.fsync(handle.fileno())
     os.replace(pending, path)
     files[key] = digest
-    receipt["pending_files"].pop(key)
+    pending_files.pop(key)
     _write_json(layout.receipt, receipt)
+
+
+def _register_bootstrap_extension(
+    layout: ProjectLayout,
+    registry_path: Path,
+    instructions: Path,
+    receipt: dict,
+) -> dict:
+    """Change only Distribution's exact slice in the shared extension registry."""
+    if registry_path.is_symlink() or not registry_path.is_file():
+        raise DistributionError(
+            "Cannot register bootstrap instructions in an unavailable extension registry"
+        )
+    try:
+        registry_path.resolve().relative_to(layout.project.resolve())
+    except ValueError as exc:
+        raise DistributionError(
+            "Extension registry escaped the admitted project root"
+        ) from exc
+    try:
+        registry = json.loads(
+            registry_path.read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError) as exc:
+        raise DistributionError(
+            "Cannot register bootstrap instructions in an invalid OS extension registry"
+        ) from exc
+    if (
+        registry.get("schema_version") != "1.0"
+        or not isinstance(registry.get("extensions"), dict)
+    ):
+        raise DistributionError(
+            "Cannot register bootstrap instructions in an unknown OS extension registry"
+        )
+
+    key = "ai-verse-project-bootstrap"
+    source = "ai-verse-distribution/project-bootstrap-v1"
+    existing = registry["extensions"].get(key)
+    if existing is not None and not isinstance(existing, dict):
+        raise DistributionError(
+            "Preserving an invalid existing bootstrap extension entry"
+        )
+    if existing and existing.get("source") != source:
+        raise DistributionError(
+            "Preserving an existing extension with the bootstrap identity"
+        )
+
+    instructions = instructions.expanduser().resolve()
+    try:
+        instructions.relative_to(layout.project.resolve())
+    except ValueError as exc:
+        raise DistributionError(
+            "Bootstrap instructions escaped the admitted project root"
+        ) from exc
+    owned = receipt.get("owned_files", {})
+    expected = (
+        owned.get(str(instructions))
+        if isinstance(owned, dict)
+        else None
+    )
+    if (
+        not isinstance(expected, str)
+        or not instructions.is_file()
+        or instructions.is_symlink()
+        or hashlib.sha256(instructions.read_bytes()).hexdigest()
+        != expected
+    ):
+        raise DistributionError(
+            "Bootstrap registry entry requires the exact receipted instructions file"
+        )
+
+    proposed = json.loads(json.dumps(registry))
+    proposed["extensions"][key] = {
+        **(existing or {}),
+        "id": key,
+        "supported": True,
+        "installed": True,
+        "enabled": (existing or {}).get("enabled", True),
+        "version": "1",
+        "source": source,
+        "instructions": instructions.relative_to(
+            layout.project
+        ).as_posix(),
+        "adapters": [],
+    }
+    evidence = build_structured_payload_evidence(
+        lifecycle=LifecycleVerb.INSTALL,
+        document_id=str(registry_path.resolve()),
+        owned_path=("extensions", key),
+        before=registry,
+        proposed=proposed,
+        operation=(
+            MutationOperation.REPLACE
+            if existing is not None
+            else MutationOperation.CREATE
+        ),
+        route=MutationRoute.DISTRIBUTION,
+        ownership=(
+            OwnershipClass.GENERATED_SYSTEM_OWNED_REPLACEABLE_WITH_RECEIPT
+        ),
+        containment_verified=True,
+        lifecycle_admitted=True,
+        provenance_verified=True,
+        receipt_verified=True,
+        owner_authorized=True,
+    )
+    require_payload_mutation(evidence)
+    _write_json(registry_path, proposed)
+    return proposed
 
 
 def _prepare_managed_npm_shim(
@@ -231,17 +379,7 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         )
         _write_owned(layout, instructions, instruction_text, receipt)
         registry_path = layout.project / ".aiverse/extensions/registry.json"
-        registry = json.loads(registry_path.read_text(encoding="utf-8"))
-        if registry.get("schema_version") != "1.0" or not isinstance(registry.get("extensions"), dict):
-            raise DistributionError("Cannot register bootstrap instructions in an unknown OS extension registry")
-        key = "ai-verse-project-bootstrap"
-        existing = registry["extensions"].get(key)
-        if existing and existing.get("source") != "ai-verse-distribution/project-bootstrap-v1":
-            raise DistributionError("Preserving an existing extension with the bootstrap identity")
-        registry["extensions"][key] = {**(existing or {}), "id": key, "supported": True,
-            "installed": True, "enabled": (existing or {}).get("enabled", True), "version": "1", "source": "ai-verse-distribution/project-bootstrap-v1",
-            "instructions": instructions.relative_to(layout.project).as_posix(), "adapters": []}
-        _write_json(registry_path, registry)
+        _register_bootstrap_extension(layout, registry_path, instructions, receipt)
         receipt["phase"] = "checking-core"
         _write_json(layout.receipt, receipt)
         status = _child_json(python, ["status"], environment)

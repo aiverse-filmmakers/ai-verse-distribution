@@ -7,14 +7,14 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from .release_catalog import DistributionError
-from .update_safety import (
-    MutationOperation,
-    MutationRoute,
-    OwnershipClass,
-    ProposedMutation,
-    require_mutation_permitted,
+from .lifecycle_payload import (
+    LifecycleVerb,
+    build_project_file_evidence,
+    require_payload_mutation,
 )
+from .project_layout import ProjectLayout
+from .release_catalog import DistributionError
+from .update_safety import MutationOperation
 
 
 GENERATED_MANIFEST_KEY = "distribution_generated_files"
@@ -69,6 +69,22 @@ def _load_receipt(distribution_home: Path) -> tuple[Path, dict[str, Any]]:
     return path, payload
 
 
+def _layout_from_receipt(
+    receipt_path: Path, receipt: dict[str, Any]
+) -> ProjectLayout:
+    project_text = receipt.get("project")
+    stack_text = receipt.get("stack")
+    if not isinstance(project_text, str) or not isinstance(stack_text, str):
+        raise DistributionError("Project receipt identity is incomplete")
+    layout = ProjectLayout(
+        Path(project_text).expanduser().resolve(),
+        Path(stack_text).expanduser().resolve(),
+    )
+    if layout.receipt.resolve() != receipt_path.resolve():
+        raise DistributionError("Project receipt does not identify this tool stack")
+    return layout
+
+
 def _target_path(
     *, scope: str, relative_path: str, project_root: Path, distribution_home: Path
 ) -> Path:
@@ -94,6 +110,7 @@ def plan_generated_refresh(
     target_raw: dict[str, Any],
     project_root: Path,
     distribution_home: Path,
+    lifecycle: LifecycleVerb = LifecycleVerb.UPDATE,
 ) -> list[dict[str, Any]]:
     """Validate all generated refreshes read-only before any bytes are changed."""
 
@@ -102,8 +119,9 @@ def plan_generated_refresh(
         return []
     if not isinstance(entries, list):
         raise DistributionError("Generated file refresh manifest must be a list")
-    _, receipt = _load_receipt(distribution_home)
-    if receipt.get("project") not in (None, str(project_root.resolve())):
+    receipt_path, receipt = _load_receipt(distribution_home)
+    layout = _layout_from_receipt(receipt_path, receipt)
+    if layout.project != project_root.expanduser().resolve():
         raise DistributionError("Project receipt belongs to a different project")
     owned = receipt["owned_files"]
     pending = receipt["pending_files"]
@@ -118,8 +136,14 @@ def plan_generated_refresh(
         owner = entry.get("owner")
         if owner != "ai-verse-distribution/project-bootstrap-v1":
             raise DistributionError("Generated refresh entry has an unknown owner")
-        if not isinstance(scope, str) or not isinstance(relative_path, str) or not isinstance(content, str):
-            raise DistributionError("Generated refresh entry is missing scope/path/content")
+        if (
+            not isinstance(scope, str)
+            or not isinstance(relative_path, str)
+            or not isinstance(content, str)
+        ):
+            raise DistributionError(
+                "Generated refresh entry is missing scope/path/content"
+            )
         path = _target_path(
             scope=scope,
             relative_path=relative_path,
@@ -127,34 +151,38 @@ def plan_generated_refresh(
             distribution_home=distribution_home,
         )
         if path.is_symlink():
-            raise DistributionError(f"Preserving locally replaced generated symlink: {path}")
+            raise DistributionError(
+                f"Preserving locally replaced generated symlink: {path}"
+            )
         key = str(path)
         expected = owned.get(key)
         pending_digest = pending.get(key)
         if not isinstance(expected, str):
-            raise DistributionError(f"Generated file has no ownership receipt; preserving it: {path}")
+            raise DistributionError(
+                f"Generated file has no ownership receipt; preserving it: {path}"
+            )
         if not path.is_file():
-            raise DistributionError(f"Generated file is missing; preserving the ambiguity: {path}")
+            raise DistributionError(
+                f"Generated file is missing; preserving the ambiguity: {path}"
+            )
         old_bytes = path.read_bytes()
         actual = _sha256(old_bytes)
         if actual != expected and actual != pending_digest:
-            raise DistributionError(f"Generated file was locally edited; preserving it: {path}")
+            raise DistributionError(
+                f"Generated file was locally edited; preserving it: {path}"
+            )
         new_bytes = content.encode("utf-8")
         new_digest = _sha256(new_bytes)
-        require_mutation_permitted(
-            ProposedMutation(
-                path=key,
-                ownership=OwnershipClass.GENERATED_SYSTEM_OWNED_REPLACEABLE_WITH_RECEIPT,
-                operation=MutationOperation.REPLACE,
-                route=MutationRoute.DISTRIBUTION,
-                containment_verified=True,
-                transition_admitted=True,
-                provenance_verified=True,
-                receipt_verified=True,
-                owner_authorized=True,
-                local_modification=False,
-            )
+        evidence = build_project_file_evidence(
+            layout,
+            path,
+            lifecycle=lifecycle,
+            operation=MutationOperation.REPLACE,
+            lifecycle_admitted=True,
+            owner_authorized=True,
+            receipt=receipt,
         )
+        require_payload_mutation(evidence)
         plan.append(
             {
                 "scope": scope,
@@ -165,6 +193,7 @@ def plan_generated_refresh(
                 "new_sha256": new_digest,
                 "new_content_utf8": content,
                 "changed": actual != new_digest,
+                "lifecycle": lifecycle.value,
             }
         )
     plan.sort(key=lambda item: item["path"])
@@ -177,6 +206,7 @@ def apply_generated_refresh(
     if not plan:
         return []
     receipt_path, receipt = _load_receipt(distribution_home)
+    layout = _layout_from_receipt(receipt_path, receipt)
     owned = receipt["owned_files"]
     pending = receipt["pending_files"]
     refreshed: list[str] = []
@@ -185,16 +215,38 @@ def apply_generated_refresh(
             continue
         path = Path(item["path"])
         if path.is_symlink() or not path.is_file():
-            raise DistributionError(f"Generated file changed after planning; preserving it: {path}")
+            raise DistributionError(
+                f"Generated file changed after planning; preserving it: {path}"
+            )
         actual = _sha256(path.read_bytes())
         if actual not in {item["old_sha256"], item["new_sha256"]}:
-            raise DistributionError(f"Generated file changed after planning; preserving it: {path}")
+            raise DistributionError(
+                f"Generated file changed after planning; preserving it: {path}"
+            )
         if actual == item["new_sha256"]:
             owned[str(path)] = item["new_sha256"]
             pending.pop(str(path), None)
             _atomic_json(receipt_path, receipt)
             refreshed.append(str(path))
             continue
+        try:
+            lifecycle = LifecycleVerb(
+                item.get("lifecycle", LifecycleVerb.UPDATE.value)
+            )
+        except ValueError as exc:
+            raise DistributionError(
+                "Generated refresh plan has an invalid lifecycle"
+            ) from exc
+        evidence = build_project_file_evidence(
+            layout,
+            path,
+            lifecycle=lifecycle,
+            operation=MutationOperation.REPLACE,
+            lifecycle_admitted=True,
+            owner_authorized=True,
+            receipt=receipt,
+        )
+        require_payload_mutation(evidence)
         pending[str(path)] = item["new_sha256"]
         _atomic_json(receipt_path, receipt)
         _atomic_bytes(path, item["new_content_utf8"].encode("utf-8"))
@@ -211,6 +263,7 @@ def restore_generated_refresh(
     if not backups:
         return []
     receipt_path, receipt = _load_receipt(distribution_home)
+    layout = _layout_from_receipt(receipt_path, receipt)
     owned = receipt["owned_files"]
     pending = receipt["pending_files"]
     restored: list[str] = []
@@ -230,6 +283,16 @@ def restore_generated_refresh(
             raise DistributionError(
                 f"Generated file changed after update; recovery will preserve it rather than overwrite: {path}"
             )
+        evidence = build_project_file_evidence(
+            layout,
+            path,
+            lifecycle=LifecycleVerb.ROLLBACK,
+            operation=MutationOperation.REPLACE,
+            lifecycle_admitted=True,
+            owner_authorized=True,
+            receipt=receipt,
+        )
+        require_payload_mutation(evidence)
         pending[str(path)] = item["old_sha256"]
         _atomic_json(receipt_path, receipt)
         _atomic_bytes(path, item["old_content_utf8"].encode("utf-8"))

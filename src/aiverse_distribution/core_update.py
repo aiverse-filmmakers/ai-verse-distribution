@@ -17,6 +17,7 @@ from .generated_refresh import (
     restore_generated_refresh,
 )
 from .infrastructure_gate import InfrastructureUpdateGate, require_update_activation
+from .lifecycle_payload import LifecycleVerb
 from .orchestrator import Orchestrator as BaseOrchestrator
 from .process import run
 from .release_catalog import Catalog, DistributionError, ReleaseSet
@@ -485,6 +486,11 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                 target_raw=target.raw,
                 project_root=root,
                 distribution_home=self.state.home,
+                lifecycle=(
+                    LifecycleVerb.ROLLBACK
+                    if transition_kind == "rollback"
+                    else LifecycleVerb.UPDATE
+                ),
             )
             if generated_plan:
                 self.update_journal.mark(

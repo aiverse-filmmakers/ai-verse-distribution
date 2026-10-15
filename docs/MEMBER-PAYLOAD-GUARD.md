@@ -1,6 +1,6 @@
 # Distribution Member Payload Guard
 
-Status: Slice 5.2 T1 reusable policy boundary
+Status: Slice 5.2 T2 adopted lifecycle wiring
 Version: `distribution-member-payload-v1`
 
 This guard is a reusable adapter around the existing zero-loss ownership policy. It does not create a second member-state database, ownership authority, Registry, release-admission mechanism, or updater.
@@ -66,6 +66,8 @@ The helper never writes a receipt entry or claims ownership. Later lifecycle wir
 
 The guard wraps the existing semantic member-state snapshot instead of introducing a new fingerprint format. Before/after snapshots must refer to the same project, local-Skills root, and Distribution-history root. The existing preservation contract remains the final authority for whether member state survived.
 
-## Slice boundary
+## Adopted T2 wiring
 
-T1 only defines and validates this reusable evidence/guard layer. It does not wire install/setup/update/rollback callers to it. That integration is exclusively Slice 5.2 T2.
+T2 routes direct Distribution member-payload writes through this guard without moving owner state into Distribution. Bootstrap-owned published files use the existing project receipt before CREATE/REPLACE. The shared OS extension registry is changed only at `/extensions/ai-verse-project-bootstrap`, with exact structured diff confinement and provenance tied to the receipted bootstrap instructions file. Generated update refreshes are checked at both plan and apply time, and rollback/recovery restores use the same guard with the rollback lifecycle. Owner setup, owner migration, owner reconcile, Data workspace initialization and system-host attachment remain owner-controlled lifecycle calls. Core transition admission, journaling, health verification, interruption recovery and software-only rollback semantics are unchanged.
+
+T2 does not claim lifecycle-wide populated-root acceptance. That destructive positive/negative proof remains exclusively Slice 5.2 T3.
