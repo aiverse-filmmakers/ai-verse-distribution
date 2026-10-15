@@ -17,7 +17,7 @@ The durable release-receipt work assigned to Slice 5.4 is explicitly out of scop
 - SYSTEM-SYNC-DEBT records: none
 - Accepted OS component revision carried by the released Core set: `64f7325444d18f94c9d4755d32eb89f3468bda6b`
 - Known carried concern: that accepted OS revision can report `Setup: setup-required` on the clean-machine Core path. Qualification/promotion is required to fail closed for that condition and emergency mode may not bypass it.
-- Canonical Repository State currently records six open drift entries and no intersecting/global BLOCKING drift. `compact-release-receipt-not-yet-implemented` remains open INFO and belongs to Slice 5.4.
+- Canonical Repository State contains six drift records total, of which only one is open. The sole open drift is `compact-release-receipt-not-yet-implemented` at INFO / Core; there is no open intersecting or global BLOCKING drift. That INFO item belongs to Slice 5.4.
 
 ## Acceptance for this evidence anchor
 
