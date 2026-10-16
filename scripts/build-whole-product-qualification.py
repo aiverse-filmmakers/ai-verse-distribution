@@ -25,6 +25,13 @@ def _load(path: Path, label: str):
     return payload
 
 
+def _repo_ref(path: Path) -> str | None:
+    try:
+        return path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Build read-only whole-product qualification evidence for one admitted candidate."
@@ -41,6 +48,8 @@ def main() -> int:
             args.candidate_id,
             _load(args.preservation, "preservation result"),
             _load(args.composed_acceptance, "composed acceptance"),
+            preservation_ref=_repo_ref(args.preservation),
+            composed_acceptance_ref=_repo_ref(args.composed_acceptance),
         )
     except WholeProductQualificationError as exc:
         print(json.dumps({"valid": False, "error": str(exc)}, sort_keys=True), file=sys.stderr)

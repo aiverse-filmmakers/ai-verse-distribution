@@ -29,6 +29,13 @@ def _sha256(payload: Mapping[str, Any]) -> str:
     return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
 
 
+def _safe_relative_ref(value: str, label: str) -> str:
+    path = Path(value)
+    if not value or path.is_absolute() or ".." in path.parts:
+        raise WholeProductQualificationError(f"{label} must be a safe repository-relative path")
+    return path.as_posix()
+
+
 def _load_json(path: Path, label: str) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -236,11 +243,15 @@ def build_whole_product_qualification(
     composed_acceptance: Mapping[str, Any],
     *,
     resolver: EvidenceResolver | None = None,
+    preservation_ref: str | None = None,
+    composed_acceptance_ref: str | None = None,
 ) -> dict[str, Any]:
     """Build exact whole-product qualification evidence for one admitted candidate.
 
     This function is intentionally read-only with respect to release catalogs, lineage,
     channels and member installations. Promotion is a separate later decision.
+    Repository-relative preservation/composed refs are optional for backward-compatible
+    callers, but durable release receipts require them to be present in the result.
     """
     root = Path(root)
     try:
@@ -312,6 +323,42 @@ def build_whole_product_qualification(
             }
         )
 
+    bindings: dict[str, Any] = {
+        "candidate_evidence": {
+            "path": evidence_binding.get("path"),
+            "sha256": evidence_binding.get("sha256"),
+        },
+        "system": {
+            "revision": system.get("revision"),
+            "governance_contracts": system.get("governance_contracts"),
+        },
+        "registry": {
+            "revision": registry.get("revision"),
+            "path": registry.get("path"),
+            "sha256": registry.get("sha256"),
+        },
+        "repository_state": {
+            "revision": repository_state.get("revision"),
+            "path": repository_state.get("path"),
+            "sha256": repository_state.get("sha256"),
+            "scope": repository_state.get("scope"),
+        },
+        "compatibility_sha256": _sha256(compatibility),
+        "owners": owner_bindings,
+        "preservation_sha256": _sha256(preservation_result),
+        "composed_acceptance_sha256": _sha256(composed_acceptance),
+    }
+    if preservation_ref is not None:
+        bindings["preservation"] = {
+            "path": _safe_relative_ref(preservation_ref, "preservation_ref"),
+            "sha256": bindings["preservation_sha256"],
+        }
+    if composed_acceptance_ref is not None:
+        bindings["composed_acceptance"] = {
+            "path": _safe_relative_ref(composed_acceptance_ref, "composed_acceptance_ref"),
+            "sha256": bindings["composed_acceptance_sha256"],
+        }
+
     result = {
         "schema_version": SCHEMA_ID,
         "candidate_id": candidate_id,
@@ -331,31 +378,7 @@ def build_whole_product_qualification(
             "doctor": "passed",
             "health": "passed",
         },
-        "bindings": {
-            "candidate_evidence": {
-                "path": evidence_binding.get("path"),
-                "sha256": evidence_binding.get("sha256"),
-            },
-            "system": {
-                "revision": system.get("revision"),
-                "governance_contracts": system.get("governance_contracts"),
-            },
-            "registry": {
-                "revision": registry.get("revision"),
-                "path": registry.get("path"),
-                "sha256": registry.get("sha256"),
-            },
-            "repository_state": {
-                "revision": repository_state.get("revision"),
-                "path": repository_state.get("path"),
-                "sha256": repository_state.get("sha256"),
-                "scope": repository_state.get("scope"),
-            },
-            "compatibility_sha256": _sha256(compatibility),
-            "owners": owner_bindings,
-            "preservation_sha256": _sha256(preservation_result),
-            "composed_acceptance_sha256": _sha256(composed_acceptance),
-        },
+        "bindings": bindings,
         "authority": {
             "qualification_evidence_only": True,
             "promotion_authority": False,
