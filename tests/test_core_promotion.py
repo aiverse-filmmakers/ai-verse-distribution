@@ -115,6 +115,68 @@ class CorePromotionTests(unittest.TestCase):
         }
         state_raw = _bytes(state)
 
+        evidence_components = []
+        qualification_owners = []
+        for index, component in enumerate(candidate["components"], start=1):
+            descriptor_revision = format(index, "x") * 40
+            descriptor_sha = hashlib.sha256(
+                f"{component['id']}:{descriptor_revision}".encode("utf-8")
+            ).hexdigest()
+            owner_acceptance = {
+                "kind": "github-actions",
+                "accepted_revision": component["revision"],
+                "evidence_revision": descriptor_revision,
+                "workflow": "Owner Native CI",
+                "run_id": 123450 + index,
+                "result": "success",
+            }
+            evidence_components.append(
+                {
+                    "id": component["id"],
+                    "repository": component["repository"],
+                    "revision": component["revision"],
+                    "descriptor": {
+                        "path": "release/component-release.json",
+                        "source_revision": descriptor_revision,
+                        "sha256": descriptor_sha,
+                    },
+                    "owner_acceptance": owner_acceptance,
+                }
+            )
+            qualification_owners.append(
+                {
+                    "component_id": component["id"],
+                    "revision": component["revision"],
+                    "descriptor_source_revision": descriptor_revision,
+                    "descriptor_sha256": descriptor_sha,
+                }
+            )
+
+        compatibility_sha = hashlib.sha256(
+            json.dumps(compatibility, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        preservation = {
+            "schema_version": "ai-verse.release-preservation/v1",
+            "source_release_set": CURRENT,
+            "target_release_set": candidate_id,
+            "status": "safe",
+        }
+        composed = {
+            "schema_version": "aiverse.distribution-composed-acceptance/v1",
+            "release_set_id": candidate_id,
+            "status": "passed",
+        }
+        preservation_ref = f"qualification/{candidate_id}/preservation.json"
+        composed_ref = f"qualification/{candidate_id}/composed-acceptance.json"
+        _write(root / preservation_ref, preservation)
+        _write(root / composed_ref, composed)
+        preservation_sha = hashlib.sha256(
+            json.dumps(preservation, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        composed_sha = hashlib.sha256(
+            json.dumps(composed, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+
         candidate_evidence = {
             "candidate_id": candidate_id,
             "registry": {
@@ -128,6 +190,15 @@ class CorePromotionTests(unittest.TestCase):
                 "sha256": _sha(state_raw),
                 "scope": "core",
                 "repositories": names,
+            },
+            "components": evidence_components,
+            "compatibility": {
+                "sha256": compatibility_sha,
+                "inputs": ["src/aiverse_distribution/catalog/core_candidates.json"],
+            },
+            "toolchain": {
+                "dependency_locks": [],
+                "runtime_requirements": {"python": ">=3.11"},
             },
         }
         candidate_evidence_path = root / f"qualification/{candidate_id}/candidate-evidence.json"
@@ -164,6 +235,7 @@ class CorePromotionTests(unittest.TestCase):
             "profile": "core",
             "status": "passed",
             "distribution_revision": "e" * 40,
+            "source_release_set": CURRENT,
             "gates": gates,
             "bindings": {
                 "candidate_evidence": binding,
@@ -172,6 +244,18 @@ class CorePromotionTests(unittest.TestCase):
                 "repository_state": {
                     key: candidate_evidence["repository_state"][key]
                     for key in ("revision", "path", "sha256", "scope")
+                },
+                "owners": qualification_owners,
+                "compatibility_sha256": compatibility_sha,
+                "preservation_sha256": preservation_sha,
+                "composed_acceptance_sha256": composed_sha,
+                "preservation": {
+                    "path": preservation_ref,
+                    "sha256": preservation_sha,
+                },
+                "composed_acceptance": {
+                    "path": composed_ref,
+                    "sha256": composed_sha,
                 },
             },
             "authority": {
