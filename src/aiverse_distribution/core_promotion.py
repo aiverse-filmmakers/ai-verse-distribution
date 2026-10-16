@@ -39,6 +39,11 @@ def _canonical_bytes(payload: Mapping[str, Any]) -> bytes:
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def _pretty_json_bytes(payload: Mapping[str, Any]) -> bytes:
+    """Return deterministic persisted JSON bytes on every platform."""
+    return (json.dumps(payload, indent=2) + "\n").encode("utf-8")
+
+
 def _sha256_bytes(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
@@ -71,7 +76,7 @@ def _load_json(path: Path, label: str) -> tuple[dict[str, Any], bytes]:
 def _write_json_atomic(path: Path, payload: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    temporary.write_bytes(_pretty_json_bytes(payload))
     os.replace(temporary, path)
 
 
@@ -85,8 +90,8 @@ def _write_json_atomic_immutable(path: Path, payload: Mapping[str, Any]) -> None
     )
     temporary = Path(temporary_name)
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            handle.write(json.dumps(payload, indent=2) + "\n")
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(_pretty_json_bytes(payload))
             handle.flush()
             os.fsync(handle.fileno())
         try:
