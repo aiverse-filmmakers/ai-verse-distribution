@@ -23,7 +23,10 @@ jobs:
       - name: Install Distribution
         run: python -m pip install .
       - name: Run focused T2 and affected promotion tests
-        run: python -m unittest -v tests.test_release_receipt tests.test_release_receipt_admission tests.test_core_promotion tests.test_promotion_qualification_regressions
+        shell: bash
+        run: |
+          export PYTHONPATH="${GITHUB_WORKSPACE}/tests:${PYTHONPATH}"
+          python -m unittest -v test_release_receipt test_release_receipt_admission test_core_promotion test_promotion_qualification_regressions
       - name: Commit bounded T2 implementation
         shell: bash
         run: |
