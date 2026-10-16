@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 import os
+import tempfile
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -38,6 +39,11 @@ def _canonical_bytes(payload: Mapping[str, Any]) -> bytes:
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def _pretty_json_bytes(payload: Mapping[str, Any]) -> bytes:
+    """Return deterministic persisted JSON bytes on every platform."""
+    return (json.dumps(payload, indent=2) + "\n").encode("utf-8")
+
+
 def _sha256_bytes(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
@@ -70,8 +76,32 @@ def _load_json(path: Path, label: str) -> tuple[dict[str, Any], bytes]:
 def _write_json_atomic(path: Path, payload: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    temporary.write_bytes(_pretty_json_bytes(payload))
     os.replace(temporary, path)
+
+
+def _write_json_atomic_immutable(path: Path, payload: Mapping[str, Any]) -> None:
+    """Publish fully written immutable JSON without any overwrite window."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        dir=path.parent,
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(_pretty_json_bytes(payload))
+            handle.flush()
+            os.fsync(handle.fileno())
+        try:
+            os.link(temporary, path)
+        except FileExistsError as exc:
+            raise CorePromotionError(
+                f"{path}: immutable release evidence already exists; history will not be overwritten"
+            ) from exc
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def _qualification(
@@ -412,6 +442,14 @@ def plan_core_promotion(
         },
     }
     evidence = copy.deepcopy(release.get("evidence", {}))
+    receipt_ref = f"qualification/{candidate_id}/release-receipt.json"
+    from .release_receipt import SCHEMA_ID as RELEASE_RECEIPT_SCHEMA
+
+    evidence["release_receipt"] = {
+        "schema_version": RELEASE_RECEIPT_SCHEMA,
+        "receipt_ref": receipt_ref,
+        "binding": "receipt-binds-final-release-set",
+    }
     evidence["whole_product_qualification"] = {
         "status": "accepted",
         "schema_version": WHOLE_PRODUCT_QUALIFICATION_SCHEMA,
@@ -482,6 +520,7 @@ def plan_core_promotion(
             "src/aiverse_distribution/catalog/core_promotions.json",
             "src/aiverse_distribution/catalog/core_candidates.json",
             f"release-sets/{candidate_id}.json",
+            receipt_ref,
             f"qualification/{candidate_id}/promotion.json",
         ],
         "authority": {
@@ -500,6 +539,7 @@ def plan_core_promotion(
         "core_candidates": next_candidates,
         "public_manifest": {"schema_version": 1, **release},
         "promotion_evidence": promotion_evidence,
+        "release_receipt_ref": receipt_ref,
     }
 
 
@@ -513,14 +553,17 @@ def apply_core_promotion(
     mode: str = "normal",
     emergency_reason: str | None = None,
 ) -> dict[str, Any]:
-    """Apply one explicit promotion after all deterministic gates pass."""
+    """Apply one explicit promotion only after durable reconstruction evidence is valid."""
     root = Path(root)
     public_path = root / "release-sets" / f"{candidate_id}.json"
     evidence_path = root / "qualification" / candidate_id / "promotion.json"
-    if public_path.exists() or evidence_path.exists():
+    receipt_path = root / "qualification" / candidate_id / "release-receipt.json"
+    immutable_outputs = (public_path, evidence_path, receipt_path)
+    if any(path.exists() for path in immutable_outputs):
         raise CorePromotionError(
-            f"{candidate_id}: promotion outputs already exist; immutable history will not be overwritten"
+            f"{candidate_id}: final admission outputs already exist; immutable history will not be overwritten"
         )
+
     plan = plan_core_promotion(
         root,
         candidate_id,
@@ -533,6 +576,66 @@ def apply_core_promotion(
     promotion_evidence = copy.deepcopy(plan["promotion_evidence"])
     promotion_evidence["status"] = "applied"
 
+    qualification, _ = _qualification(root, candidate_id, qualification_ref)
+    bindings = qualification.get("bindings")
+    preservation = bindings.get("preservation") if isinstance(bindings, dict) else None
+    composed = bindings.get("composed_acceptance") if isinstance(bindings, dict) else None
+    preservation_ref = preservation.get("path") if isinstance(preservation, dict) else None
+    composed_ref = composed.get("path") if isinstance(composed, dict) else None
+    if not isinstance(preservation_ref, str) or not isinstance(composed_ref, str):
+        raise CorePromotionError(
+            f"{candidate_id}: final admission requires immutable preservation and composed-acceptance source refs"
+        )
+
+    debt_ids = promotion_evidence.get("system_sync", {}).get("debt_ids", [])
+    debt_id_set = set(debt_ids) if isinstance(debt_ids, list) else set()
+    all_debts = plan["core_promotions"].get("system_sync_debts", [])
+    receipt_debts = [
+        copy.deepcopy(item)
+        for item in all_debts
+        if isinstance(item, dict) and item.get("id") in debt_id_set
+    ]
+
+    from .release_receipt import (
+        ReleaseReceiptError,
+        build_release_receipt,
+        validate_release_receipt,
+    )
+
+    try:
+        receipt = build_release_receipt(
+            root,
+            plan["public_manifest"],
+            qualification_ref,
+            preservation_ref,
+            composed_ref,
+            f"qualification/{candidate_id}/promotion.json",
+            promotion_evidence,
+            system_sync_debts=receipt_debts,
+        )
+        validate_release_receipt(
+            root,
+            receipt,
+            release_set=plan["public_manifest"],
+            promotion_evidence=promotion_evidence,
+            system_sync_debts=receipt_debts,
+        )
+    except ReleaseReceiptError as exc:
+        raise CorePromotionError(
+            f"{candidate_id}: durable release receipt is invalid: {exc}"
+        ) from exc
+
+    # Durable reconstruction evidence must exist before the live promotion/channel moves.
+    _write_json_atomic_immutable(receipt_path, receipt)
+    persisted_receipt, _ = _load_json(receipt_path, "durable release receipt")
+    if persisted_receipt != receipt:
+        raise CorePromotionError(
+            f"{candidate_id}: durable release receipt changed during immutable publication"
+        )
+
+    # Persist the exact receipt-bound release/promotion evidence before moving the channel.
+    _write_json_atomic(public_path, plan["public_manifest"])
+    _write_json_atomic(evidence_path, promotion_evidence)
     _write_json_atomic(
         root / "src/aiverse_distribution/catalog/core_promotions.json",
         plan["core_promotions"],
@@ -541,9 +644,11 @@ def apply_core_promotion(
         root / "src/aiverse_distribution/catalog/core_candidates.json",
         plan["core_candidates"],
     )
-    _write_json_atomic(public_path, plan["public_manifest"])
-    _write_json_atomic(evidence_path, promotion_evidence)
-    return {**plan, "promotion_evidence": promotion_evidence}
+    return {
+        **plan,
+        "promotion_evidence": promotion_evidence,
+        "release_receipt": receipt,
+    }
 
 
 def reconcile_system_sync_debt(
@@ -645,6 +750,20 @@ def validate_core_promotion_governance(promotions: Mapping[str, Any]) -> None:
             or len(qualification["sha256"]) != 64
         ):
             raise CorePromotionError(f"{release_id}: future Core promotion lacks exact qualification evidence")
+        receipt_binding = release.get("evidence", {}).get("release_receipt")
+        from .release_receipt import SCHEMA_ID as RELEASE_RECEIPT_SCHEMA
+
+        expected_receipt_ref = f"qualification/{release_id}/release-receipt.json"
+        if (
+            not isinstance(receipt_binding, dict)
+            or set(receipt_binding) != {"schema_version", "receipt_ref", "binding"}
+            or receipt_binding.get("schema_version") != RELEASE_RECEIPT_SCHEMA
+            or receipt_binding.get("receipt_ref") != expected_receipt_ref
+            or receipt_binding.get("binding") != "receipt-binds-final-release-set"
+        ):
+            raise CorePromotionError(
+                f"{release_id}: future Core promotion lacks a non-cyclic durable release-receipt reference"
+            )
         mode = promotion.get("mode")
         sync = promotion.get("system_sync")
         if mode not in {"normal", "emergency"} or not isinstance(sync, dict):

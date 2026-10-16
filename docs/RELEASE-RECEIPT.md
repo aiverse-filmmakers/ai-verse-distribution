@@ -107,3 +107,11 @@ Every receipt declares:
 - no user-state recovery authority.
 
 A receipt that cannot reconstruct exactly from its bound evidence must fail closed. Missing required evidence is not a passing result.
+
+## Final-admission persistence
+
+Future Core final admission now treats the durable receipt as a mandatory precondition, not a post-release report. `apply_core_promotion` builds and validates the complete receipt in memory before any promotion/channel catalog mutation, then atomically publishes `qualification/<release-id>/release-receipt.json` with immutable no-overwrite semantics. The bound public release manifest and applied promotion evidence are persisted before the live Core promotion ledger moves the default channel.
+
+The final release-set evidence contains only the receipt schema, repository-relative receipt path and the directional binding `receipt-binds-final-release-set`. It deliberately contains no receipt digest. The receipt instead hashes the final release-set bytes, which avoids a digest cycle while still making later reconstruction exact. Missing, changed or unreadable preservation/composed/qualification/promotion inputs fail closed before channel mutation.
+
+This durable source release receipt remains separate from the mutable local member lifecycle/project receipt. It carries no member state, user-state recovery or owner-state authority.
