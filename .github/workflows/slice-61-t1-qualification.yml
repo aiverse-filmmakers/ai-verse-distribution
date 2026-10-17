@@ -15,66 +15,72 @@ jobs:
   exact-network:
     runs-on: ubuntu-latest
     env:
-      QUAL: ${{ github.workspace }}/.qualification
+      QUAL: ${{ github.workspace }}
     steps:
       - name: Checkout Distribution T1 branch
         uses: actions/checkout@v4
+        with:
+          path: Distribution
 
       - name: Checkout exact canonical System planning boundary
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-System
           ref: b917f8812f21a02f4b58e402ce6dc5838303bb5d
-          path: .qualification/System
+          path: System
 
       - name: Checkout exact State-observed OS owner head
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-OS
           ref: 83747a90998077ad2ab4636f202ca2e065a9a6bb
-          path: .qualification/OS
+          path: OS
 
       - name: Checkout exact State-observed Brain owner head
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-Brain
           ref: 4406d15068284b88e0076b6dfff5aa0b06890a24
-          path: .qualification/Brain
+          path: Brain
 
       - name: Checkout exact State-observed Memory owner head
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-Memory
           ref: 09911eae0b4b0cbf7e7e7969230fe5b86647b841
-          path: .qualification/Memory
+          path: Memory
 
       - name: Checkout exact State-observed Skills owner head
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-Skills
           ref: 23779f10515951ac92c83cba34a1a868c02c4d87
-          path: .qualification/Skills
+          path: Skills
 
       - name: Checkout exact State-observed Data owner head
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-Data
           ref: 7e9fadbd73752b24eb79e270aff6b311ad508109
-          path: .qualification/Data
+          path: Data
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install Distribution
+        working-directory: Distribution
         run: python -m pip install .
 
       - name: Focused T1 harness tests
+        working-directory: Distribution
         run: python -m unittest discover -s tests -p "test_repository_network_governance_regression.py" -v
 
       - name: Exact read-only network regression
+        working-directory: Distribution
         run: |
           python scripts/run-repository-network-governance-regression.py \
+            --distribution-root "$QUAL/Distribution" \
             --system-root "$QUAL/System" \
             --os-root "$QUAL/OS" \
             --brain-root "$QUAL/Brain" \
@@ -85,7 +91,6 @@ jobs:
       - name: Assert all checked-out evidence remains clean
         shell: bash
         run: |
-          test -z "$(git status --porcelain)"
-          for repo in System OS Brain Memory Skills Data; do
+          for repo in Distribution System OS Brain Memory Skills Data; do
             test -z "$(git -C "$QUAL/$repo" status --porcelain)"
           done
