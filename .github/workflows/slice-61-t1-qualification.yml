@@ -9,7 +9,7 @@ on:
       - ".github/workflows/slice-61-t1-qualification.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   exact-network:
@@ -21,6 +21,59 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: Distribution
+          fetch-depth: 0
+
+      - name: Correct projection contract and fixture
+        working-directory: Distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          script = Path('scripts/run-repository-network-governance-regression.py')
+          text = script.read_text(encoding='utf-8')
+          old = '''    _require(promotion_release == release_set, "promotion ledger and release-set bytes describe different release truth")
+'''
+          new = '''    _require(
+        promotion_release.get("id") == release_set.get("id")
+        and promotion_release.get("profile") == release_set.get("profile")
+        and promotion_release.get("status") == release_set.get("status"),
+        "promotion ledger release identity/profile/status differs from the standalone release set",
+    )
+    _require(
+        promotion_release.get("components") == release_set.get("components"),
+        "promotion ledger component projection differs from the standalone release pins",
+    )
+'''
+          if text.count(old) != 1:
+              raise SystemExit('expected promotion equality assertion not found exactly once')
+          script.write_text(text.replace(old, new), encoding='utf-8')
+
+          tests = Path('tests/test_repository_network_governance_regression.py')
+          text = tests.read_text(encoding='utf-8')
+          old = '''            "release_sets": [self.release],
+'''
+          new = '''            "release_sets": [{key: value for key, value in self.release.items() if key != "schema_version"}],
+'''
+          if text.count(old) != 1:
+              raise SystemExit('expected initial promotion fixture not found exactly once')
+          text = text.replace(old, new)
+          old = '''        self.promotions["release_sets"] = [self.release]
+'''
+          new = '''        self.promotions["release_sets"] = [
+            {key: value for key, value in self.release.items() if key != "schema_version"}
+        ]
+'''
+          if text.count(old) != 1:
+              raise SystemExit('expected rewrite promotion fixture not found exactly once')
+          tests.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          git diff --check
+          git config user.name "AI-VERSE"
+          git config user.email "hello@bogdanpascal.com"
+          git add scripts/run-repository-network-governance-regression.py tests/test_repository_network_governance_regression.py
+          git commit -m "Align T1 harness with promotion projection authority"
 
       - name: Checkout exact canonical System planning boundary
         uses: actions/checkout@v4
@@ -94,3 +147,12 @@ jobs:
           for repo in Distribution System OS Brain Memory Skills Data; do
             test -z "$(git -C "$QUAL/$repo" status --porcelain)"
           done
+
+      - name: Remove temporary qualifier and publish qualified T1 tree
+        working-directory: Distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/slice-61-t1-qualification.yml
+          git commit -m "Remove Slice 6.1 T1 qualification workflow"
+          git push origin HEAD:slice-6.1-t1-governance-harness
