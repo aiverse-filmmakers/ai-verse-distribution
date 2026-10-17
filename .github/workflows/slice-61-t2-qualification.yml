@@ -1,0 +1,165 @@
+name: Slice 6.1 T2 Preservation Reconstruction Qualification
+
+on:
+  push:
+    branches: [slice-6.1-t2-preservation-reconstruction]
+    paths:
+      - ".github/workflows/slice-61-t2-qualification.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  exact-network-preservation:
+    runs-on: ubuntu-latest
+    env:
+      QUAL: ${{ github.workspace }}
+    steps:
+      - name: Checkout Distribution T2 branch
+        uses: actions/checkout@v4
+        with:
+          path: Distribution
+          fetch-depth: 0
+
+      - name: Extend read-only harness with preservation and reconstruction regressions
+        working-directory: Distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          script = Path('scripts/run-repository-network-governance-regression.py')
+          text = script.read_text(encoding='utf-8')
+          old = '"""Read-only cross-repository governance/admission regression harness.\n'
+          new = '"""Read-only cross-repository governance/admission and preservation/reconstruction regression harness.\n'
+          if text.count(old) != 1:
+              raise SystemExit('expected harness docstring anchor exactly once')
+          text = text.replace(old, new, 1)
+          old = '''DISTRIBUTION_REGRESSION_TESTS = (
+    "test_candidate_admission.py",
+    "test_candidate_admission_regressions.py",
+)
+'''
+          new = '''DISTRIBUTION_REGRESSION_TESTS = (
+    "test_candidate_admission.py",
+    "test_candidate_admission_regressions.py",
+    "test_lifecycle_payload_zero_loss.py",
+    "test_release_receipt_admission.py",
+    "test_release_receipt_reconstruction_regressions.py",
+)
+'''
+          if text.count(old) != 1:
+              raise SystemExit('expected Distribution regression tuple exactly once')
+          script.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          tests = Path('tests/test_repository_network_governance_regression.py')
+          text = tests.read_text(encoding='utf-8')
+          anchor = '''
+
+if __name__ == "__main__":
+    unittest.main()
+'''
+          addition = '''
+
+    def test_harness_reuses_permanent_preservation_and_reconstruction_regressions(self):
+        commands = network_regression.regression_commands(ROOT, ROOT)
+        files = {expected.name for _, _, expected in commands}
+        self.assertIn("test_lifecycle_payload_zero_loss.py", files)
+        self.assertIn("test_release_receipt_admission.py", files)
+        self.assertIn("test_release_receipt_reconstruction_regressions.py", files)
+
+
+if __name__ == "__main__":
+    unittest.main()
+'''
+          if text.count(anchor) != 1:
+              raise SystemExit('expected unittest main anchor exactly once')
+          tests.write_text(text.replace(anchor, addition, 1), encoding='utf-8')
+          PY
+          git diff --check
+          git config user.name "AI-VERSE"
+          git config user.email "hello@bogdanpascal.com"
+          git add scripts/run-repository-network-governance-regression.py tests/test_repository_network_governance_regression.py
+          git commit -m "Extend 6.1 T2 preservation reconstruction regressions"
+          git push origin HEAD:slice-6.1-t2-preservation-reconstruction
+
+      - name: Checkout exact canonical System T1 network boundary
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-System
+          ref: b917f8812f21a02f4b58e402ce6dc5838303bb5d
+          path: System
+
+      - name: Checkout exact State-observed OS owner head
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-OS
+          ref: 83747a90998077ad2ab4636f202ca2e065a9a6bb
+          path: OS
+
+      - name: Checkout exact State-observed Brain owner head
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Brain
+          ref: 4406d15068284b88e0076b6dfff5aa0b06890a24
+          path: Brain
+
+      - name: Checkout exact State-observed Memory owner head
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Memory
+          ref: 09911eae0b4b0cbf7e7e7969230fe5b86647b841
+          path: Memory
+
+      - name: Checkout exact State-observed Skills owner head
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Skills
+          ref: 23779f10515951ac92c83cba34a1a868c02c4d87
+          path: Skills
+
+      - name: Checkout exact State-observed Data owner head
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Data
+          ref: 7e9fadbd73752b24eb79e270aff6b311ad508109
+          path: Data
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Distribution
+        working-directory: Distribution
+        run: python -m pip install .
+
+      - name: Focused T2 harness tests
+        working-directory: Distribution
+        run: python -m unittest discover -s tests -p "test_repository_network_governance_regression.py" -v
+
+      - name: Exact read-only network preservation regression
+        working-directory: Distribution
+        run: |
+          python scripts/run-repository-network-governance-regression.py \
+            --distribution-root "$QUAL/Distribution" \
+            --system-root "$QUAL/System" \
+            --os-root "$QUAL/OS" \
+            --brain-root "$QUAL/Brain" \
+            --memory-root "$QUAL/Memory" \
+            --skills-root "$QUAL/Skills" \
+            --data-root "$QUAL/Data"
+
+      - name: Assert historical U36 evidence remains untouched
+        working-directory: Distribution
+        shell: bash
+        run: |
+          test "$(git hash-object qualification/core-update-program-u36/release-evidence.json)" = "0fec6e5290e659469a52a5f769da620f329f8c5a"
+          test ! -e qualification/core-update-program-u36/release-receipt.json
+
+      - name: Assert tracked evidence remains unchanged
+        shell: bash
+        run: |
+          for repo in Distribution System OS Brain Memory Skills Data; do
+            test -z "$(git -C "$QUAL/$repo" status --porcelain --untracked-files=no)"
+          done
