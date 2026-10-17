@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "id": "agent-purpose-context-candidate-2026-10-09",
+  "profile": "agent",
+  "status": "blocked",
+  "created_at": "2026-10-09",
+  "lineage": {
+    "parent": "agent-video-editor-rc1-2026-10-04",
+    "policy": "same-or-descendant-per-component"
+  },
+  "blockers": [
+    "Purpose Context Slice 12.3 Agent/composed qualification pending"
+  ],
+  "runtime_requirements": {
+    "git_lfs": true
+  },
+  "components": [
+    {
+      "id": "ai-verse-os",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+      "revision": "4f03849444b1d01ad81317bf0fece082d5a30e79",
+      "install_order": 10
+    },
+    {
+      "id": "ai-verse-brain",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+      "revision": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+      "install_order": 20
+    },
+    {
+      "id": "ai-verse-memory",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+      "revision": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+      "install_order": 30
+    },
+    {
+      "id": "ai-verse-skills",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+      "revision": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+      "install_order": 40
+    },
+    {
+      "id": "ai-verse-data",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+      "revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
+      "install_order": 50,
+      "dependency_lock": {
+        "scheme": "distribution-companion-npm-lock-v1",
+        "manifest": "ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/lock.json",
+        "manifest_sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
+      }
+    },
+    {
+      "id": "ai-verse-gateway",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Gateway.git",
+      "revision": "1772b75e2add73a524715f746e87b3a6b5561bf6",
+      "install_order": 60
+    },
+    {
+      "id": "ai-verse-automations",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Automations.git",
+      "revision": "caaed83b98026dd955640fc015d181529b91a1c6",
+      "install_order": 70
+    },
+    {
+      "id": "ai-verse-multiple-bots",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Multiple-Bots.git",
+      "revision": "c600e2bc014351a61e1c0e2673fc63f5d5fa54ec",
+      "install_order": 80
+    },
+    {
+      "id": "ai-verse-token",
+      "repository": "https://github.com/aiverse-filmmakers/ai-verse-token.git",
+      "revision": "23b7b8ecbc9d9ef267f5e10449f785eb11107dd4",
+      "install_order": 90
+    }
+  ],
+  "authority": {
+    "grants_permissions": false,
+    "transfers_brain_strategy": false,
+    "initializes_all_workspaces": false,
+    "exposes_gateway_remotely": false
+  },
+  "evidence": {
+    "core_candidate": "core-purpose-context-candidate-2026-10-09",
+    "gateway_purpose_runtime_ref": "1772b75e2add73a524715f746e87b3a6b5561bf6",
+    "agent_parent_release": "agent-video-editor-rc1-2026-10-04",
+    "qualification_ref_policy": "exact-commit-sha-only",
+    "qualification_uses_moving_branch_heads": false,
+    "agent_tail_unchanged_from_parent": [
+      "ai-verse-automations",
+      "ai-verse-multiple-bots",
+      "ai-verse-token"
+    ]
+  }
+}

@@ -1,0 +1,118 @@
+name: Purpose Context Core Candidate Qualification
+
+on:
+  pull_request:
+    paths:
+      - 'qualification/purpose-context/**'
+      - 'dependency-locks/**'
+      - 'src/aiverse_distribution/dependency_locks/**'
+      - 'scripts/prepare-purpose-candidate-qualification.py'
+      - 'scripts/verify-purpose-candidate-lineage.py'
+      - 'tests/acceptance/**'
+      - 'tests/test_purpose_context_candidate.py'
+      - '.github/workflows/purpose-context-core-candidate.yml'
+      - '.github/workflows/core-lineage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  candidate-core:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      AI_VERSE_ACCEPTANCE_RELEASE_SET: core-purpose-context-candidate-2026-10-09
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Pin tested npm major
+        run: npm install --global npm@10.9.2
+      - name: Verify frozen candidate policy
+        run: python -m unittest tests.test_purpose_context_candidate
+      - name: Stage candidate as explicit-install-only qualification set
+        run: python scripts/prepare-purpose-candidate-qualification.py
+      - name: Install Distribution qualification tree
+        run: python -m pip install .
+      - name: Prove exact Purpose Core candidate from a clean machine
+        run: python tests/acceptance/profile_acceptance.py core
+      - name: Prove member/project bootstrap against exact Purpose candidate
+        run: python tests/acceptance/project_bootstrap_acceptance.py --source . --candidate qualification/purpose-context/candidate.json --output purpose-bootstrap-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: purpose-core-candidate-${{ runner.os }}
+          path: purpose-bootstrap-report.json
+
+  exact-owner-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Prove OS↔Brain direction/ownership contract against exact candidate refs
+        shell: bash
+        run: bash qualification/purpose-context/test-os-brain-direction-contract.sh
+
+  exact-workspace-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Prove workspace isolation against exact candidate ref
+        shell: bash
+        run: bash qualification/purpose-context/test-workspace-isolation.sh
+
+  exact-data-memory-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Prove Data/Memory integration used by Purpose Context against exact candidate refs
+        shell: bash
+        run: bash qualification/purpose-context/test-data-memory-integration.sh
+
+  exact-context-ladder-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Prove Context Ladder/runtime integration against exact candidate refs
+        shell: bash
+        run: bash qualification/purpose-context/test-context-ladder-runtime.sh
