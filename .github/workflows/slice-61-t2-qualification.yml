@@ -36,43 +36,16 @@ jobs:
           if text.count(old) != 1:
               raise SystemExit('expected harness docstring anchor exactly once')
           text = text.replace(old, new, 1)
-          old = '''DISTRIBUTION_REGRESSION_TESTS = (
-    "test_candidate_admission.py",
-    "test_candidate_admission_regressions.py",
-)
-'''
-          new = '''DISTRIBUTION_REGRESSION_TESTS = (
-    "test_candidate_admission.py",
-    "test_candidate_admission_regressions.py",
-    "test_lifecycle_payload_zero_loss.py",
-    "test_release_receipt_admission.py",
-    "test_release_receipt_reconstruction_regressions.py",
-)
-'''
+          old = '    "test_candidate_admission_regressions.py",\n'
+          new = old + '    "test_lifecycle_payload_zero_loss.py",\n    "test_release_receipt_admission.py",\n    "test_release_receipt_reconstruction_regressions.py",\n'
           if text.count(old) != 1:
-              raise SystemExit('expected Distribution regression tuple exactly once')
+              raise SystemExit('expected Distribution regression anchor exactly once')
           script.write_text(text.replace(old, new, 1), encoding='utf-8')
 
           tests = Path('tests/test_repository_network_governance_regression.py')
           text = tests.read_text(encoding='utf-8')
-          anchor = '''
-
-if __name__ == "__main__":
-    unittest.main()
-'''
-          addition = '''
-
-    def test_harness_reuses_permanent_preservation_and_reconstruction_regressions(self):
-        commands = network_regression.regression_commands(ROOT, ROOT)
-        files = {expected.name for _, _, expected in commands}
-        self.assertIn("test_lifecycle_payload_zero_loss.py", files)
-        self.assertIn("test_release_receipt_admission.py", files)
-        self.assertIn("test_release_receipt_reconstruction_regressions.py", files)
-
-
-if __name__ == "__main__":
-    unittest.main()
-'''
+          anchor = '\n\nif __name__ == "__main__":\n    unittest.main()\n'
+          addition = '\n\n    def test_harness_reuses_permanent_preservation_and_reconstruction_regressions(self):\n        commands = network_regression.regression_commands(ROOT, ROOT)\n        files = {expected.name for _, _, expected in commands}\n        self.assertIn("test_lifecycle_payload_zero_loss.py", files)\n        self.assertIn("test_release_receipt_admission.py", files)\n        self.assertIn("test_release_receipt_reconstruction_regressions.py", files)\n\n\nif __name__ == "__main__":\n    unittest.main()\n'
           if text.count(anchor) != 1:
               raise SystemExit('expected unittest main anchor exactly once')
           tests.write_text(text.replace(anchor, addition, 1), encoding='utf-8')
