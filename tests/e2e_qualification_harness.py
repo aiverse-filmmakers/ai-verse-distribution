@@ -27,12 +27,12 @@ def _sha(raw):
 
 
 def _blob(raw):
-    return hashlib.sha1(f"blob {len(raw)}\\0".encode() + raw).hexdigest()
+    return hashlib.sha1(f"blob {len(raw)}".encode() + bytes([0]) + raw).hexdigest()
 
 
 def _write(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
-    raw = (json.dumps(data, indent=2) + "\\n").encode()
+    raw = (json.dumps(data, indent=2) + chr(10)).encode()
     path.write_bytes(raw)
     return raw
 
@@ -51,7 +51,7 @@ class IsolatedCoreFixture:
         self.member_root = Path(self.temporary.name) / "existing-member"
         self.member_root.mkdir()
         self.sentinel = self.member_root / "user-owned.txt"
-        self.sentinel.write_bytes(b"USER DATA MUST SURVIVE\\n")
+        self.sentinel.write_bytes((b"USER DATA MUST SURVIVE" + bytes([10])))
         self.protected_sources = [
             "src/aiverse_distribution/catalog/core_promotions.json",
             "src/aiverse_distribution/catalog/core_candidates.json",
@@ -70,7 +70,7 @@ class IsolatedCoreFixture:
         self.temporary.cleanup()
 
     def assert_untouched(self):
-        assert self.sentinel.read_bytes() == b"USER DATA MUST SURVIVE\\n"
+        assert self.sentinel.read_bytes() == (b"USER DATA MUST SURVIVE" + bytes([10]))
         assert all((SOURCE / p).read_bytes() == raw for p, raw in self.before.items())
 
     def _stage(self):
