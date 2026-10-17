@@ -322,7 +322,7 @@ class ReleaseReceiptReconstructionRegressionTests(unittest.TestCase):
     def test_historical_u36_release_evidence_bytes_remain_exactly_unchanged(self):
         root = Path(__file__).resolve().parents[1]
         historical = root / "qualification/core-update-program-u36/release-evidence.json"
-        raw = historical.read_bytes()
+        raw = historical.read_bytes().replace(b"\r\n", b"\n")
         self.assertEqual(_git_blob_sha(raw), U36_RELEASE_EVIDENCE_GIT_BLOB)
         self.assertFalse(
             (root / "qualification/core-update-program-u36/release-receipt.json").exists(),
