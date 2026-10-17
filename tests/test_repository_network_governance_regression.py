@@ -217,7 +217,7 @@ class Fixture:
             "schema_version": 1,
             "current_release": self.release_id,
             "system_sync_debts": [],
-            "release_sets": [self.release],
+            "release_sets": [{key: value for key, value in self.release.items() if key != "schema_version"}],
         }
         write_json(
             self.distribution / "src/aiverse_distribution/catalog/core_promotions.json",
@@ -254,7 +254,9 @@ class Fixture:
 
     def rewrite_release_truth(self):
         write_json(self.distribution / f"release-sets/{self.release_id}.json", self.release)
-        self.promotions["release_sets"] = [self.release]
+        self.promotions["release_sets"] = [
+            {key: value for key, value in self.release.items() if key != "schema_version"}
+        ]
         write_json(
             self.distribution / "src/aiverse_distribution/catalog/core_promotions.json",
             self.promotions,

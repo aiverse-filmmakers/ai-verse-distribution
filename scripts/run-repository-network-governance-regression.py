@@ -202,7 +202,16 @@ def validate_repository_network(
         lambda item: item.get("id") == current_release,
         "promotion current release",
     )
-    _require(promotion_release == release_set, "promotion ledger and release-set bytes describe different release truth")
+    _require(
+        promotion_release.get("id") == release_set.get("id")
+        and promotion_release.get("profile") == release_set.get("profile")
+        and promotion_release.get("status") == release_set.get("status"),
+        "promotion ledger release identity/profile/status differs from the standalone release set",
+    )
+    _require(
+        promotion_release.get("components") == release_set.get("components"),
+        "promotion ledger component projection differs from the standalone release pins",
+    )
 
     components = release_set.get("components", [])
     _require(
