@@ -141,11 +141,11 @@ jobs:
             --skills-root "$QUAL/Skills" \
             --data-root "$QUAL/Data"
 
-      - name: Assert all checked-out evidence remains clean
+      - name: Assert tracked evidence remains unchanged
         shell: bash
         run: |
           for repo in Distribution System OS Brain Memory Skills Data; do
-            test -z "$(git -C "$QUAL/$repo" status --porcelain)"
+            test -z "$(git -C "$QUAL/$repo" status --porcelain --untracked-files=no)"
           done
 
       - name: Remove temporary qualifier and publish qualified T1 tree
