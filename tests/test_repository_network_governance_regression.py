@@ -394,5 +394,13 @@ class RepositoryNetworkGovernanceRegressionTests(unittest.TestCase):
         self.assertIn("test_candidate_admission_regressions.py", files)
 
 
+    def test_harness_reuses_permanent_preservation_and_reconstruction_regressions(self):
+        commands = network_regression.regression_commands(ROOT, ROOT)
+        files = {expected.name for _, _, expected in commands}
+        self.assertIn("test_lifecycle_payload_zero_loss.py", files)
+        self.assertIn("test_release_receipt_admission.py", files)
+        self.assertIn("test_release_receipt_reconstruction_regressions.py", files)
+
+
 if __name__ == "__main__":
     unittest.main()
