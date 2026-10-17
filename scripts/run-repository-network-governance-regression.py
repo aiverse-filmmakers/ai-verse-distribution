@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only cross-repository governance/admission regression harness.
+"""Read-only cross-repository governance/admission and preservation/reconstruction regression harness.
 
 This harness does not qualify, promote, install, update, or mutate repository state.
 It binds one exact canonical System checkout to the current Core owner heads recorded
@@ -35,6 +35,9 @@ SYSTEM_REGRESSION_TESTS = (
 DISTRIBUTION_REGRESSION_TESTS = (
     "test_candidate_admission.py",
     "test_candidate_admission_regressions.py",
+    "test_lifecycle_payload_zero_loss.py",
+    "test_release_receipt_admission.py",
+    "test_release_receipt_reconstruction_regressions.py",
 )
 
 
