@@ -33,38 +33,38 @@ jobs:
 
           script = Path('scripts/run-repository-network-governance-regression.py')
           text = script.read_text(encoding='utf-8')
-          old = '''    _require(promotion_release == release_set, "promotion ledger and release-set bytes describe different release truth")
-'''
-          new = '''    _require(
-        promotion_release.get("id") == release_set.get("id")
-        and promotion_release.get("profile") == release_set.get("profile")
-        and promotion_release.get("status") == release_set.get("status"),
-        "promotion ledger release identity/profile/status differs from the standalone release set",
-    )
-    _require(
-        promotion_release.get("components") == release_set.get("components"),
-        "promotion ledger component projection differs from the standalone release pins",
-    )
-'''
+          old = (
+              '    _require(promotion_release == release_set, "promotion ledger and release-set bytes describe different release truth")\n'
+          )
+          new = (
+              '    _require(\n'
+              '        promotion_release.get("id") == release_set.get("id")\n'
+              '        and promotion_release.get("profile") == release_set.get("profile")\n'
+              '        and promotion_release.get("status") == release_set.get("status"),\n'
+              '        "promotion ledger release identity/profile/status differs from the standalone release set",\n'
+              '    )\n'
+              '    _require(\n'
+              '        promotion_release.get("components") == release_set.get("components"),\n'
+              '        "promotion ledger component projection differs from the standalone release pins",\n'
+              '    )\n'
+          )
           if text.count(old) != 1:
               raise SystemExit('expected promotion equality assertion not found exactly once')
           script.write_text(text.replace(old, new), encoding='utf-8')
 
           tests = Path('tests/test_repository_network_governance_regression.py')
           text = tests.read_text(encoding='utf-8')
-          old = '''            "release_sets": [self.release],
-'''
-          new = '''            "release_sets": [{key: value for key, value in self.release.items() if key != "schema_version"}],
-'''
+          old = '            "release_sets": [self.release],\n'
+          new = '            "release_sets": [{key: value for key, value in self.release.items() if key != "schema_version"}],\n'
           if text.count(old) != 1:
               raise SystemExit('expected initial promotion fixture not found exactly once')
           text = text.replace(old, new)
-          old = '''        self.promotions["release_sets"] = [self.release]
-'''
-          new = '''        self.promotions["release_sets"] = [
-            {key: value for key, value in self.release.items() if key != "schema_version"}
-        ]
-'''
+          old = '        self.promotions["release_sets"] = [self.release]\n'
+          new = (
+              '        self.promotions["release_sets"] = [\n'
+              '            {key: value for key, value in self.release.items() if key != "schema_version"}\n'
+              '        ]\n'
+          )
           if text.count(old) != 1:
               raise SystemExit('expected rewrite promotion fixture not found exactly once')
           tests.write_text(text.replace(old, new), encoding='utf-8')
