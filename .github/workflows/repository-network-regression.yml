@@ -1,0 +1,123 @@
+name: Repository Network Regression
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-network-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exact-network-regression:
+    runs-on: ubuntu-latest
+    env:
+      QUAL: ${{ github.workspace }}/.qualification
+    steps:
+      - name: Checkout Distribution
+        uses: actions/checkout@v4
+        with:
+          path: .qualification/Distribution
+          fetch-depth: 0
+
+      - name: Checkout exact canonical System evidence boundary
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-System
+          ref: b917f8812f21a02f4b58e402ce6dc5838303bb5d
+          path: .qualification/System
+
+      - name: Checkout exact State-observed OS owner head
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-OS
+          ref: 83747a90998077ad2ab4636f202ca2e065a9a6bb
+          path: .qualification/OS
+
+      - name: Checkout exact State-observed Brain owner head
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Brain
+          ref: 4406d15068284b88e0076b6dfff5aa0b06890a24
+          path: .qualification/Brain
+
+      - name: Checkout exact State-observed Memory owner head
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Memory
+          ref: 09911eae0b4b0cbf7e7e7969230fe5b86647b841
+          path: .qualification/Memory
+
+      - name: Checkout exact State-observed Skills owner head
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Skills
+          ref: 23779f10515951ac92c83cba34a1a868c02c4d87
+          path: .qualification/Skills
+
+      - name: Checkout exact State-observed Data owner head
+        uses: actions/checkout@v4
+        with:
+          repository: aiverse-filmmakers/AI-Verse-Data
+          ref: 7e9fadbd73752b24eb79e270aff6b311ad508109
+          path: .qualification/Data
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Distribution
+        working-directory: .qualification/Distribution
+        run: python -m pip install .
+
+      - name: Focused harness contract tests
+        working-directory: .qualification/Distribution
+        run: python -m unittest discover -s tests -p "test_repository_network_governance_regression.py" -v
+
+      - name: Run exact read-only repository network regression
+        working-directory: .qualification/Distribution
+        run: |
+          python scripts/run-repository-network-governance-regression.py \
+            --distribution-root "$QUAL/Distribution" \
+            --system-root "$QUAL/System" \
+            --os-root "$QUAL/OS" \
+            --brain-root "$QUAL/Brain" \
+            --memory-root "$QUAL/Memory" \
+            --skills-root "$QUAL/Skills" \
+            --data-root "$QUAL/Data"
+
+      - name: Assert live Core catalogs remain unchanged
+        working-directory: .qualification/Distribution
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('.')
+          candidates = json.loads((root / 'src/aiverse_distribution/catalog/core_candidates.json').read_text(encoding='utf-8'))
+          promotions = json.loads((root / 'src/aiverse_distribution/catalog/core_promotions.json').read_text(encoding='utf-8'))
+          assert candidates.get('release_sets') == [], candidates
+          assert candidates.get('compatibility') == {}, candidates
+          assert candidates.get('candidate_evidence') == {}, candidates
+          assert promotions.get('current_release') == 'core-first-run-rc1-2026-10-12', promotions
+          assert promotions.get('system_sync_debts') == [], promotions
+          PY
+
+      - name: Assert historical U36 evidence remains untouched
+        working-directory: .qualification/Distribution
+        shell: bash
+        run: |
+          test "$(git hash-object qualification/core-update-program-u36/release-evidence.json)" = "0fec6e5290e659469a52a5f769da620f329f8c5a"
+          test ! -e qualification/core-update-program-u36/release-receipt.json
+
+      - name: Assert tracked evidence remains unchanged
+        shell: bash
+        run: |
+          for repo in Distribution System OS Brain Memory Skills Data; do
+            test -z "$(git -C "$QUAL/$repo" status --porcelain --untracked-files=no)"
+          done
