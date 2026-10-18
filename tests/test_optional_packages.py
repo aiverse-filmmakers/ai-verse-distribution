@@ -3,9 +3,11 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+import sys
 
 from aiverse_distribution.optional_packages import (
     validate_optional_packages,
+    run_optional_package_owner,
     verify_optional_package_source,
 )
 from aiverse_distribution.release_catalog import Catalog, CatalogValidationError
@@ -85,6 +87,36 @@ class OptionalPackageContractTests(unittest.TestCase):
             (package_root / "install.py").write_text("modified\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "digest mismatch"):
                 verify_optional_package_source(package, root)
+
+    def test_owner_api_runs_only_after_exact_source_verification(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            package_root, record, release = package_fixture(root)
+            script = (
+                "import json,sys; "
+                "print(json.dumps({'installed':sys.argv[1]=='install', 'version':'0.3.0-local', "
+                "'state':'absent' if sys.argv[1]=='remove' else 'setup-required'}))\n"
+            ).encode()
+            (package_root / "install.py").write_bytes(script)
+            record["files"]["install.py"] = sha(script)
+            manifest = {
+                "schema_version": 1,
+                "id": record["id"],
+                "version": record["version"],
+                "files": record["files"],
+            }
+            manifest_bytes = (json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            (package_root / "PACKAGE.json").write_bytes(manifest_bytes)
+            record["manifest_sha256"] = sha(manifest_bytes)
+            package = validate_optional_packages(release)[0]
+            installed = run_optional_package_owner(package, root, root, "install", python=sys.executable)
+            self.assertTrue(installed["installed"])
+            removed = run_optional_package_owner(package, root, root, "remove", python=sys.executable)
+            self.assertEqual(removed["state"], "absent")
+
+            (package_root / "install.py").write_text("print('tampered')\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "digest mismatch"):
+                run_optional_package_owner(package, root, root, "remove", python=sys.executable)
 
     def test_release_metadata_rejects_unsafe_paths_and_unqualified_hosts(self):
         with tempfile.TemporaryDirectory() as temporary:

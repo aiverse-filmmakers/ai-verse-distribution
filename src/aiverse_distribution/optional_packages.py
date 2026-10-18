@@ -181,3 +181,47 @@ def verify_optional_package_source(package: OptionalPackageRef, owner_source: Pa
         if hashlib.sha256(resolved.read_bytes()).hexdigest() != expected_digest:
             raise ValueError(f"optional package file digest mismatch: {name}")
     return package_root
+
+
+def run_optional_package_owner(
+    package: OptionalPackageRef,
+    owner_source: Path,
+    project_root: Path,
+    action: str,
+    *,
+    python: str,
+) -> Dict[str, Any]:
+    """Invoke the verified OS package API with a fixed argv and verify its receipt."""
+    if action not in {"install", "remove"}:
+        raise ValueError("optional package action must be install or remove")
+    package_root = verify_optional_package_source(package, owner_source)
+    if "install.py" not in package.files:
+        raise ValueError("optional package does not admit the OS install/remove API")
+    from .process import run
+
+    result = run(
+        [
+            # Keep virtual-environment interpreter symlinks intact; resolving them
+            # can discard the owner's installed packages.
+            str(Path(python).expanduser().absolute()),
+            str(package_root / "install.py"),
+            action,
+            "--root",
+            str(Path(project_root).resolve()),
+            "--json",
+        ],
+        cwd=Path(project_root).resolve(),
+    )
+    try:
+        payload = json.loads(result.stdout)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("OS optional-package API returned invalid JSON evidence") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("OS optional-package API returned an invalid receipt")
+    if action == "install" and (
+        payload.get("installed") is not True or payload.get("version") != package.version
+    ):
+        raise ValueError("OS optional-package API did not verify the admitted package version")
+    if action == "remove" and payload.get("state") != "absent":
+        raise ValueError("OS optional-package API did not verify removal")
+    return payload

@@ -60,12 +60,29 @@ def _experience_main(command: str, argv: list[str]) -> int:
     )
     if command == "upgrade":
         parser.add_argument("--apply", action="store_true", help="apply the exact verified setup upgrade")
+        parser.add_argument("--package", help="preview or install one admitted optional package")
+        parser.add_argument("--remove-package", help="preview or remove one admitted optional package")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    package_action = None
+    package_id = None
+    if command == "upgrade":
+        if args.package and args.remove_package:
+            parser.error("choose either --package or --remove-package")
+        if args.package:
+            package_action, package_id = "install", args.package
+        elif args.remove_package:
+            package_action, package_id = "remove", args.remove_package
     app = ExperienceOrchestrator()
     try:
         if command == "doctor":
             payload = app.doctor_overview()
+        elif package_action:
+            payload = (
+                app.optional_package_apply(package_id, package_action)
+                if args.apply
+                else app.optional_package_plan(package_id, package_action)
+            )
         elif args.apply:
             payload = app.upgrade_apply()
         else:

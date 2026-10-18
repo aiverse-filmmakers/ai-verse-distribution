@@ -12,6 +12,43 @@ from aiverse_distribution.state import StateStore
 
 
 class ExperienceEntrypointTests(unittest.TestCase):
+    def test_optional_package_selection_is_explicit_and_does_not_call_general_upgrade(self):
+        payload = {
+            "kind": "optional-package-preview",
+            "package_id": "ai-verse-codex-learning",
+            "action": "install",
+            "member_view": {"kind": "optional-package", "action": "install", "state": "READY",
+                            "message": "Nothing has changed yet."},
+        }
+        app = Mock()
+        app.optional_package_plan.return_value = payload
+        with patch("aiverse_distribution.experience_orchestrator.ExperienceOrchestrator", return_value=app):
+            output = io.StringIO()
+            with redirect_stdout(output):
+                code = entrypoint.main(["upgrade", "--package", "ai-verse-codex-learning"])
+        self.assertEqual(code, 0)
+        app.optional_package_plan.assert_called_once_with("ai-verse-codex-learning", "install")
+        app.upgrade_plan.assert_not_called()
+        self.assertIn("Nothing has changed yet.", output.getvalue())
+
+    def test_optional_package_apply_requires_selected_action_and_apply_flag(self):
+        payload = {
+            "kind": "optional-package-apply",
+            "state": "APPLIED",
+            "member_view": {"kind": "optional-package", "action": "remove", "state": "APPLIED",
+                            "message": "Removed safely."},
+        }
+        app = Mock()
+        app.optional_package_apply.return_value = payload
+        with patch("aiverse_distribution.experience_orchestrator.ExperienceOrchestrator", return_value=app):
+            output = io.StringIO()
+            with redirect_stdout(output):
+                code = entrypoint.main(["upgrade", "--remove-package", "ai-verse-codex-learning", "--apply"])
+        self.assertEqual(code, 0)
+        app.optional_package_apply.assert_called_once_with("ai-verse-codex-learning", "remove")
+        app.upgrade_apply.assert_not_called()
+        self.assertIn("Removed safely.", output.getvalue())
+
     def test_upgrade_entrypoint_is_preview_only(self):
         payload = {
             "kind": "upgrade-preview",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -19,6 +20,7 @@ from .infrastructure_upgrade import (
     canonical_sha256,
     require_owner_result,
 )
+from .optional_packages import run_optional_package_owner
 from .recovery_orchestrator import RecoveryOrchestrator
 from .release_catalog import DistributionError, ReleaseSet
 from .state import LifecycleRecoveryRequired, now_iso
@@ -328,6 +330,154 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
 
     def upgrade_plan(self) -> Dict[str, Any]:
         return self._build_upgrade_plan(allow_pending=False)
+
+    @staticmethod
+    def _optional_platform(platform: str) -> str:
+        return {"linux": "linux", "darwin": "macos", "win32": "windows"}.get(platform, "")
+
+    def _optional_package_plan(self, package_id: str, action: str) -> Dict[str, Any]:
+        if action not in {"install", "remove"}:
+            raise DistributionError("optional package action must be install or remove")
+        lock, release = self._installed_core()
+        packages = self.catalog.optional_packages_for(release.id)
+        package = next((item for item in packages if item.id == package_id), None)
+        if package is None:
+            raise DistributionError(f"optional package is not admitted by installed Core: {package_id}")
+        if package.owner_component != "ai-verse-os":
+            raise DistributionError("this optional package lifecycle currently requires the OS owner API")
+        current_platform = self._optional_platform(self.catalog.platform_key())
+        if not current_platform or current_platform not in package.qualified_platforms:
+            raise DistributionError("optional package is not qualified for this platform")
+        owner = next((item for item in release.components if item.id == package.owner_component), None)
+        if owner is None or owner.revision != package.source_revision:
+            raise DistributionError("optional package owner revision does not match installed Core")
+        root = Path(lock["root"]).expanduser().resolve()
+        owner_source = root
+        try:
+            self._verify_exact_source(owner, owner_source)
+            from .optional_packages import verify_optional_package_source
+
+            verify_optional_package_source(package, owner_source)
+        except Exception as exc:
+            raise DistributionError(f"optional package source is not safe to use: {exc}") from exc
+        return {
+            "release": release,
+            "package": package,
+            "root": root,
+            "owner_source": owner_source,
+            "platform": current_platform,
+            "action": action,
+        }
+
+    def optional_package_plan(self, package_id: str, action: str) -> Dict[str, Any]:
+        plan = self._optional_package_plan(package_id, action)
+        package = plan["package"]
+        fingerprint = canonical_sha256({
+            "release_set_id": plan["release"].id,
+            "package_id": package.id,
+            "version": package.version,
+            "manifest_sha256": package.manifest_sha256,
+            "action": action,
+            "platform": plan["platform"],
+        })
+        return {
+            "kind": "optional-package-preview",
+            "preview": True,
+            "mutated": False,
+            "package_id": package.id,
+            "version": package.version,
+            "action": action,
+            "plan_fingerprint": fingerprint,
+            "member_view": {
+                "kind": "optional-package",
+                "action": action,
+                "state": "READY",
+                "message": (
+                    "This package is available from your installed Core. Nothing has changed yet."
+                    if action == "install"
+                    else "Package removal is ready. Changed or unrecognized hooks will be preserved and reported."
+                ),
+            },
+        }
+
+    def optional_package_apply(self, package_id: str, action: str) -> Dict[str, Any]:
+        with self.state.lifecycle_transaction():
+            if self.update_journal.load() is not None or self.infrastructure_upgrade_journal.load() is not None:
+                raise LifecycleRecoveryRequired(
+                    "Another AI-Verse update or setup change needs recovery before package changes can start."
+                )
+            plan = self._optional_package_plan(package_id, action)
+            package = plan["package"]
+            marker_metadata = {
+                "release_set_id": plan["release"].id,
+                "package_id": package.id,
+                "package_version": package.version,
+                "manifest_sha256": package.manifest_sha256,
+                "source_revision": package.source_revision,
+                "action": action,
+            }
+            operation_key = f"optional-package:{action}:{package.id}:{package.version}"
+            pending = self.state.pending_effect()
+            if pending and (
+                pending.get("operation_key") != operation_key
+                or pending.get("metadata") != marker_metadata
+            ):
+                raise LifecycleRecoveryRequired(
+                    "A different AI-Verse change needs recovery before package changes can start."
+                )
+            lkg = (
+                self.last_known_good.load_current()
+                if pending
+                else self.ensure_last_known_good()
+            )
+            marker = self.state.begin_effect(operation_key, metadata=marker_metadata)
+            try:
+                result = run_optional_package_owner(
+                    package,
+                    plan["owner_source"],
+                    plan["root"],
+                    action,
+                    python=sys.executable,
+                )
+            except ValueError as exc:
+                raise DistributionError(f"OS optional-package API verification failed: {exc}") from exc
+            state = "APPLIED" if action == "remove" else "SETUP_REQUIRED"
+            updated = dict(self.state.load())
+            updated.pop("_pending_lifecycle", None)
+            updated["last_optional_package_operation"] = {
+                **marker_metadata,
+                "state": state,
+                "completed_at": now_iso(),
+            }
+            self.state.commit_effect(updated, marker)
+            message = (
+                "The optional package was installed. Review and trust its hooks in your host settings to activate them."
+                if action == "install"
+                else "The optional package was removed. Its files, settings, trust, and user data were preserved."
+            )
+            return {
+                "kind": "optional-package-apply",
+                "state": state,
+                "applied": True,
+                "mutated": True,
+                "package_id": package.id,
+                "version": package.version,
+                "action": action,
+                "last_known_good": lkg,
+                "owner_result": {
+                    "state": result.get("state"),
+                    "installed": result.get("installed"),
+                    "canonical_state_preserved": result.get("canonical_state_preserved", True),
+                    "extension_files_preserved": result.get("extension_files_preserved", True),
+                    "trust_modified": result.get("trust_modified", False),
+                },
+                "member_view": {
+                    "kind": "optional-package",
+                    "action": action,
+                    "state": state,
+                    "message": message,
+                },
+            }
 
     @staticmethod
     def _operation_context(

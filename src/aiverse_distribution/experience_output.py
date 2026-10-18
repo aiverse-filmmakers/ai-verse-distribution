@@ -7,6 +7,14 @@ from .redaction import sanitize
 
 
 def format_experience(payload: Dict[str, Any]) -> Optional[str]:
+    if payload.get("kind") in {"optional-package-preview", "optional-package-apply"}:
+        view = payload.get("member_view")
+        if not isinstance(view, dict):
+            return None
+        action = str(view.get("action") or payload.get("action") or "install")
+        message = str(view.get("message") or "AI-Verse could not confirm the package action.")
+        title = "AI-Verse Optional Package"
+        return "\n".join([title, "", message])
     view = payload.get("member_view")
     if not isinstance(view, dict):
         return None
