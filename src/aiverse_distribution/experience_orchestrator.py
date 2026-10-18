@@ -425,14 +425,26 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                 )
             except (OSError, ValueError) as exc:
                 raise DistributionError(f"OS optional-package setup check failed: {exc}") from exc
-        ready = result.get("state") == "ready"
-        state = "READY" if ready else "SETUP_REQUIRED"
         files_verified = result.get("package_files_verified") is True
+        enabled = result.get("enabled") is True
+        ready = (
+            result.get("state") == "ready"
+            and files_verified
+            and enabled
+            and result.get("handlers_enabled") is True
+            and result.get("approval_required") is False
+            and result.get("execution_observed") is True
+            and result.get("review_observed") is True
+        )
+        state = "READY" if ready else "SETUP_REQUIRED"
         if not files_verified:
             message = "The installed helper files do not match the admitted release. Repair the package, then check setup again."
             owner_guidance = (
                 f"Run `aiverse upgrade --package {package.id} --apply`, then run `aiverse setup --package {package.id}` again."
             )
+        elif not enabled:
+            message = "The optional helper is installed but disabled. Ordinary AI-Verse use is unaffected."
+            owner_guidance = None
         elif ready:
             message = "The package files, current hooks, callbacks, and original-turn review were verified."
             owner_guidance = None
@@ -453,6 +465,7 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                 "kind": "optional-package-check",
                 "state": state,
                 "message": message,
+                "enabled": enabled,
                 "hooks_discovered": result.get("hooks_discovered"),
                 "handlers_enabled": result.get("handlers_enabled"),
                 "package_files_verified": files_verified,

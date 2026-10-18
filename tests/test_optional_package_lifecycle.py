@@ -64,6 +64,7 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             before = state.load()
             owner_result = {
                 "installed": True,
+                "enabled": True,
                 "state": "setup-required",
                 "hooks_discovered": 6,
                 "handlers_enabled": True,
@@ -94,6 +95,7 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             app, state, package, root = make_app(Path(temporary))
             owner_result = {
                 "installed": True,
+                "enabled": True,
                 "state": "ready",
                 "package_files_verified": True,
                 "hooks_discovered": 6,
@@ -108,8 +110,33 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             ):
                 result = app.optional_package_check(package.id, "doctor")
             self.assertEqual(result["state"], "READY")
+            self.assertTrue(result["member_view"]["enabled"])
             self.assertTrue(result["member_view"]["package_files_verified"])
             self.assertIsNone(result["member_view"]["guidance"])
+            self.assertIsNone(state.pending_effect())
+
+    def test_disabled_optional_package_is_reported_without_claiming_ready(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, state, package, root = make_app(Path(temporary))
+            owner_result = {
+                "installed": True,
+                "enabled": False,
+                "state": "setup-required",
+                "package_files_verified": True,
+                "handlers_enabled": False,
+                "approval_required": None,
+                "execution_observed": False,
+                "review_observed": False,
+            }
+            with patch("aiverse_distribution.optional_packages.verify_optional_package_source"), patch(
+                "aiverse_distribution.experience_orchestrator.run_optional_package_owner",
+                return_value=owner_result,
+            ):
+                result = app.optional_package_check(package.id, "doctor")
+            self.assertEqual(result["state"], "SETUP_REQUIRED")
+            self.assertTrue(result["member_view"]["package_files_verified"])
+            self.assertFalse(result["member_view"]["enabled"])
+            self.assertIn("disabled", result["member_view"]["message"])
             self.assertIsNone(state.pending_effect())
 
     def test_install_uses_owner_api_inside_recoverable_distribution_transaction(self):
