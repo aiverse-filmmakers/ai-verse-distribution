@@ -439,7 +439,7 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                     action,
                     python=sys.executable,
                 )
-            except ValueError as exc:
+            except (OSError, ValueError) as exc:
                 raise DistributionError(f"OS optional-package API verification failed: {exc}") from exc
             state = "APPLIED" if action == "remove" else "SETUP_REQUIRED"
             updated = dict(self.state.load())
