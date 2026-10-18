@@ -49,6 +49,15 @@ class ExperienceEntrypointTests(unittest.TestCase):
         app.upgrade_apply.assert_not_called()
         self.assertIn("Removed safely.", output.getvalue())
 
+    def test_ordinary_update_still_uses_software_update_entrypoint(self):
+        with patch.object(cli, "main", return_value=0) as software_update, patch(
+            "aiverse_distribution.experience_orchestrator.ExperienceOrchestrator"
+        ) as package_orchestrator:
+            code = entrypoint.main(["update", "--json"])
+        self.assertEqual(code, 0)
+        software_update.assert_called_once_with(["update", "--json"])
+        package_orchestrator.assert_not_called()
+
     def test_upgrade_entrypoint_is_preview_only(self):
         payload = {
             "kind": "upgrade-preview",
