@@ -121,12 +121,13 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             owner_result = {
                 "installed": True,
                 "enabled": False,
-                "state": "setup-required",
+                "state": "ready",
                 "package_files_verified": True,
-                "handlers_enabled": False,
-                "approval_required": None,
-                "execution_observed": False,
-                "review_observed": False,
+                "hooks_discovered": 6,
+                "handlers_enabled": True,
+                "approval_required": False,
+                "execution_observed": True,
+                "review_observed": True,
             }
             with patch("aiverse_distribution.optional_packages.verify_optional_package_source"), patch(
                 "aiverse_distribution.experience_orchestrator.run_optional_package_owner",

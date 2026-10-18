@@ -84,7 +84,8 @@ class ExperienceEntrypointTests(unittest.TestCase):
             "kind": "optional-package-check",
             "state": "SETUP_REQUIRED",
             "member_view": {"kind": "optional-package-check", "state": "SETUP_REQUIRED",
-                            "message": "Setup remains incomplete."},
+                            "message": "The optional helper is installed but disabled.",
+                            "enabled": False},
         }
         app = Mock()
         app.optional_package_check.return_value = payload
@@ -94,6 +95,7 @@ class ExperienceEntrypointTests(unittest.TestCase):
                 code = entrypoint.main(["doctor", "--package", "ai-verse-codex-learning"])
         self.assertEqual(code, 1)
         app.optional_package_check.assert_called_once_with("ai-verse-codex-learning", "doctor")
+        self.assertIn("Package enabled: no", output.getvalue())
         self.assertIn("Setup complete: no", output.getvalue())
 
     def test_general_setup_without_package_keeps_existing_cli_route(self):
