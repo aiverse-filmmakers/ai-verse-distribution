@@ -17,6 +17,10 @@ aiverse update --plan
 aiverse doctor
 aiverse upgrade
 aiverse upgrade --apply
+aiverse upgrade --package <id>
+aiverse upgrade --package <id> --apply
+aiverse upgrade --remove-package <id>
+aiverse upgrade --remove-package <id> --apply
 aiverse restore
 aiverse restore --apply
 aiverse status
@@ -30,6 +34,8 @@ Semantics:
 - `aiverse doctor` is the read-only whole-install health aggregate. Owner checks remain authoritative underneath it.
 - `aiverse upgrade` is read-only structural convergence preview.
 - `aiverse upgrade --apply` is the explicit whole-install structural mutation path. It revalidates the exact plan, protects the current installation with Last-Known-Good first, executes opaque owner operations, supports exact resume, verifies resulting identity/reference state, and finishes with whole-install health.
+- `aiverse upgrade --package <id>` and `--remove-package <id>` preview one exact optional package action admitted by the installed release. The matching `--apply` invokes only the verified package owner's install/remove API, records the action under the lifecycle lock, and resumes only that same action after interruption. Package installation never sets host trust; members review and trust hooks themselves.
+- Optional packages remain outside the Core component/profile list. `aiverse update` does not install, remove, enable, or change trust for them. A modified or unknown hook is preserved and reported by the package owner.
 - `aiverse restore` is read-only recovery preview.
 - `aiverse restore --apply` explicitly restores the single verified retained Last-Known-Good point according to declared recovery coverage.
 

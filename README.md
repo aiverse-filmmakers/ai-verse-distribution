@@ -38,6 +38,10 @@ aiverse update --plan     # preview that software update without changing anythi
 aiverse doctor            # check the whole supported installation
 aiverse upgrade           # preview optional/required structural convergence
 aiverse upgrade --apply   # explicitly apply the exact verified structural plan
+aiverse upgrade --package <id>  # preview one admitted optional package install
+aiverse upgrade --package <id> --apply  # install it through its component owner
+aiverse upgrade --remove-package <id>  # preview one admitted optional package removal
+aiverse upgrade --remove-package <id> --apply  # remove it through its component owner
 aiverse restore           # preview the single verified Last-Known-Good recovery point
 aiverse restore --apply   # explicitly restore that verified recovery point
 aiverse status            # show current owner-backed installation state
@@ -45,6 +49,8 @@ aiverse open              # show the installed root and use handoff
 ```
 
 `aiverse update` never silently performs optional structural work. Structural change stays behind `aiverse upgrade --apply`. Restore stays preview-first and requires `--apply` to mutate state.
+
+Optional packages must be named by the installed release and remain separate from the Core component list. Package install/removal is preview-first and requires the matching `--apply`. Distribution verifies the exact owner source before invoking its lifecycle API. Installation does not approve or trust host hooks; each member reviews those in their host settings. A changed or unrecognized owned hook blocks removal for review.
 
 Normal member output is deliberately plain English. Repository paths, infrastructure generations, migration recipes, exact release IDs, compatibility receipts, and recovery internals remain diagnostic evidence rather than knowledge the member must supply.
 
