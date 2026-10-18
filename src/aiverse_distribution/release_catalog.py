@@ -8,6 +8,7 @@ from importlib import resources
 from typing import Any, Dict, Iterable, List, Optional
 
 from .candidate_admission import CandidateAdmissionError, validate_candidate_overlay_bindings
+from .optional_packages import OptionalPackageRef, validate_optional_packages
 
 
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
@@ -211,6 +212,10 @@ class Catalog:
                         raise CatalogValidationError(f"{rid}/{cid}: invalid dependency lock manifest path")
                     if not isinstance(manifest_sha, str) or not _SHA256.fullmatch(manifest_sha):
                         raise CatalogValidationError(f"{rid}/{cid}: invalid dependency lock manifest digest")
+            try:
+                validate_optional_packages(raw)
+            except ValueError as exc:
+                raise CatalogValidationError(f"{rid}: {exc}") from exc
             authority = raw.get("authority", {})
             if authority.get("grants_permissions") is not False:
                 raise CatalogValidationError(f"{rid}: release sets may not grant permissions")
@@ -344,6 +349,11 @@ class Catalog:
                     raise ReleaseBlockedError(release.id, release.blockers)
                 return release
         raise DistributionError(f"unknown release set: {release_set_id}")
+
+    def optional_packages_for(self, release_set_id: str) -> tuple[OptionalPackageRef, ...]:
+        """Return exact optional package pins without treating them as components."""
+        release = self.get_release(release_set_id, require_released=True)
+        return validate_optional_packages(release.raw)
 
     def resolve(
         self,
