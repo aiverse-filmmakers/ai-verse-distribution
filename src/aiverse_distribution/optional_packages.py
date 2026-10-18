@@ -193,8 +193,8 @@ def run_optional_package_owner(
     python: str,
 ) -> Dict[str, Any]:
     """Invoke the verified OS package API with a fixed argv and verify its receipt."""
-    if action not in {"install", "remove"}:
-        raise ValueError("optional package action must be install or remove")
+    if action not in {"install", "remove", "setup", "doctor"}:
+        raise ValueError("optional package action is not supported by the OS owner API")
     package_root = verify_optional_package_source(package, owner_source)
     if "install.py" not in package.files:
         raise ValueError("optional package does not admit the OS install/remove API")
@@ -227,4 +227,9 @@ def run_optional_package_owner(
         raise ValueError("OS optional-package API did not verify the admitted package version")
     if action == "remove" and payload.get("state") != "absent":
         raise ValueError("OS optional-package API did not verify removal")
+    if action in {"setup", "doctor"} and (
+        payload.get("state") not in {"ready", "setup-required"}
+        or payload.get("installed") is not True
+    ):
+        raise ValueError("OS optional-package API did not verify an installed setup state")
     return payload

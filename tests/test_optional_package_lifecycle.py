@@ -58,6 +58,35 @@ def make_app(home: Path):
 
 
 class OptionalPackageLifecycleTests(unittest.TestCase):
+    def test_package_setup_check_is_read_only_and_reports_owner_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, state, package, root = make_app(Path(temporary))
+            before = state.load()
+            owner_result = {
+                "installed": True,
+                "state": "setup-required",
+                "hooks_discovered": 6,
+                "handlers_enabled": True,
+                "approval_required": True,
+                "execution_observed": False,
+                "review_observed": False,
+                "guidance": "Review project hooks in Codex Settings.",
+            }
+            with patch("aiverse_distribution.optional_packages.verify_optional_package_source") as verify, patch(
+                "aiverse_distribution.experience_orchestrator.run_optional_package_owner",
+                return_value=owner_result,
+            ) as run_owner:
+                result = app.optional_package_check(package.id, "setup")
+            verify.assert_called_once_with(package, root)
+            run_owner.assert_called_once_with(package, root, root, "setup", python=run_owner.call_args.kwargs["python"])
+            self.assertEqual(result["state"], "SETUP_REQUIRED")
+            self.assertFalse(result["mutated"])
+            self.assertEqual(result["member_view"]["hooks_discovered"], 6)
+            self.assertTrue(result["member_view"]["approval_required"])
+            self.assertEqual(result["member_view"]["guidance"], owner_result["guidance"])
+            self.assertEqual(state.load(), before)
+            self.assertIsNone(state.pending_effect())
+
     def test_install_uses_owner_api_inside_recoverable_distribution_transaction(self):
         with tempfile.TemporaryDirectory() as temporary:
             app, state, package, root = make_app(Path(temporary))

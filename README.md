@@ -36,6 +36,8 @@ The installed `aiverse` command exposes one whole-install lifecycle surface:
 aiverse update            # apply the newest explicitly admitted software update
 aiverse update --plan     # preview that software update without changing anything
 aiverse doctor            # check the whole supported installation
+aiverse setup --package <id>  # guide and check setup for one admitted optional package
+aiverse doctor --package <id> # check approval, callbacks, and review for that package
 aiverse upgrade           # preview optional/required structural convergence
 aiverse upgrade --apply   # explicitly apply the exact verified structural plan
 aiverse upgrade --package <id>  # preview one admitted optional package install
@@ -50,7 +52,7 @@ aiverse open              # show the installed root and use handoff
 
 `aiverse update` never silently performs optional structural work. Structural change stays behind `aiverse upgrade --apply`. Restore stays preview-first and requires `--apply` to mutate state.
 
-Optional packages must be named by the installed release and remain separate from the Core component list. Package install/removal is preview-first and requires the matching `--apply`. Distribution verifies the exact owner source before invoking its lifecycle API. Installation does not approve or trust host hooks; each member reviews those in their host settings. A changed or unrecognized owned hook blocks removal for review.
+Optional packages must be named by the installed release and remain separate from the Core component list. Package install/removal is preview-first and requires the matching `--apply`. Distribution verifies the exact owner source before invoking its lifecycle API. Installation does not approve or trust host hooks; each member reviews those in their host settings. Use `aiverse setup --package <id>` for the owner's plain-language steps, then rerun it after approval. `aiverse doctor --package <id>` reports hook discovery, enabled handlers, approval, an actual callback, and a completed original-turn review separately. It reports ready only when the owner verifies every required check. A changed or unrecognized owned hook blocks removal for review.
 
 Normal member output is deliberately plain English. Repository paths, infrastructure generations, migration recipes, exact release IDs, compatibility receipts, and recovery internals remain diagnostic evidence rather than knowledge the member must supply.
 

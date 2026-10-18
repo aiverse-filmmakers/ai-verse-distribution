@@ -55,6 +55,8 @@ def _experience_main(command: str, argv: list[str]) -> int:
         description=(
             "Check the whole supported AI-Verse installation without changing it."
             if command == "doctor"
+            else "Check and guide setup for one explicitly selected optional package."
+            if command == "setup"
             else "Preview safe setup improvements, or apply them only with explicit --apply intent."
         ),
     )
@@ -62,10 +64,13 @@ def _experience_main(command: str, argv: list[str]) -> int:
         parser.add_argument("--apply", action="store_true", help="apply the exact verified setup upgrade")
         parser.add_argument("--package", help="preview or install one admitted optional package")
         parser.add_argument("--remove-package", help="preview or remove one admitted optional package")
+    elif command in {"setup", "doctor"}:
+        parser.add_argument("--package", help="check setup for one admitted optional package")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     package_action = None
     package_id = None
+    package_check = command in {"setup", "doctor"} and args.package is not None
     if command == "upgrade":
         if args.package and args.remove_package:
             parser.error("choose either --package or --remove-package")
@@ -75,7 +80,9 @@ def _experience_main(command: str, argv: list[str]) -> int:
             package_action, package_id = "remove", args.remove_package
     app = ExperienceOrchestrator()
     try:
-        if command == "doctor":
+        if package_check:
+            payload = app.optional_package_check(args.package, command)
+        elif command == "doctor":
             payload = app.doctor_overview()
         elif package_action:
             payload = (
@@ -88,7 +95,11 @@ def _experience_main(command: str, argv: list[str]) -> int:
         else:
             payload = app.upgrade_plan()
         emit_experience(payload, args.json)
+        if package_check and command == "setup":
+            return 0
         if command == "doctor":
+            if package_check:
+                return 0 if payload.get("state") == "READY" else 1
             return 0 if payload.get("ok") is True else 1
         return 1 if payload.get("state") in {"BLOCKED/REVIEW", "RECOVERY_REQUIRED", "REPLAN_REQUIRED"} else 0
     except Exception as exc:
@@ -118,6 +129,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         return _experience_main("upgrade", values[1:])
     if values and values[0] == "doctor" and "--component" not in values[1:]:
         return _experience_main("doctor", values[1:])
+    if values and values[0] == "setup" and "--package" in values[1:]:
+        return _experience_main("setup", values[1:])
 
     # Component-scoped doctor remains an expert/internal compatibility surface.
     cli.Orchestrator = RecoveryOrchestrator

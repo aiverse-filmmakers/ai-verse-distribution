@@ -97,7 +97,7 @@ class OptionalPackageContractTests(unittest.TestCase):
             record["files"]["support.py"] = sha(support)
             script = (
                 "import json,sys,support; "
-                "print(json.dumps({'installed':sys.argv[1]=='install', 'version':'0.3.0-local', "
+                "print(json.dumps({'installed':sys.argv[1] in ('install','setup','doctor'), 'version':'0.3.0-local', "
                 "'state':'absent' if sys.argv[1]=='remove' else 'setup-required'}))\n"
             ).encode()
             (package_root / "install.py").write_bytes(script)
@@ -114,6 +114,8 @@ class OptionalPackageContractTests(unittest.TestCase):
             package = validate_optional_packages(release)[0]
             installed = run_optional_package_owner(package, root, root, "install", python=sys.executable)
             self.assertTrue(installed["installed"])
+            checked = run_optional_package_owner(package, root, root, "setup", python=sys.executable)
+            self.assertEqual(checked["state"], "setup-required")
             removed = run_optional_package_owner(package, root, root, "remove", python=sys.executable)
             self.assertEqual(removed["state"], "absent")
             self.assertFalse((package_root / "__pycache__").exists())

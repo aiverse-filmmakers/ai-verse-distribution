@@ -336,8 +336,8 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
         return {"linux": "linux", "darwin": "macos", "win32": "windows"}.get(platform, "")
 
     def _optional_package_plan(self, package_id: str, action: str) -> Dict[str, Any]:
-        if action not in {"install", "remove"}:
-            raise DistributionError("optional package action must be install or remove")
+        if action not in {"install", "remove", "setup", "doctor"}:
+            raise DistributionError("optional package action is not supported")
         lock, release = self._installed_core()
         packages = self.catalog.optional_packages_for(release.id)
         package = next((item for item in packages if item.id == package_id), None)
@@ -392,11 +392,63 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                 "kind": "optional-package",
                 "action": action,
                 "state": "READY",
-                "message": (
-                    "This package is available from your installed Core. Nothing has changed yet."
-                    if action == "install"
-                    else "Package removal is ready. Changed or unrecognized hooks will be preserved and reported."
-                ),
+                "message": {
+                    "install": "This package is available from your installed Core. Nothing has changed yet.",
+                    "remove": "Package removal is ready. Changed or unrecognized hooks will be preserved and reported.",
+                    "setup": "AI-Verse will check the installed package and its current hook status without changing anything.",
+                    "doctor": "AI-Verse will check the installed package and its current hook status without changing anything.",
+                }[action],
+            },
+        }
+
+    def optional_package_check(self, package_id: str, action: str) -> Dict[str, Any]:
+        if action not in {"setup", "doctor"}:
+            raise DistributionError("optional package check must use setup or doctor")
+        with self.state.lifecycle_transaction():
+            if self.update_journal.load() is not None or self.infrastructure_upgrade_journal.load() is not None:
+                raise LifecycleRecoveryRequired(
+                    "Another AI-Verse change needs recovery before package setup can be checked."
+                )
+            if self.state.pending_effect() is not None:
+                raise LifecycleRecoveryRequired(
+                    "A previous AI-Verse change needs recovery before package setup can be checked."
+                )
+            plan = self._optional_package_plan(package_id, action)
+            package = plan["package"]
+            try:
+                result = run_optional_package_owner(
+                    package,
+                    plan["owner_source"],
+                    plan["root"],
+                    action,
+                    python=sys.executable,
+                )
+            except (OSError, ValueError) as exc:
+                raise DistributionError(f"OS optional-package setup check failed: {exc}") from exc
+        ready = result.get("state") == "ready"
+        state = "READY" if ready else "SETUP_REQUIRED"
+        message = (
+            "The package is installed and its current hooks, callbacks, and review were verified."
+            if ready
+            else "The package is installed, but setup checks are incomplete. Follow the steps below, then run the check again."
+        )
+        return {
+            "kind": "optional-package-check",
+            "package_id": package.id,
+            "version": package.version,
+            "action": action,
+            "state": state,
+            "mutated": False,
+            "member_view": {
+                "kind": "optional-package-check",
+                "state": state,
+                "message": message,
+                "hooks_discovered": result.get("hooks_discovered"),
+                "handlers_enabled": result.get("handlers_enabled"),
+                "approval_required": result.get("approval_required"),
+                "execution_observed": result.get("execution_observed") is True,
+                "review_observed": result.get("review_observed") is True,
+                "guidance": result.get("guidance") if not ready else None,
             },
         }
 
