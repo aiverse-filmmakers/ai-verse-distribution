@@ -196,6 +196,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
             adapters.PUBLIC_BETA_AGENT_OS,
             adapters.INVISIBLE_INTELLIGENCE_OS,
             adapters.CONTEXT_LADDER_OS,
+            adapters.FIRST_RUN_CORE_OS,
         ):
             mocked.reset_mock()
             adapters.owner_setup(
