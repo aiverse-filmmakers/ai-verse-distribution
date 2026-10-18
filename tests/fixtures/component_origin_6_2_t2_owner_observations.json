@@ -1,0 +1,91 @@
+{
+  "schema": "aiverse.6.2-t2-owner-observations/v1",
+  "authority": {
+    "historical_observation_only": true,
+    "does_not_issue_owner_acceptance": true,
+    "does_not_publish_system_state": true,
+    "does_not_promote_live_release": true
+  },
+  "brain_release_descriptor_validation": {
+    "run_id": 39088807245,
+    "head_sha": "f81b1a0334426e604d11ce0195e2e5c3f77a0bd5",
+    "conclusion": "success"
+  },
+  "owners": [
+    {
+      "component_id": "ai-verse-os",
+      "repository": "aiverse-filmmakers/AI-Verse-OS",
+      "descriptor_source_revision": "83747a90998077ad2ab4636f202ca2e065a9a6bb",
+      "descriptor_path": "release/component-release.json",
+      "descriptor_blob_sha": "04934f60d495d17efd8f48d258e3b6ace173d740",
+      "descriptor_content": "{\n  \"schema_version\": \"ai-verse.component-release/v1\",\n  \"component_id\": \"ai-verse-os\",\n  \"version\": \"0.2.0\",\n  \"revision\": \"64f7325444d18f94c9d4755d32eb89f3468bda6b\",\n  \"release_status\": \"accepted\",\n  \"package\": {\n    \"repository\": \"aiverse-filmmakers/AI-Verse-OS\",\n    \"source_type\": \"git\",\n    \"package_name\": \"ai-verse-os\",\n    \"integrity\": null\n  },\n  \"supported_platforms\": [\"linux\", \"macos\", \"windows\"],\n  \"runtime_requirements\": {\"python\": null, \"node\": \">=18\", \"other\": []},\n  \"lifecycle\": {\"install\": true, \"setup\": true, \"status\": true, \"doctor\": true, \"enable\": false, \"disable\": false, \"update\": true, \"uninstall\": false},\n  \"state\": {\"canonical_state_owned\": true, \"preserve_on_update\": true, \"preserve_on_uninstall\": true, \"preserve_unknown_user_files\": true, \"state_format\": \"unified-workspace-v2\"},\n  \"migration\": {\"change_classification\": \"non-breaking\", \"compatibility\": \"none-required\", \"from_versions\": [], \"requires_explicit_migration\": false, \"owner_controlled\": true, \"checkpoint_policy\": \"not-required\"},\n  \"authority\": {\"grants_permissions\": false, \"changes_direction_owner\": false, \"changes_scope\": false, \"enables_disabled_component\": false, \"exposes_remote_listener\": false},\n  \"evidence\": {\n    \"ci\": [{\"kind\": \"owner-native-ci\", \"status\": \"pass\", \"revision\": \"64f7325444d18f94c9d4755d32eb89f3468bda6b\", \"run_id\": \"38228297973\", \"url\": \"https://github.com/aiverse-filmmakers/AI-Verse-OS/actions/runs/38228297973\"}],\n    \"acceptance\": [{\"kind\": \"owner-local-native-workflow-acceptance\", \"status\": \"pass\", \"revision\": \"64f7325444d18f94c9d4755d32eb89f3468bda6b\", \"run_id\": \"38228297973\", \"url\": \"https://github.com/aiverse-filmmakers/AI-Verse-OS/actions/runs/38228297973\"}]\n  },\n  \"semantics\": {\"release_metadata_only\": true, \"live_health_truth\": false}\n}\n",
+      "native_workflow": {
+        "run_id": 38228297973,
+        "name": "Repository QC",
+        "head_sha": "64f7325444d18f94c9d4755d32eb89f3468bda6b",
+        "conclusion": "success",
+        "url": "https://github.com/aiverse-filmmakers/AI-Verse-OS/actions/runs/38228297973"
+      }
+    },
+    {
+      "component_id": "ai-verse-brain",
+      "repository": "aiverse-filmmakers/AI-Verse-Brain",
+      "descriptor_source_revision": "f81b1a0334426e604d11ce0195e2e5c3f77a0bd5",
+      "descriptor_path": "release/component-release.json",
+      "descriptor_blob_sha": "e7dfc74bf9d7c0dbee0b2b3eaa754dee223ed738",
+      "descriptor_content": "{\n  \"schema_version\": \"ai-verse.component-release/v1\",\n  \"component_id\": \"ai-verse-brain\",\n  \"version\": \"0.1.0-beta.3.dev0\",\n  \"revision\": \"2b64bbb36d6a891d855a00ca2459a87f5cf92cdb\",\n  \"release_status\": \"accepted\",\n  \"package\": {\n    \"repository\": \"aiverse-filmmakers/AI-Verse-Brain\",\n    \"source_type\": \"git\",\n    \"package_name\": \"ai-verse-brain\",\n    \"integrity\": null\n  },\n  \"supported_platforms\": [\n    \"linux\",\n    \"macos\",\n    \"windows\"\n  ],\n  \"runtime_requirements\": {\n    \"python\": \">=3.9\",\n    \"node\": null,\n    \"other\": []\n  },\n  \"lifecycle\": {\n    \"install\": true,\n    \"setup\": true,\n    \"status\": true,\n    \"doctor\": true,\n    \"enable\": true,\n    \"disable\": true,\n    \"update\": true,\n    \"uninstall\": true\n  },\n  \"state\": {\n    \"canonical_state_owned\": true,\n    \"preserve_on_update\": true,\n    \"preserve_on_uninstall\": true,\n    \"preserve_unknown_user_files\": true,\n    \"state_format\": null\n  },\n  \"migration\": {\n    \"change_classification\": \"non-breaking\",\n    \"compatibility\": \"none-required\",\n    \"from_versions\": [],\n    \"requires_explicit_migration\": false,\n    \"owner_controlled\": true,\n    \"checkpoint_policy\": \"not-required\"\n  },\n  \"authority\": {\n    \"grants_permissions\": false,\n    \"changes_direction_owner\": false,\n    \"changes_scope\": false,\n    \"enables_disabled_component\": false,\n    \"exposes_remote_listener\": false\n  },\n  \"evidence\": {\n    \"ci\": [\n      {\n        \"kind\": \"owner-native-ci\",\n        \"status\": \"pass\",\n        \"revision\": \"2b64bbb36d6a891d855a00ca2459a87f5cf92cdb\",\n        \"run_id\": \"39088696092\",\n        \"url\": \"https://github.com/aiverse-filmmakers/AI-Verse-Brain/actions/runs/39088696092\"\n      }\n    ],\n    \"acceptance\": [\n      {\n        \"kind\": \"owner-local-native-workflow-acceptance\",\n        \"status\": \"pass\",\n        \"revision\": \"2b64bbb36d6a891d855a00ca2459a87f5cf92cdb\",\n        \"run_id\": \"39088696092\",\n        \"url\": \"https://github.com/aiverse-filmmakers/AI-Verse-Brain/actions/runs/39088696092\"\n      }\n    ]\n  },\n  \"semantics\": {\n    \"release_metadata_only\": true,\n    \"live_health_truth\": false\n  }\n}\n",
+      "native_workflow": {
+        "run_id": 39088696092,
+        "name": "CI",
+        "head_sha": "2b64bbb36d6a891d855a00ca2459a87f5cf92cdb",
+        "conclusion": "success",
+        "url": "https://github.com/aiverse-filmmakers/AI-Verse-Brain/actions/runs/39088696092"
+      }
+    },
+    {
+      "component_id": "ai-verse-memory",
+      "repository": "aiverse-filmmakers/AI-Verse-Memory",
+      "descriptor_source_revision": "09911eae0b4b0cbf7e7e7969230fe5b86647b841",
+      "descriptor_path": "release/component-release.json",
+      "descriptor_blob_sha": "63b4607fbcb07a8bd040239cdf6201d40eeab050",
+      "descriptor_content": "{\n  \"schema_version\": \"ai-verse.component-release/v1\",\n  \"component_id\": \"ai-verse-memory\",\n  \"version\": \"0.3.0-beta.2.dev0\",\n  \"revision\": \"f1327be48ba2ee0043959021365e6dbb9dcb1d3a\",\n  \"release_status\": \"accepted\",\n  \"package\": {\n    \"repository\": \"aiverse-filmmakers/AI-Verse-Memory\",\n    \"source_type\": \"git\",\n    \"package_name\": null,\n    \"integrity\": null\n  },\n  \"supported_platforms\": [\n    \"linux\",\n    \"macos\",\n    \"windows\"\n  ],\n  \"runtime_requirements\": {\n    \"python\": \">=3.9\",\n    \"node\": null,\n    \"other\": []\n  },\n  \"lifecycle\": {\n    \"install\": true,\n    \"setup\": true,\n    \"status\": true,\n    \"doctor\": true,\n    \"enable\": true,\n    \"disable\": true,\n    \"update\": true,\n    \"uninstall\": true\n  },\n  \"state\": {\n    \"canonical_state_owned\": true,\n    \"preserve_on_update\": true,\n    \"preserve_on_uninstall\": true,\n    \"preserve_unknown_user_files\": true,\n    \"state_format\": null\n  },\n  \"migration\": {\n    \"change_classification\": \"non-breaking\",\n    \"compatibility\": \"none-required\",\n    \"from_versions\": [],\n    \"requires_explicit_migration\": false,\n    \"owner_controlled\": true,\n    \"checkpoint_policy\": \"not-required\"\n  },\n  \"authority\": {\n    \"grants_permissions\": false,\n    \"changes_direction_owner\": false,\n    \"changes_scope\": false,\n    \"enables_disabled_component\": false,\n    \"exposes_remote_listener\": false\n  },\n  \"evidence\": {\n    \"ci\": [\n      {\n        \"kind\": \"owner-native-ci\",\n        \"status\": \"pass\",\n        \"revision\": \"f1327be48ba2ee0043959021365e6dbb9dcb1d3a\",\n        \"run_id\": \"37686666851\",\n        \"url\": \"https://github.com/aiverse-filmmakers/AI-Verse-Memory/actions/runs/37686666851\"\n      }\n    ],\n    \"acceptance\": [\n      {\n        \"kind\": \"owner-local-native-workflow-acceptance\",\n        \"status\": \"pass\",\n        \"revision\": \"f1327be48ba2ee0043959021365e6dbb9dcb1d3a\",\n        \"run_id\": \"37686666851\",\n        \"url\": \"https://github.com/aiverse-filmmakers/AI-Verse-Memory/actions/runs/37686666851\"\n      }\n    ]\n  },\n  \"semantics\": {\n    \"release_metadata_only\": true,\n    \"live_health_truth\": false\n  }\n}\n",
+      "native_workflow": {
+        "run_id": 37686666851,
+        "name": "Test",
+        "head_sha": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+        "conclusion": "success",
+        "url": "https://github.com/aiverse-filmmakers/AI-Verse-Memory/actions/runs/37686666851"
+      }
+    },
+    {
+      "component_id": "ai-verse-skills",
+      "repository": "aiverse-filmmakers/AI-Verse-Skills",
+      "descriptor_source_revision": "23779f10515951ac92c83cba34a1a868c02c4d87",
+      "descriptor_path": "release/component-release.json",
+      "descriptor_blob_sha": "6673cf4b528ce8dee53de694ec7b6865ea8def10",
+      "descriptor_content": "{\n  \"schema_version\": \"ai-verse.component-release/v1\",\n  \"component_id\": \"ai-verse-skills\",\n  \"version\": \"1.1.0-beta.2.dev0\",\n  \"revision\": \"afde5c06307fba7d074de2929c2eb6c3dc6bdab8\",\n  \"release_status\": \"accepted\",\n  \"package\": {\n    \"repository\": \"aiverse-filmmakers/AI-Verse-Skills\",\n    \"source_type\": \"git\",\n    \"package_name\": null,\n    \"integrity\": null\n  },\n  \"supported_platforms\": [\n    \"linux\",\n    \"macos\",\n    \"windows\"\n  ],\n  \"runtime_requirements\": {\n    \"python\": \">=3.9\",\n    \"node\": null,\n    \"other\": []\n  },\n  \"lifecycle\": {\n    \"install\": true,\n    \"setup\": true,\n    \"status\": true,\n    \"doctor\": true,\n    \"enable\": true,\n    \"disable\": true,\n    \"update\": true,\n    \"uninstall\": true\n  },\n  \"state\": {\n    \"canonical_state_owned\": true,\n    \"preserve_on_update\": true,\n    \"preserve_on_uninstall\": true,\n    \"preserve_unknown_user_files\": true,\n    \"state_format\": \"immutable-generation-v3\"\n  },\n  \"migration\": {\n    \"change_classification\": \"non-breaking\",\n    \"compatibility\": \"none-required\",\n    \"from_versions\": [],\n    \"requires_explicit_migration\": false,\n    \"owner_controlled\": true,\n    \"checkpoint_policy\": \"not-required\"\n  },\n  \"authority\": {\n    \"grants_permissions\": false,\n    \"changes_direction_owner\": false,\n    \"changes_scope\": false,\n    \"enables_disabled_component\": false,\n    \"exposes_remote_listener\": false\n  },\n  \"evidence\": {\n    \"ci\": [\n      {\n        \"kind\": \"owner-native-ci\",\n        \"status\": \"pass\",\n        \"revision\": \"afde5c06307fba7d074de2929c2eb6c3dc6bdab8\",\n        \"run_id\": \"37183671930\",\n        \"url\": \"https://github.com/aiverse-filmmakers/AI-Verse-Skills/actions/runs/37183671930\"\n      }\n    ],\n    \"acceptance\": [\n      {\n        \"kind\": \"owner-local-native-workflow-acceptance\",\n        \"status\": \"pass\",\n        \"revision\": \"afde5c06307fba7d074de2929c2eb6c3dc6bdab8\",\n        \"run_id\": \"37183671930\",\n        \"url\": \"https://github.com/aiverse-filmmakers/AI-Verse-Skills/actions/runs/37183671930\"\n      }\n    ]\n  },\n  \"semantics\": {\n    \"release_metadata_only\": true,\n    \"live_health_truth\": false\n  }\n}\n",
+      "native_workflow": {
+        "run_id": 37183671930,
+        "name": "Runtime Readiness",
+        "head_sha": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
+        "conclusion": "success",
+        "url": "https://github.com/aiverse-filmmakers/AI-Verse-Skills/actions/runs/37183671930"
+      }
+    },
+    {
+      "component_id": "ai-verse-data",
+      "repository": "aiverse-filmmakers/AI-Verse-Data",
+      "descriptor_source_revision": "7e9fadbd73752b24eb79e270aff6b311ad508109",
+      "descriptor_path": "release/component-release.json",
+      "descriptor_blob_sha": "1944fabb102843682e3dd29414c1626af15424d7",
+      "descriptor_content": "{\n  \"schema_version\": \"ai-verse.component-release/v1\",\n  \"component_id\": \"ai-verse-data\",\n  \"version\": \"0.1.0-alpha.1.dev0\",\n  \"revision\": \"f8978f8f7a1bc94edecddc2662112233289159a3\",\n  \"release_status\": \"accepted\",\n  \"package\": {\n    \"repository\": \"aiverse-filmmakers/AI-Verse-Data\",\n    \"source_type\": \"git\",\n    \"package_name\": \"@ai-verse/data\",\n    \"integrity\": null\n  },\n  \"supported_platforms\": [\n    \"linux\",\n    \"macos\",\n    \"windows\"\n  ],\n  \"runtime_requirements\": {\n    \"python\": null,\n    \"node\": \">=22.0.0\",\n    \"other\": []\n  },\n  \"lifecycle\": {\n    \"install\": true,\n    \"setup\": false,\n    \"status\": true,\n    \"doctor\": true,\n    \"enable\": true,\n    \"disable\": true,\n    \"update\": true,\n    \"uninstall\": true\n  },\n  \"state\": {\n    \"canonical_state_owned\": true,\n    \"preserve_on_update\": true,\n    \"preserve_on_uninstall\": true,\n    \"preserve_unknown_user_files\": true,\n    \"state_format\": \"ai-verse-data-format-v2\"\n  },\n  \"migration\": {\n    \"change_classification\": \"non-breaking\",\n    \"compatibility\": \"none-required\",\n    \"from_versions\": [],\n    \"requires_explicit_migration\": false,\n    \"owner_controlled\": true,\n    \"checkpoint_policy\": \"not-required\"\n  },\n  \"authority\": {\n    \"grants_permissions\": false,\n    \"changes_direction_owner\": false,\n    \"changes_scope\": false,\n    \"enables_disabled_component\": false,\n    \"exposes_remote_listener\": false\n  },\n  \"evidence\": {\n    \"ci\": [\n      {\n        \"kind\": \"owner-native-ci\",\n        \"status\": \"pass\",\n        \"revision\": \"f8978f8f7a1bc94edecddc2662112233289159a3\",\n        \"run_id\": \"37645269881\",\n        \"url\": \"https://github.com/aiverse-filmmakers/AI-Verse-Data/actions/runs/37645269881\"\n      }\n    ],\n    \"acceptance\": [\n      {\n        \"kind\": \"owner-local-native-workflow-acceptance\",\n        \"status\": \"pass\",\n        \"revision\": \"f8978f8f7a1bc94edecddc2662112233289159a3\",\n        \"run_id\": \"37645269881\",\n        \"url\": \"https://github.com/aiverse-filmmakers/AI-Verse-Data/actions/runs/37645269881\"\n      }\n    ]\n  },\n  \"semantics\": {\n    \"release_metadata_only\": true,\n    \"live_health_truth\": false\n  }\n}\n",
+      "native_workflow": {
+        "run_id": 37645269881,
+        "name": "CI",
+        "head_sha": "f8978f8f7a1bc94edecddc2662112233289159a3",
+        "conclusion": "success",
+        "url": "https://github.com/aiverse-filmmakers/AI-Verse-Data/actions/runs/37645269881"
+      }
+    }
+  ]
+}
