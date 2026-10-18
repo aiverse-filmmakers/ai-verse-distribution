@@ -394,6 +394,27 @@ class RepositoryNetworkGovernanceRegressionTests(unittest.TestCase):
         self.assertIn("test_candidate_admission_regressions.py", files)
 
 
+    def test_harness_mandates_entire_disposable_t1_t4_end_to_end_suite(self):
+        # These run inside the preexisting exact System/five-owner checkout gate.
+        # Owner-native observations are frozen; scoped State and composition
+        # remain synthetic and cannot be promoted to remote canonical authority.
+        required = {
+            "test_distribution_origin_end_to_end.py",
+            "test_component_origin_end_to_end.py",
+            "test_network_origin_fail_closed_end_to_end.py",
+            "test_emergency_origin_end_to_end.py",
+        }
+        commands = network_regression.regression_commands(ROOT, ROOT)
+        distribution = {
+            path.name
+            for cwd, _, path in commands
+            if cwd == ROOT
+        }
+        self.assertTrue(required <= distribution)
+        self.assertEqual(len(distribution), len([1 for cwd, _, _ in commands if cwd == ROOT]))
+        for name in required:
+            self.assertTrue((ROOT / "tests" / name).is_file(), name)
+
     def test_harness_reuses_permanent_preservation_and_reconstruction_regressions(self):
         commands = network_regression.regression_commands(ROOT, ROOT)
         files = {expected.name for _, _, expected in commands}

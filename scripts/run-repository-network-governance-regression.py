@@ -38,6 +38,12 @@ DISTRIBUTION_REGRESSION_TESTS = (
     "test_lifecycle_payload_zero_loss.py",
     "test_release_receipt_admission.py",
     "test_release_receipt_reconstruction_regressions.py",
+    # 6.2: immutable-ref, disposable T1-T4 end-to-end release qualification.
+    # Synthetic System State/composed PASS does NOT authenticate remote canonical State.
+    "test_distribution_origin_end_to_end.py",
+    "test_component_origin_end_to_end.py",
+    "test_network_origin_fail_closed_end_to_end.py",
+    "test_emergency_origin_end_to_end.py",
 )
 
 
