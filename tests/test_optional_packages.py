@@ -92,8 +92,11 @@ class OptionalPackageContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             package_root, record, release = package_fixture(root)
+            support = b"VALUE = True\n"
+            (package_root / "support.py").write_bytes(support)
+            record["files"]["support.py"] = sha(support)
             script = (
-                "import json,sys; "
+                "import json,sys,support; "
                 "print(json.dumps({'installed':sys.argv[1]=='install', 'version':'0.3.0-local', "
                 "'state':'absent' if sys.argv[1]=='remove' else 'setup-required'}))\n"
             ).encode()
@@ -113,6 +116,7 @@ class OptionalPackageContractTests(unittest.TestCase):
             self.assertTrue(installed["installed"])
             removed = run_optional_package_owner(package, root, root, "remove", python=sys.executable)
             self.assertEqual(removed["state"], "absent")
+            self.assertFalse((package_root / "__pycache__").exists())
 
             (package_root / "install.py").write_text("print('tampered')\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "digest mismatch"):

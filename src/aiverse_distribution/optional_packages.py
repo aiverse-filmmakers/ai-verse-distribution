@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Dict
@@ -199,19 +200,21 @@ def run_optional_package_owner(
         raise ValueError("optional package does not admit the OS install/remove API")
     from .process import run
 
-    result = run(
-        [
-            # Keep virtual-environment interpreter symlinks intact; resolving them
-            # can discard the owner's installed packages.
-            str(Path(python).expanduser().absolute()),
-            str(package_root / "install.py"),
-            action,
-            "--root",
-            str(Path(project_root).resolve()),
-            "--json",
-        ],
-        cwd=Path(project_root).resolve(),
-    )
+    with tempfile.TemporaryDirectory(prefix="aiverse-optional-package-cache-") as cache:
+        result = run(
+            [
+                # Keep virtual-environment interpreter symlinks intact; resolving them
+                # can discard the owner's installed packages.
+                str(Path(python).expanduser().absolute()),
+                str(package_root / "install.py"),
+                action,
+                "--root",
+                str(Path(project_root).resolve()),
+                "--json",
+            ],
+            cwd=Path(project_root).resolve(),
+            env={"PYTHONPYCACHEPREFIX": cache},
+        )
     try:
         payload = json.loads(result.stdout)
     except (TypeError, json.JSONDecodeError) as exc:
