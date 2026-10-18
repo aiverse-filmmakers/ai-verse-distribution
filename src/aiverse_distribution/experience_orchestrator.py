@@ -427,11 +427,21 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                 raise DistributionError(f"OS optional-package setup check failed: {exc}") from exc
         ready = result.get("state") == "ready"
         state = "READY" if ready else "SETUP_REQUIRED"
-        message = (
-            "The package is installed and its current hooks, callbacks, and review were verified."
-            if ready
-            else "The package is installed, but setup checks are incomplete. Follow the steps below, then run the check again."
-        )
+        files_verified = result.get("package_files_verified") is True
+        if not files_verified:
+            message = "The installed helper files do not match the admitted release. Repair the package, then check setup again."
+            owner_guidance = (
+                f"Run `aiverse upgrade --package {package.id} --apply`, then run `aiverse setup --package {package.id}` again."
+            )
+        elif ready:
+            message = "The package files, current hooks, callbacks, and original-turn review were verified."
+            owner_guidance = None
+        else:
+            message = "The package is installed, but setup checks are incomplete. Follow the steps below, then run the check again."
+            owner_guidance = None
+        guidance = result.get("guidance") if not ready else None
+        if owner_guidance:
+            guidance = owner_guidance + ("\n\n" + guidance if isinstance(guidance, str) and guidance.strip() else "")
         return {
             "kind": "optional-package-check",
             "package_id": package.id,
@@ -445,10 +455,11 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                 "message": message,
                 "hooks_discovered": result.get("hooks_discovered"),
                 "handlers_enabled": result.get("handlers_enabled"),
+                "package_files_verified": files_verified,
                 "approval_required": result.get("approval_required"),
                 "execution_observed": result.get("execution_observed") is True,
                 "review_observed": result.get("review_observed") is True,
-                "guidance": result.get("guidance") if not ready else None,
+                "guidance": guidance,
             },
         }
 

@@ -59,6 +59,7 @@ class ExperienceEntrypointTests(unittest.TestCase):
                 "message": "Approval is still missing.",
                 "hooks_discovered": 6,
                 "handlers_enabled": True,
+                "package_files_verified": True,
                 "approval_required": True,
                 "execution_observed": False,
                 "review_observed": False,

@@ -18,6 +18,7 @@ def format_experience(payload: Dict[str, Any]) -> Optional[str]:
             "AI-Verse Package Setup",
             "",
             str(view.get("message") or "AI-Verse could not confirm package setup."),
+            f"Package files match the admitted release: {'yes' if view.get('package_files_verified') is True else 'no'}",
             f"Hooks found: {hooks if hooks is not None else 'not verified'}",
             f"Hook handlers enabled: {'yes' if view.get('handlers_enabled') is True else 'no' if view.get('handlers_enabled') is False else 'not verified'}",
             f"Hook approval: {'approved' if approval is False else 'approval needed' if approval is True else 'not verified'}",

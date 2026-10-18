@@ -81,10 +81,35 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             run_owner.assert_called_once_with(package, root, root, "setup", python=run_owner.call_args.kwargs["python"])
             self.assertEqual(result["state"], "SETUP_REQUIRED")
             self.assertFalse(result["mutated"])
+            self.assertFalse(result["member_view"]["package_files_verified"])
             self.assertEqual(result["member_view"]["hooks_discovered"], 6)
             self.assertTrue(result["member_view"]["approval_required"])
-            self.assertEqual(result["member_view"]["guidance"], owner_result["guidance"])
+            self.assertIn("aiverse upgrade --package ai-verse-codex-learning --apply", result["member_view"]["guidance"])
+            self.assertIn(owner_result["guidance"], result["member_view"]["guidance"])
             self.assertEqual(state.load(), before)
+            self.assertIsNone(state.pending_effect())
+
+    def test_package_setup_is_ready_only_after_owner_verifies_every_condition(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, state, package, root = make_app(Path(temporary))
+            owner_result = {
+                "installed": True,
+                "state": "ready",
+                "package_files_verified": True,
+                "hooks_discovered": 6,
+                "handlers_enabled": True,
+                "approval_required": False,
+                "execution_observed": True,
+                "review_observed": True,
+            }
+            with patch("aiverse_distribution.optional_packages.verify_optional_package_source"), patch(
+                "aiverse_distribution.experience_orchestrator.run_optional_package_owner",
+                return_value=owner_result,
+            ):
+                result = app.optional_package_check(package.id, "doctor")
+            self.assertEqual(result["state"], "READY")
+            self.assertTrue(result["member_view"]["package_files_verified"])
+            self.assertIsNone(result["member_view"]["guidance"])
             self.assertIsNone(state.pending_effect())
 
     def test_install_uses_owner_api_inside_recoverable_distribution_transaction(self):
