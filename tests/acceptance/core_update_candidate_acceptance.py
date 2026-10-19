@@ -321,8 +321,13 @@ def main() -> int:
     require_member_state_preserved(other_state_before, after)
 
     blocked = _run_project(layout, "rollback", "--to", CURRENT_RELEASE, "--apply", expect=2)
-    if blocked.get("error") != "CORE_UPDATE_TRANSITION_UNSUPPORTED":
-        raise RuntimeError(f"unqualified reverse rollback did not fail closed: {blocked}")
+    rollback_message = str(blocked.get("message") or "")
+    if (
+        blocked.get("error") != "DISTRIBUTION_ERROR"
+        or "does not explicitly admit rollback to" not in rollback_message
+        or CURRENT_RELEASE not in rollback_message
+    ):
+        raise RuntimeError(f"unqualified reverse rollback did not fail closed for the expected reason: {blocked}")
     if _run_project(layout, "status").get("release_set_id") != CANDIDATE_ID:
         raise RuntimeError("blocked reverse rollback changed the installed release")
 
