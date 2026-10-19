@@ -3,7 +3,7 @@ import unittest
 from aiverse_distribution.release_catalog import Catalog, CatalogValidationError, ReleaseBlockedError
 
 
-CURRENT_CORE = "core-first-run-rc1-2026-10-12"
+CURRENT_CORE = "core-local-upgrades-candidate-2026-10-19-v6"
 
 
 class CatalogTests(unittest.TestCase):
@@ -16,8 +16,8 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(
             {component.id: component.revision for component in release.components},
             {
-                "ai-verse-os": "64f7325444d18f94c9d4755d32eb89f3468bda6b",
-                "ai-verse-brain": "69f7912eeb35f0178f6952ff0554aec8d7f2c496",
+                "ai-verse-os": "558f4ecb2f6810b10a0e152bfcf610e725fc7032",
+                "ai-verse-brain": "f746806e4361c2b1cd67ee97810071cc86db7b9a",
                 "ai-verse-memory": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
                 "ai-verse-skills": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
                 "ai-verse-data": "f8978f8f7a1bc94edecddc2662112233289159a3",

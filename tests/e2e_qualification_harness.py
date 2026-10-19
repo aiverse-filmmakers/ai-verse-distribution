@@ -18,7 +18,8 @@ from test_whole_product_qualification import _valid_preservation, _valid_compose
 SOURCE = Path(__file__).resolve().parents[1]
 SYSTEM = "aiverse-filmmakers/AI-Verse-System"
 DISTRIBUTION = "aiverse-filmmakers/ai-verse-distribution"
-CURRENT = "core-first-run-rc1-2026-10-12"
+CURRENT = "core-local-upgrades-candidate-2026-10-19-v6"
+HISTORICAL = "core-first-run-rc1-2026-10-12"
 CANDIDATE = "core-distribution-origin-fixture"
 
 
@@ -44,7 +45,7 @@ def _read(path):
 class IsolatedCoreFixture:
     """A disposable evidence/composition graph, made from admitted source pins."""
 
-    def __init__(self):
+    def __init__(self, *, baseline_release=CURRENT):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name) / "staging"
         self.root.mkdir()
@@ -56,12 +57,29 @@ class IsolatedCoreFixture:
             "src/aiverse_distribution/catalog/core_promotions.json",
             "src/aiverse_distribution/catalog/core_candidates.json",
             f"release-sets/{CURRENT}.json",
+            f"release-sets/{HISTORICAL}.json",
             "qualification/core-update-program-u36/release-evidence.json",
         ]
         self.before = {path: (SOURCE / path).read_bytes() for path in self.protected_sources}
-        self.original = _read(SOURCE / "src/aiverse_distribution/catalog/core_promotions.json")
-        self.source_release = _read(SOURCE / f"release-sets/{CURRENT}.json")
-        assert self.original["current_release"] == CURRENT
+        live_promotions = _read(SOURCE / "src/aiverse_distribution/catalog/core_promotions.json")
+        if baseline_release == CURRENT:
+            self.original = live_promotions
+        else:
+            release = _read(SOURCE / f"release-sets/{baseline_release}.json")
+            release.pop("schema_version", None)
+            matrix = _read(SOURCE / "compatibility/matrix.json")
+            self.original = {
+                "schema_version": 1,
+                "current_release": baseline_release,
+                "system_sync_debts": [],
+                "release_sets": [release],
+                "compatibility": {
+                    baseline_release: matrix["release_sets"][baseline_release]
+                },
+            }
+        self.source_release = _read(SOURCE / f"release-sets/{baseline_release}.json")
+        self.previous_release_id = baseline_release
+        assert self.original["current_release"] == baseline_release
         assert self.original["system_sync_debts"] == []
         self._stage()
 
@@ -78,11 +96,11 @@ class IsolatedCoreFixture:
         candidate = overlay["release_sets"][0]
         candidate["id"] = CANDIDATE
         candidate["components"] = copy.deepcopy(self.source_release["components"])
-        candidate["lineage"] = {"parent": CURRENT, "policy": "same-or-descendant"}
+        candidate["lineage"] = {"parent": self.previous_release_id, "policy": "same-or-descendant"}
         # Keep the real exact component pins and lock metadata from the accepted
         # release; synthetic owner evidence below is used only in this test.
         compatibility = overlay["compatibility"][seed_id]
-        compatibility["update_from"] = [CURRENT, CANDIDATE]
+        compatibility["update_from"] = [self.previous_release_id, CANDIDATE]
         compatibility["rollback_to"] = [CANDIDATE]
 
         evidence_path = self.root / f"qualification/{seed_id}/candidate-evidence.json"
@@ -208,7 +226,7 @@ class IsolatedCoreFixture:
 
     def preservation_and_composed(self):
         preservation = _valid_preservation(self.id, self.revision)
-        preservation["source_release_set"] = CURRENT
+        preservation["source_release_set"] = self.previous_release_id
         composed = _valid_composed(self.id, self.revision)
         composed["platforms"]["linux"]["components"] = {
             item["id"]: {"status": "ready", "doctor": "ready"}

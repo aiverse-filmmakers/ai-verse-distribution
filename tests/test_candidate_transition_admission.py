@@ -18,6 +18,7 @@ from preservation_support import PopulatedCoreFixture
 ROOT = Path(__file__).resolve().parents[1]
 STABLE = "core-stable-2026-10-10"
 RELEASE = "core-first-run-rc1-2026-10-12"
+PROMOTED = "core-local-upgrades-candidate-2026-10-19-v6"
 
 
 class CandidateTransitionAdmissionTests(unittest.TestCase):
@@ -121,13 +122,16 @@ class CandidateTransitionAdmissionTests(unittest.TestCase):
 
     def test_u36_promotion_does_not_change_u34_exact_component_evidence(self):
         catalog = Catalog()
-        release = catalog.get_release(RELEASE)
-        self.assertEqual(catalog.resolve("core").id, RELEASE)
+        release = catalog.get_release(PROMOTED)
+        self.assertEqual(catalog.resolve("core").id, PROMOTED)
         self.assertTrue(release.raw["promotion"]["default_channel"])
         self.assertTrue(release.raw["promotion"]["automatic_update"])
         self.assertTrue(release.raw["promotion"]["cross_release_transition_admitted"])
-        self.assertEqual(release.raw["evidence"]["qualification"]["status"], "accepted")
-        self.assertTrue(release.raw["evidence"]["qualification"]["real_member_pilot"])
+        self.assertEqual(release.raw["evidence"]["whole_product_qualification"]["status"], "accepted")
+        self.assertEqual(
+            release.raw["evidence"]["whole_product_qualification"]["qualification_ref"],
+            "qualification/core-local-upgrades-candidate-2026-10-19-v6/whole-product-qualification.json",
+        )
 
     def test_u34_immutable_admission_evidence_matches_exact_catalog_revisions(self):
         catalog = Catalog()

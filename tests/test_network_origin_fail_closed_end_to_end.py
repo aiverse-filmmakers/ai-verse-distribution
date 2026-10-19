@@ -22,7 +22,7 @@ from aiverse_distribution.whole_product_qualification import (
 from component_origin_qualification_fixture import (
     BRAIN_FORWARD_REVISION, BRAIN_ID, ComponentOriginFixture,
 )
-from e2e_qualification_harness import CURRENT, DISTRIBUTION, SYSTEM, SOURCE, _read, _sha, _write
+from e2e_qualification_harness import DISTRIBUTION, SYSTEM, SOURCE, _read, _sha, _write
 from test_candidate_admission import _json_bytes
 
 
@@ -102,7 +102,7 @@ class SiblingAndContractEndToEndTests(unittest.TestCase):
     def assert_no_promotion(self):
         self.assertEqual(
             _read(self.f.root / "src/aiverse_distribution/catalog/core_promotions.json")["current_release"],
-            CURRENT,
+            self.f.previous_release_id,
         )
         self.assertFalse((self.f.root / f"release-sets/{self.f.id}.json").exists())
         self.assertFalse(
@@ -156,7 +156,7 @@ class SiblingAndContractEndToEndTests(unittest.TestCase):
             BRAIN_FORWARD_REVISION,
         )
         plan = plan_core_promotion(f.root, f.id, ref, f.registry_bytes, f.state_bytes)
-        self.assertEqual(plan["previous_release_id"], CURRENT)
+        self.assertEqual(plan["previous_release_id"], self.f.previous_release_id)
         self.assert_no_promotion()
 
     def test_stale_documentation_drift_is_frozen_then_reconciled_by_state_evidence(self):
@@ -183,7 +183,7 @@ class SiblingAndContractEndToEndTests(unittest.TestCase):
         ref, result = _qualify(f)
         self.assertEqual(result["status"], "passed")
         plan = plan_core_promotion(f.root, f.id, ref, f.registry_bytes, f.state_bytes)
-        self.assertEqual(plan["previous_release_id"], CURRENT)
+        self.assertEqual(plan["previous_release_id"], self.f.previous_release_id)
         self.assert_no_promotion()
 
         # Reconciliation changes the *frozen State record*, not source owner

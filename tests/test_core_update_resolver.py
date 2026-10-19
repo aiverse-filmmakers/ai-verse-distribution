@@ -9,7 +9,8 @@ from aiverse_distribution.release_catalog import DistributionError
 
 
 STABLE = "core-stable-2026-10-10"
-CURRENT = "core-first-run-rc1-2026-10-12"
+CURRENT = "core-local-upgrades-candidate-2026-10-19-v6"
+PREVIOUS = "core-first-run-rc1-2026-10-12"
 
 
 class CoreUpdateResolverTests(unittest.TestCase):
@@ -29,11 +30,11 @@ class CoreUpdateResolverTests(unittest.TestCase):
 
     def test_default_resolves_current_core_channel_and_requires_admission(self):
         with tempfile.TemporaryDirectory() as td:
-            store = self._store(Path(td))
+            store = self._store(Path(td), release=PREVIOUS)
             app = CoreUpdateOrchestrator(state=store)
             target, admission = app.resolve_core_update_target()
             self.assertEqual(target.id, CURRENT)
-            self.assertEqual(admission.source_release, STABLE)
+            self.assertEqual(admission.source_release, PREVIOUS)
             self.assertEqual(admission.target_release, CURRENT)
             self.assertEqual(admission.evidence["status"], "accepted")
 

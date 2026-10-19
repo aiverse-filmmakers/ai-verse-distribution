@@ -13,7 +13,7 @@ import json
 
 from aiverse_distribution.candidate_admission import FetchedFile
 from e2e_qualification_harness import (
-    CANDIDATE, CURRENT, DISTRIBUTION, SOURCE, SYSTEM,
+    CANDIDATE, HISTORICAL, DISTRIBUTION, SOURCE, SYSTEM,
     IsolatedCoreFixture, _blob, _read, _sha, _write,
 )
 from test_candidate_admission import _json_bytes
@@ -30,7 +30,7 @@ BRAIN_DESCRIPTOR_GATE = 39088807245
 
 class ComponentOriginFixture(IsolatedCoreFixture):
     def __init__(self):
-        super().__init__()
+        super().__init__(baseline_release=HISTORICAL)
         self.observations = _read(OBSERVATIONS)
         self._install_verified_observations()
 
@@ -51,7 +51,7 @@ class ComponentOriginFixture(IsolatedCoreFixture):
         overlay_path = self.root / "src/aiverse_distribution/catalog/core_candidates.json"
         overlay = _read(overlay_path)
         compatibility = overlay["compatibility"].pop(CANDIDATE)
-        compatibility["update_from"] = [CURRENT, COMPONENT_CANDIDATE]
+        compatibility["update_from"] = [self.previous_release_id, COMPONENT_CANDIDATE]
         compatibility["rollback_to"] = [COMPONENT_CANDIDATE]
         self.candidate["id"] = COMPONENT_CANDIDATE
         overlay["compatibility"][COMPONENT_CANDIDATE] = compatibility

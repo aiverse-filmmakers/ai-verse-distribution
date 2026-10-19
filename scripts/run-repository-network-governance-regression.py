@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Callable
 
 
-EXPECTED_SYSTEM_REVISION = "b917f8812f21a02f4b58e402ce6dc5838303bb5d"
+EXPECTED_SYSTEM_REVISION = "d05abee0e23ff4154665a04b88d752ee01272572"
 CORE_PROFILE = "core"
 CORE_OWNER_KEYS = {
     "ai-verse-os": "os",
@@ -123,6 +123,87 @@ def _passing_owner_evidence(entries, revision: str, label: str):
     _require(bool(exact), f"{label} lacks exact passing owner-native evidence")
 
 
+def _validate_distribution_pin(
+    *,
+    distribution_root: Path,
+    state_sha256: str,
+    state_pin: dict,
+    current_release: str,
+    current_release_set: dict,
+    promotion_release: dict,
+    component_id: str,
+    target_revision: str,
+    system_revision: str,
+) -> None:
+    """Validate the observed pin, including the exact pre-promotion snapshot.
+
+    System State is observational: before a Distribution promotion it correctly
+    names the source release. The immutable promotion record may bridge that
+    exact source snapshot to the new current release until System refreshes its
+    observed pins. No other stale or mismatched pin is accepted.
+    """
+    _require(state_pin.get("status") == "pinned", f"{component_id} is not pinned in Repository State")
+    if (
+        state_pin.get("revision") == target_revision
+        and state_pin.get("release_id") == current_release
+    ):
+        return
+
+    lineage = current_release_set.get("lineage", {})
+    source_release = lineage.get("parent")
+    _require(
+        isinstance(source_release, str)
+        and lineage.get("policy") == "same-or-descendant"
+        and state_pin.get("release_id") == source_release,
+        f"{component_id} Repository State pin is neither the current release nor its exact parent",
+    )
+    source_path = distribution_root / "release-sets" / f"{source_release}.json"
+    source_set = _read_json(source_path)
+    _require(source_set.get("id") == source_release, "promotion source release identity differs")
+    source_component = _one(
+        source_set.get("components", []),
+        lambda item: item.get("id") == component_id,
+        f"promotion source component {component_id}",
+    )
+    _require(
+        state_pin.get("revision") == source_component.get("revision"),
+        f"{component_id} Repository State pin differs from the exact promotion source release",
+    )
+
+    evidence = promotion_release.get("evidence", {})
+    sync = evidence.get("system_sync", {})
+    qualification = evidence.get("whole_product_qualification", {})
+    transition = evidence.get("transition_policy", {})
+    _require(
+        sync.get("status") == "synchronized"
+        and sync.get("repository_state_sha256") == state_sha256,
+        "promotion does not bind the exact synchronized Repository State snapshot",
+    )
+    _require(
+        qualification.get("status") == "accepted"
+        and qualification.get("repository_state_sha256") == state_sha256
+        and qualification.get("system_revision") == system_revision
+        and qualification.get("repository_state_revision") == system_revision,
+        "promotion qualification does not bind the exact System snapshot",
+    )
+    _require(
+        transition.get("status") == "accepted"
+        and transition.get("cross_release_update_admitted") is True
+        and transition.get("cross_release_rollback_admitted") is False
+        and transition.get("update_from") == [source_release, current_release]
+        and transition.get("admission_ref") == qualification.get("qualification_ref"),
+        "promotion transition evidence is missing or inconsistent",
+    )
+    update = transition.get("preservation_evidence", {}).get("updates", {}).get(source_release, {})
+    _require(
+        update.get("status") == "accepted"
+        and update.get("from") == source_release
+        and update.get("to") == current_release
+        and update.get("qualification_ref") == qualification.get("qualification_ref"),
+        "promotion lacks exact accepted source-to-current preservation evidence",
+    )
+
+
 def validate_repository_network(
     distribution_root: Path,
     system_root: Path,
@@ -160,6 +241,7 @@ def validate_repository_network(
     registry_raw = registry_path.read_bytes()
     registry = _read_json(registry_path)
     state = _read_json(state_path)
+    state_sha256 = hashlib.sha256(state_path.read_bytes()).hexdigest()
 
     policy = registry.get("admission_policy", {})
     _require(policy.get("identity_key") == "repository_id", "Registry identity must be repository_id")
@@ -221,6 +303,10 @@ def validate_repository_network(
         promotion_release.get("components") == release_set.get("components"),
         "promotion ledger component projection differs from the standalone release pins",
     )
+    _require(
+        promotion_release.get("lineage") == release_set.get("lineage"),
+        "promotion ledger lineage differs from the standalone release set",
+    )
 
     components = release_set.get("components", [])
     _require(
@@ -278,15 +364,16 @@ def validate_repository_network(
             f"{component_id} owner acceptance revision differs from the release pin",
         )
 
-        distribution_pin = state_entry.get("distribution_pin", {})
-        _require(distribution_pin.get("status") == "pinned", f"{component_id} is not pinned in Repository State")
-        _require(
-            distribution_pin.get("revision") == release_revision,
-            f"{component_id} Repository State pin differs from the release pin",
-        )
-        _require(
-            distribution_pin.get("release_id") == current_release,
-            f"{component_id} Repository State release identity differs",
+        _validate_distribution_pin(
+            distribution_root=distribution_root,
+            state_sha256=state_sha256,
+            state_pin=state_entry.get("distribution_pin", {}),
+            current_release=current_release,
+            current_release_set=release_set,
+            promotion_release=promotion_release,
+            component_id=component_id,
+            target_revision=release_revision,
+            system_revision=actual_system_revision,
         )
 
         owner_root = owner_roots[component_id]

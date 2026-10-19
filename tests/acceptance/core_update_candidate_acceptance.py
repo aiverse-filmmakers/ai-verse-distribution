@@ -13,6 +13,7 @@ from aiverse_distribution.preservation import (
     require_member_state_preserved,
     snapshot_member_state,
 )
+from aiverse_distribution.release_catalog import Catalog
 
 import profile_acceptance as profile
 
@@ -248,7 +249,9 @@ def main() -> int:
 
     # This evidence overlay exists only in this disposable member's private venv.
     # It exercises the real updater without creating a production promotion or receipt.
-    _install_test_transition(layout)
+    accepted_default = Catalog().resolve("core").id == CANDIDATE_ID
+    if not accepted_default:
+        _install_test_transition(layout)
     update = _run_project(layout, "update", "--to", CANDIDATE_ID, "--apply")
     if update.get("to") != CANDIDATE_ID:
         raise RuntimeError(f"project updater did not apply the exact candidate: {update}")
@@ -299,6 +302,8 @@ def main() -> int:
         raise RuntimeError(f"version reporter did not identify the installed candidate: {version}")
     if latest_version.get("releaseSet") not in {CURRENT_RELEASE, CANDIDATE_ID}:
         raise RuntimeError(f"version reporter returned an unexpected accepted Core release: {version}")
+    if accepted_default and latest_version.get("releaseSet") != CANDIDATE_ID:
+        raise RuntimeError(f"version reporter did not identify the promoted Core default: {version}")
     if latest_version.get("releaseSet") == CANDIDATE_ID and version.get("update") != "up-to-date":
         raise RuntimeError(f"version reporter did not recognize the accepted installed release: {version}")
 
@@ -361,6 +366,7 @@ def main() -> int:
         "doctor": doctor.get("ok"),
         "component_readiness": component_readiness,
         "version_reporter": "exact-installed-candidate",
+        "used_real_promoted_transition": accepted_default,
         "unqualified_reverse_rollback": "blocked",
         "promotion_or_member_receipt_created": False,
     }, indent=2, sort_keys=True))
