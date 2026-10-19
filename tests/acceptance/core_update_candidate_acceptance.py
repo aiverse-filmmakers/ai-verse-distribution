@@ -169,7 +169,7 @@ def main() -> int:
 
     brain_marker = "core-update-candidate-brain-preservation"
     brain_before = profile.brain_onboarding_payload(
-        profile.run_cli("onboard", "--practice", brain_marker)
+        _run_project(layout, "onboard", "--practice", brain_marker)
     )
     created_refs = set(brain_before.get("created_refs", []))
     if not created_refs:
@@ -178,7 +178,7 @@ def main() -> int:
     profile.prove_data(project)
     (project / "custom-notes.md").write_text("member-owned update preservation marker\n", encoding="utf-8")
 
-    before_status = profile.run_cli("status")
+    before_status = _run_project(layout, "status")
     if before_status.get("state") not in {"ready", "setup-required"}:
         raise RuntimeError(f"current Core has an unexpected state before update: {before_status}")
     before = snapshot_member_state(
