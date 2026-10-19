@@ -10,9 +10,9 @@ class RepositoryNetworkWorkflowTests(unittest.TestCase):
     def test_workflow_pins_exact_network_and_runs_read_only_harness(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         for revision in (
-            "b917f8812f21a02f4b58e402ce6dc5838303bb5d",
-            "83747a90998077ad2ab4636f202ca2e065a9a6bb",
-            "4406d15068284b88e0076b6dfff5aa0b06890a24",
+            "d05abee0e23ff4154665a04b88d752ee01272572",
+            "37f14c85e480c405be573bb3aeab54dd4bc1e3da",
+            "39336cd19eb4600d5ece58f5649f0c494cd02754",
             "09911eae0b4b0cbf7e7e7969230fe5b86647b841",
             "23779f10515951ac92c83cba34a1a868c02c4d87",
             "7e9fadbd73752b24eb79e270aff6b311ad508109",
@@ -22,6 +22,8 @@ class RepositoryNetworkWorkflowTests(unittest.TestCase):
         self.assertIn("run-repository-network-governance-regression.py", text)
         self.assertIn("test_repository_network_governance_regression.py", text)
         self.assertIn("core-first-run-rc1-2026-10-12", text)
+        self.assertIn("core-local-upgrades-candidate-2026-10-19-v6", text)
+        self.assertIn("promotions.get('current_release') == promoted_id", text)
         self.assertIn("0fec6e5290e659469a52a5f769da620f329f8c5a", text)
         self.assertIn("--untracked-files=no", text)
 

@@ -1,4 +1,5 @@
 import importlib.util
+import hashlib
 import json
 import shutil
 import tempfile
@@ -268,6 +269,91 @@ class Fixture:
         )
         return next(item for item in self.state["repositories"] if item["repository_id"] == repository_id)
 
+    def promote_with_pre_promotion_state(self):
+        source_id = self.release_id
+        target_id = "core-test-next"
+        source_path = self.distribution / f"release-sets/{source_id}.json"
+        source_set = json.loads(source_path.read_text(encoding="utf-8"))
+        target_components = json.loads(json.dumps(source_set["components"]))
+        for component in target_components:
+            component_id = component["id"]
+            target_revision = f"{int(component['revision'], 16) + 1000:040x}"
+            component["revision"] = target_revision
+            self.release_pins[component_id] = target_revision
+            state_entry = self.state_for(component_id)
+            state_entry["owner_acceptance"]["revision"] = target_revision
+            descriptor_path = self.owner_roots[component_id] / "release/component-release.json"
+            descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+            descriptor["revision"] = target_revision
+            for key in ("ci", "acceptance"):
+                for item in descriptor["evidence"][key]:
+                    item["revision"] = target_revision
+            write_json(descriptor_path, descriptor)
+            descriptor_raw = descriptor_path.read_bytes()
+            state_entry["descriptor"]["revision"] = target_revision
+            state_entry["descriptor"]["blob_sha"] = network_regression.git_blob_sha(descriptor_raw)
+            # Repository State remains an observation of the last admitted release.
+            state_entry["distribution_pin"] = {
+                "status": "pinned",
+                "revision": next(
+                    item["revision"] for item in source_set["components"] if item["id"] == component_id
+                ),
+                "release_id": source_id,
+                "evidence_refs": ["fixture-source-release"],
+            }
+
+        self.rewrite_state()
+        state_sha = hashlib.sha256(
+            (self.system / "governance/repository-state.json").read_bytes()
+        ).hexdigest()
+        qualification_ref = f"qualification/{target_id}/whole-product-qualification.json"
+        target = {
+            "schema_version": 1,
+            "id": target_id,
+            "profile": "core",
+            "status": "released",
+            "lineage": {"parent": source_id, "policy": "same-or-descendant"},
+            "components": target_components,
+            "evidence": {
+                "system_sync": {"status": "synchronized", "repository_state_sha256": state_sha},
+                "whole_product_qualification": {
+                    "status": "accepted",
+                    "qualification_ref": qualification_ref,
+                    "repository_state_sha256": state_sha,
+                    "repository_state_revision": network_regression.EXPECTED_SYSTEM_REVISION,
+                    "system_revision": network_regression.EXPECTED_SYSTEM_REVISION,
+                },
+                "transition_policy": {
+                    "status": "accepted",
+                    "cross_release_update_admitted": True,
+                    "cross_release_rollback_admitted": False,
+                    "update_from": [source_id, target_id],
+                    "admission_ref": qualification_ref,
+                    "preservation_evidence": {
+                        "updates": {
+                            source_id: {
+                                "status": "accepted",
+                                "from": source_id,
+                                "to": target_id,
+                                "qualification_ref": qualification_ref,
+                            }
+                        }
+                    },
+                },
+            },
+        }
+        write_json(self.distribution / f"release-sets/{target_id}.json", target)
+        self.promotions["current_release"] = target_id
+        self.promotions["release_sets"].append(
+            {key: value for key, value in target.items() if key != "schema_version"}
+        )
+        write_json(
+            self.distribution / "src/aiverse_distribution/catalog/core_promotions.json",
+            self.promotions,
+        )
+        self.release_id = target_id
+        self.release = target
+
 
 class RepositoryNetworkGovernanceRegressionTests(unittest.TestCase):
     def setUp(self):
@@ -297,6 +383,53 @@ class RepositoryNetworkGovernanceRegressionTests(unittest.TestCase):
         with self.assertRaisesRegex(
             network_regression.RepositoryNetworkRegressionError,
             "owner acceptance revision differs",
+        ):
+            self.fixture.validate()
+
+    def test_exact_promoted_release_accepts_only_its_bound_pre_promotion_state(self):
+        self.fixture.promote_with_pre_promotion_state()
+        result = self.fixture.validate()
+        self.assertEqual(result["status"], "pass")
+        self.assertEqual(result["release_id"], "core-test-next")
+
+    def test_promoted_release_rejects_state_pin_from_an_unrelated_release(self):
+        self.fixture.promote_with_pre_promotion_state()
+        state_pin = self.fixture.state_for("ai-verse-memory")["distribution_pin"]
+        state_pin["release_id"] = "unrelated-release"
+        self.fixture.rewrite_state()
+        state_sha = hashlib.sha256(
+            (self.fixture.system / "governance/repository-state.json").read_bytes()
+        ).hexdigest()
+        promotion_evidence = self.fixture.promotions["release_sets"][-1]["evidence"]
+        promotion_evidence["system_sync"]["repository_state_sha256"] = state_sha
+        promotion_evidence["whole_product_qualification"]["repository_state_sha256"] = state_sha
+        write_json(
+            self.fixture.distribution / f"release-sets/{self.fixture.release_id}.json",
+            self.fixture.release,
+        )
+        self.fixture.promotions["release_sets"][-1] = {
+            key: value for key, value in self.fixture.release.items() if key != "schema_version"
+        }
+        write_json(
+            self.fixture.distribution / "src/aiverse_distribution/catalog/core_promotions.json",
+            self.fixture.promotions,
+        )
+        with self.assertRaisesRegex(
+            network_regression.RepositoryNetworkRegressionError,
+            "neither the current release nor its exact parent",
+        ):
+            self.fixture.validate()
+
+    def test_promoted_release_rejects_wrong_state_snapshot_hash(self):
+        self.fixture.promote_with_pre_promotion_state()
+        self.fixture.promotions["release_sets"][-1]["evidence"]["system_sync"]["repository_state_sha256"] = "0" * 64
+        write_json(
+            self.fixture.distribution / "src/aiverse_distribution/catalog/core_promotions.json",
+            self.fixture.promotions,
+        )
+        with self.assertRaisesRegex(
+            network_regression.RepositoryNetworkRegressionError,
+            "exact synchronized Repository State snapshot",
         ):
             self.fixture.validate()
 

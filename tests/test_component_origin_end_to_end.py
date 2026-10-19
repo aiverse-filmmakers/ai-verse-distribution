@@ -21,7 +21,7 @@ from component_origin_qualification_fixture import (
     BRAIN_ID, BRAIN_NATIVE_RUN, COMPONENT_CANDIDATE,
     ComponentOriginFixture,
 )
-from e2e_qualification_harness import CURRENT, SOURCE, _read, _write
+from e2e_qualification_harness import SOURCE, _read, _write
 
 
 class ComponentOriginEndToEndTests(unittest.TestCase):
@@ -55,7 +55,7 @@ class ComponentOriginEndToEndTests(unittest.TestCase):
         fixture = self.fixture
         baseline = {
             row["id"]: row["revision"]
-            for row in _read(SOURCE / f"release-sets/{CURRENT}.json")["components"]
+            for row in fixture.source_release["components"]
         }
         target = {row["id"]: row["revision"] for row in fixture.candidate["components"]}
         differences = [id for id in baseline if target[id] != baseline[id]]
@@ -95,7 +95,7 @@ class ComponentOriginEndToEndTests(unittest.TestCase):
         plan = plan_core_promotion(
             fixture.root, fixture.id, ref, fixture.registry_bytes, fixture.state_bytes,
         )
-        self.assertEqual(plan["previous_release_id"], CURRENT)
+        self.assertEqual(plan["previous_release_id"], fixture.previous_release_id)
         self.assertEqual({p: p.read_bytes() for p in before}, before)
         self.assertFalse(
             (fixture.root / f"qualification/{fixture.id}/release-receipt.json").exists()

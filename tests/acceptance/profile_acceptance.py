@@ -9,6 +9,8 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
+from aiverse_distribution.release_catalog import Catalog
+
 
 def run_process(argv: list[str], *, input_text: Optional[str] = None, expect: int = 0) -> subprocess.CompletedProcess:
     completed = subprocess.run(
@@ -436,21 +438,37 @@ def main() -> int:
 
     if candidate_id:
         before_update = run_cli("status")
-        blocked_update = run_cli("update", "--apply", expect=2)
-        if blocked_update.get("error") != "DISTRIBUTION_ERROR":
-            raise RuntimeError(
-                f"default update must remain blocked for an explicit-only candidate: {blocked_update}"
-            )
-        after_update = run_cli("status")
-        after_refs = {
-            component_id: record.get("revision")
-            for component_id, record in after_update.get("components", {}).items()
-        }
-        if after_update.get("release_set_id") != candidate_id or after_refs != expected_refs:
-            raise RuntimeError(
-                "blocked default update changed the explicit candidate or its component pins: "
-                f"before={before_update}, after={after_update}"
-            )
+        accepted_default = Catalog().resolve("core").id == candidate_id
+        if accepted_default:
+            update = run_cli("update", "--apply")
+            after_update = run_cli("status")
+            after_refs = {
+                component_id: record.get("revision")
+                for component_id, record in after_update.get("components", {}).items()
+            }
+            if update.get("changed") is not False:
+                raise RuntimeError(f"accepted Core default update should be a no-op: {update}")
+            if after_update.get("release_set_id") != candidate_id or after_refs != expected_refs:
+                raise RuntimeError(
+                    "default update changed the accepted Core release or its exact component pins: "
+                    f"before={before_update}, after={after_update}"
+                )
+        else:
+            blocked_update = run_cli("update", "--apply", expect=2)
+            if blocked_update.get("error") != "DISTRIBUTION_ERROR":
+                raise RuntimeError(
+                    f"default update must remain blocked for an explicit-only candidate: {blocked_update}"
+                )
+            after_update = run_cli("status")
+            after_refs = {
+                component_id: record.get("revision")
+                for component_id, record in after_update.get("components", {}).items()
+            }
+            if after_update.get("release_set_id") != candidate_id or after_refs != expected_refs:
+                raise RuntimeError(
+                    "blocked default update changed the explicit candidate or its component pins: "
+                    f"before={before_update}, after={after_update}"
+                )
     else:
         update = run_cli("update", "--apply")
         if update.get("changed") is not False:

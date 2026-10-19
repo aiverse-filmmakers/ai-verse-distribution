@@ -85,6 +85,17 @@
       "update_from": ["core-stable-2026-10-10", "core-first-run-rc1-2026-10-12"],
       "rollback_to": ["core-first-run-rc1-2026-10-12"]
     },
+    "core-local-upgrades-candidate-2026-10-19-v6": {
+      "profile": "core",
+      "status": "released",
+      "platforms": ["darwin", "linux", "win32"],
+      "python_min": "3.11",
+      "node_min": "22",
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "update_from": ["core-first-run-rc1-2026-10-12", "core-local-upgrades-candidate-2026-10-19-v6"],
+      "rollback_to": ["core-local-upgrades-candidate-2026-10-19-v6"]
+    },
     "agent-public-beta-2026-09-14": {
       "profile": "agent",
       "status": "released",

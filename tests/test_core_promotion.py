@@ -20,7 +20,7 @@ from aiverse_distribution.release_catalog import Catalog
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT = "core-first-run-rc1-2026-10-12"
+CURRENT = "core-local-upgrades-candidate-2026-10-19-v6"
 SYSTEM = "aiverse-filmmakers/AI-Verse-System"
 DISTRIBUTION = "aiverse-filmmakers/ai-verse-distribution"
 
