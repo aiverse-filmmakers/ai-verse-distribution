@@ -1,0 +1,113 @@
+name: Release Descriptor
+
+on:
+  pull_request:
+    paths:
+      - "release/component-release.json"
+      - ".github/workflows/release-descriptor.yml"
+      - "docs/RELEASE-DESCRIPTOR.md"
+  push:
+    branches: [main]
+    paths:
+      - "release/component-release.json"
+      - ".github/workflows/release-descriptor.yml"
+      - "docs/RELEASE-DESCRIPTOR.md"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate release descriptor
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          d = json.loads(Path("release/component-release.json").read_text(encoding="utf-8"))
+          required = {
+              "schema_version", "component_id", "version", "revision", "release_status",
+              "package", "supported_platforms", "runtime_requirements", "lifecycle",
+              "state", "migration", "authority", "evidence", "semantics",
+          }
+          assert set(d) == required, (set(d) - required, required - set(d))
+          assert d["schema_version"] == "ai-verse.component-release/v1"
+          assert d["component_id"] == "ai-verse-distribution"
+          assert d["version"] == "0.1.0b1"
+          revision = d["revision"]
+          assert re.fullmatch(r"[0-9a-f]{40}", revision)
+          assert d["release_status"] == "accepted"
+          package = d["package"]
+          assert package["repository"] == "aiverse-filmmakers/ai-verse-distribution"
+          assert package["source_type"] == "git"
+          assert set(package) == {"repository", "source_type", "package_name", "integrity"}
+          assert set(d["runtime_requirements"]) == {"python", "node", "other"}
+          assert d["supported_platforms"] == ["linux", "macos", "windows"]
+          assert set(d["lifecycle"]) == {
+              "install", "setup", "status", "doctor", "enable", "disable", "update", "uninstall",
+          }
+          assert all(type(value) is bool for value in d["lifecycle"].values())
+          for key in ("preserve_on_update", "preserve_on_uninstall", "preserve_unknown_user_files"):
+              assert d["state"].get(key) is True, key
+          migration = d["migration"]
+          assert migration["change_classification"] in {"non-breaking", "breaking"}
+          assert migration["compatibility"] in {"none-required", "compatible", "explicit-migration", "blocked"}
+          assert migration["owner_controlled"] is True
+          assert migration["requires_explicit_migration"] is False
+          assert migration["compatibility"] == "none-required"
+          assert migration["change_classification"] == "non-breaking"
+          assert migration["from_versions"] == []
+          assert all(value is False for value in d["authority"].values())
+          assert d["semantics"] == {"release_metadata_only": True, "live_health_truth": False}
+          for group in ("ci", "acceptance"):
+              evidence = d["evidence"][group]
+              assert evidence, f"missing {group} evidence"
+              for item in evidence:
+                  assert item["status"] == "pass" and item["revision"] == revision, (group, item)
+          Path("/tmp/component-revision").write_text(revision, encoding="ascii")
+          print("Distribution release descriptor structure and exact evidence refs: PASS", revision)
+          PY
+          git cat-file -e "$(cat /tmp/component-revision)^{commit}"
+
+      - name: Verify native owner CI and acceptance on exact descriptor revision
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REVISION="$(cat /tmp/component-revision)"
+          for WORKFLOW in ci.yml repository-network-regression.yml; do
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW/runs?head_sha=$REVISION&status=success&per_page=100" \
+              -o "/tmp/$WORKFLOW-runs.json"
+            python - "$WORKFLOW" "$REVISION" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          workflow, revision = sys.argv[1:]
+          path = Path("/tmp") / f"{workflow}-runs.json"
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          expected_path = f".github/workflows/{workflow}"
+          matches = [
+              run for run in payload.get("workflow_runs", [])
+              if run.get("head_sha") == revision
+              and run.get("conclusion") == "success"
+              and run.get("path") == expected_path
+          ]
+          assert matches, f"no successful {expected_path} run on exact descriptor revision {revision}"
+          print(f"exact owner evidence PASS: {workflow} run {matches[0]['id']} on {revision}")
+          PY
+          done
+          echo "This proves Distribution owner acceptance only. It does not admit or promote a Core release."
