@@ -81,7 +81,7 @@ def main() -> None:
 
     marker = root / "operator" / "context" / "qualification-preservation-marker.txt"
     marker.parent.mkdir(parents=True, exist_ok=True)
-    marker.write_text("member-owned synthetic state\\n", encoding="utf-8")
+    marker.write_text("member-owned synthetic state\n", encoding="utf-8")
 
     registry_path = root / ".aiverse" / "extensions" / "registry.json"
     registry_path.parent.mkdir(parents=True, exist_ok=True)
@@ -97,7 +97,7 @@ def main() -> None:
     registry_path.write_text(
         json.dumps({"schema_version": "1.0", "extensions": {
             unrelated_extension["id"]: unrelated_extension,
-        }}, indent=2, sort_keys=True) + "\\n",
+        }}, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 
@@ -108,7 +108,7 @@ def main() -> None:
     unrelated_hook = {"type": "command", "command": "external-owner-hook"}
     hooks_path.write_text(
         json.dumps({"hooks": {"UserPromptSubmit": [{"hooks": [unrelated_hook]}]}},
-                   indent=2, sort_keys=True) + "\\n",
+                   indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 
@@ -166,7 +166,7 @@ def main() -> None:
         for group in final_hooks.get("hooks", {}).get("UserPromptSubmit", [])
     ):
         raise RuntimeError("package lifecycle changed an unrelated host hook")
-    if marker.read_text(encoding="utf-8") != "member-owned synthetic state\\n":
+    if marker.read_text(encoding="utf-8") != "member-owned synthetic state\n":
         raise RuntimeError("package lifecycle changed the member-owned marker")
     if state_snapshot(root) != before_state:
         raise RuntimeError("package removal changed member-owned state")
