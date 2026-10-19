@@ -428,7 +428,7 @@ class CandidateAdmissionTests(unittest.TestCase):
             )
         )
         candidate_ids = [item["id"] for item in overlay["release_sets"]]
-        self.assertEqual(candidate_ids, ["core-local-upgrades-candidate-2026-10-19", "core-local-upgrades-candidate-2026-10-19-v2"])
+        self.assertEqual(candidate_ids, ["core-local-upgrades-candidate-2026-10-19", "core-local-upgrades-candidate-2026-10-19-v2", "core-local-upgrades-candidate-2026-10-19-v3"])
         self.assertIn(candidate_ids[0], overlay["candidate_evidence"])
         with self.assertRaises(CandidateAdmissionError):
             validate_candidate_admission(root, MemoryResolver())
