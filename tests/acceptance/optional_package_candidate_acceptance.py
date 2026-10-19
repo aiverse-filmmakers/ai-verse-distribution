@@ -21,6 +21,15 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def replace_digest(value, old: str, new: str):
+    if isinstance(value, str):
+        return value.replace(old, new)
+    if isinstance(value, list):
+        return [replace_digest(item, old, new) for item in value]
+    if isinstance(value, dict):
+        return {key: replace_digest(item, old, new) for key, item in value.items()}
+    return value
+
 def state_snapshot(root: Path) -> dict[str, str]:
     paths: dict[str, str] = {}
     for name in ("operator", "workspaces", "connections", "knowledge", "archives"):
@@ -165,6 +174,70 @@ def main() -> None:
         raise RuntimeError(f"package install changed host hook approval: {owner_result}")
     if owner_result.get("installed") is not True:
         raise RuntimeError(f"package install was not verified by the OS owner: {owner_result}")
+
+    config_path = root / ".aiverse" / "extensions" / PACKAGE_ID / "config.json"
+    member_config = json.loads(config_path.read_text(encoding="utf-8"))
+    member_config["review_mode"] = "meaningful"
+    config_path.write_text(json.dumps(member_config, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    # Turn the installed candidate into a synthetic older receipt-owned build, then
+    # exercise the same explicit package lifecycle used to update a member install.
+    extension_root = root / ".aiverse" / "extensions" / PACKAGE_ID
+    receipt_path = extension_root / "install-receipt.json"
+    bridge_path = extension_root / "bridge.py"
+    candidate_bridge_digest = package.files.get("bridge.py")
+    if not candidate_bridge_digest or digest(bridge_path) != candidate_bridge_digest:
+        raise RuntimeError("fresh package install does not match its admitted bridge digest")
+    previous_build = bridge_path.read_bytes() + b"\n# synthetic prior receipt-owned package build\n"
+    bridge_path.write_bytes(previous_build)
+    previous_bridge_digest = digest(bridge_path)
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    if receipt.get("files", {}).get("bridge.py") != candidate_bridge_digest:
+        raise RuntimeError("fresh package receipt does not record its admitted bridge digest")
+    hooks_document = json.loads(hooks_path.read_text(encoding="utf-8"))
+    registry_document = json.loads(registry_path.read_text(encoding="utf-8"))
+    for name, document in (("receipt", receipt), ("hooks", hooks_document), ("registry", registry_document)):
+        if candidate_bridge_digest not in json.dumps(document, sort_keys=True):
+            raise RuntimeError(f"synthetic previous {name} does not contain the candidate build digest")
+    receipt = replace_digest(receipt, candidate_bridge_digest, previous_bridge_digest)
+    hooks_document = replace_digest(hooks_document, candidate_bridge_digest, previous_bridge_digest)
+    registry_document = replace_digest(registry_document, candidate_bridge_digest, previous_bridge_digest)
+    receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    hooks_path.write_text(json.dumps(hooks_document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    registry_path.write_text(json.dumps(registry_document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    upgraded = run_aiverse(root, ["upgrade", "--package", PACKAGE_ID, "--apply"])
+    if upgraded.get("state") != "SETUP_REQUIRED":
+        raise RuntimeError(f"receipt-owned package upgrade claimed readiness or failed: {upgraded}")
+    upgrade_owner_result = upgraded.get("owner_result", {})
+    if upgrade_owner_result.get("installed") is not True or upgrade_owner_result.get("trust_modified") is not False:
+        raise RuntimeError(f"package upgrade did not preserve the pending human hook approval: {upgrade_owner_result}")
+    for filename, expected_digest in package.files.items():
+        installed_file = extension_root / filename
+        if not installed_file.is_file() or digest(installed_file) != expected_digest:
+            raise RuntimeError(f"package upgrade did not restore the admitted file {filename!r}")
+    upgraded_registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    upgraded_entry = upgraded_registry.get("extensions", {}).get(PACKAGE_ID, {})
+    if upgraded_entry.get("hook_build_sha256") != candidate_bridge_digest:
+        raise RuntimeError("package upgrade did not refresh its registered bridge build digest")
+    upgraded_hooks = json.loads(hooks_path.read_text(encoding="utf-8"))
+    if previous_bridge_digest in json.dumps(upgraded_hooks, sort_keys=True):
+        raise RuntimeError("package upgrade left a stale owned hook command behind")
+
+    upgraded_config = json.loads(config_path.read_text(encoding="utf-8"))
+    if upgraded_config.get("review_mode") != "meaningful":
+        raise RuntimeError("receipt-owned package upgrade changed the member's review setting")
+    if state_snapshot(root) != before_state:
+        raise RuntimeError("receipt-owned package upgrade changed member-owned state")
+    if marker.read_text(encoding="utf-8") != "member-owned synthetic state\n":
+        raise RuntimeError("receipt-owned package upgrade changed the member-owned marker")
+    if upgraded_registry.get("extensions", {}).get(unrelated_extension["id"]) != unrelated_extension:
+        raise RuntimeError("receipt-owned package upgrade changed an unrelated extension record")
+    if not any(
+        unrelated_hook in group.get("hooks", [])
+        for group in upgraded_hooks.get("hooks", {}).get("UserPromptSubmit", [])
+    ):
+        raise RuntimeError("receipt-owned package upgrade changed an unrelated host hook")
 
     after_install = {
         str(path.relative_to(root)): digest(path)
