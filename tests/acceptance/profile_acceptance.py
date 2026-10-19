@@ -434,9 +434,27 @@ def main() -> int:
     if not doctor_reinstalled.get("ok"):
         raise RuntimeError("doctor failed after owner-safe uninstall/reinstall cycle")
 
-    update = run_cli("update", "--apply")
-    if update.get("changed") is not False:
-        raise RuntimeError(f"same-set update should be a no-op: {update}")
+    if candidate_id:
+        before_update = run_cli("status")
+        blocked_update = run_cli("update", "--apply", expect=2)
+        if blocked_update.get("error") != "DISTRIBUTION_ERROR":
+            raise RuntimeError(
+                f"default update must remain blocked for an explicit-only candidate: {blocked_update}"
+            )
+        after_update = run_cli("status")
+        after_refs = {
+            component_id: record.get("revision")
+            for component_id, record in after_update.get("components", {}).items()
+        }
+        if after_update.get("release_set_id") != candidate_id or after_refs != expected_refs:
+            raise RuntimeError(
+                "blocked default update changed the explicit candidate or its component pins: "
+                f"before={before_update}, after={after_update}"
+            )
+    else:
+        update = run_cli("update", "--apply")
+        if update.get("changed") is not False:
+            raise RuntimeError(f"same-set update should be a no-op: {update}")
 
     blocked_rollback = run_cli(
         "rollback",
