@@ -164,13 +164,13 @@
   },
   "drift": {
     "records": [],
-    "state_sha256": "041fb01924cbf40432235f2f8522c49fbf0f76917666a76f57e34f3aef474fd8"
+    "state_sha256": "e03de96057e36d56bfc9fefa4f67c7d543d23b4d3d82f5a1abad58cb5f69a460"
   },
   "profile": "core",
   "registry": {
     "path": "governance/repository-registry.json",
     "repository": "aiverse-filmmakers/AI-Verse-System",
-    "revision": "6e98aff82a84f857eb6acdeee99dfd643ee642ce",
+    "revision": "e9858192a46a11b1a080f6e695460b9825e0652a",
     "sha256": "d0cd07396aaf849cf5baae155f1389cf93f0b0f881ffb96d0595de2b229050ab"
   },
   "repository_state": {
@@ -192,9 +192,9 @@
       "aiverse-filmmakers/AI-Verse-Apps"
     ],
     "repository": "aiverse-filmmakers/AI-Verse-System",
-    "revision": "6e98aff82a84f857eb6acdeee99dfd643ee642ce",
+    "revision": "e9858192a46a11b1a080f6e695460b9825e0652a",
     "scope": "global",
-    "sha256": "041fb01924cbf40432235f2f8522c49fbf0f76917666a76f57e34f3aef474fd8"
+    "sha256": "e03de96057e36d56bfc9fefa4f67c7d543d23b4d3d82f5a1abad58cb5f69a460"
   },
   "schema": "aiverse.distribution-candidate-evidence/v1",
   "system": {
@@ -202,18 +202,18 @@
       {
         "path": "docs/REPOSITORY-NETWORK-GOVERNANCE-CONTRACT.md",
         "repository": "aiverse-filmmakers/AI-Verse-System",
-        "revision": "6e98aff82a84f857eb6acdeee99dfd643ee642ce",
+        "revision": "e9858192a46a11b1a080f6e695460b9825e0652a",
         "sha256": "176e31dcf30e68c3c5934667d23e02ddf40a1a2de11d12dcc49b80c7f8117235"
       },
       {
         "path": "docs/SAFE-UPDATE-AND-STATE-PRESERVATION-CONTRACT.md",
         "repository": "aiverse-filmmakers/AI-Verse-System",
-        "revision": "6e98aff82a84f857eb6acdeee99dfd643ee642ce",
+        "revision": "e9858192a46a11b1a080f6e695460b9825e0652a",
         "sha256": "c026818b118cd07c9539f6bbbc1d97be42493bdc680e824d1f0183811f6ec793"
       }
     ],
     "repository": "aiverse-filmmakers/AI-Verse-System",
-    "revision": "6e98aff82a84f857eb6acdeee99dfd643ee642ce"
+    "revision": "e9858192a46a11b1a080f6e695460b9825e0652a"
   },
   "toolchain": {
     "dependency_locks": [
