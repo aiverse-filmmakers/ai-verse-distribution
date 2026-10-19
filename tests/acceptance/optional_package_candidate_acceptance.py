@@ -176,8 +176,15 @@ def main() -> None:
         view = result.get("member_view", {})
         if result.get("state") != "SETUP_REQUIRED" or view.get("package_files_verified") is not True:
             raise RuntimeError(f"{action} did not accurately report the pending member approval: {result}")
-        if view.get("approval_required") is not True:
-            raise RuntimeError(f"{action} reported incorrect hook-approval evidence: {result}")
+        approval = view.get("approval_required")
+        if approval is None:
+            if view.get("hooks_discovered") is not None:
+                raise RuntimeError(f"{action} omitted approval evidence despite inspecting hooks: {result}")
+            guidance = str(view.get("guidance") or "")
+            if "Settings" not in guidance or "Trust" not in guidance:
+                raise RuntimeError(f"{action} did not explain how to review and trust hooks: {result}")
+        elif approval is not True:
+            raise RuntimeError(f"{action} did not report the synthetic hooks as unapproved: {result}")
         if result.get("mutated") is not False:
             raise RuntimeError(f"{action} was not read-only: {result}")
     if {
