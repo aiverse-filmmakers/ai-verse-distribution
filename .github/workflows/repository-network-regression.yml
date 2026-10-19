@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-System
-          ref: d05abee0e23ff4154665a04b88d752ee01272572
+          ref: 28b596ba802ddc1a882e4d5971a85c407dbe5aa6
           path: .qualification/System
 
       - name: Checkout exact State-observed OS owner head
