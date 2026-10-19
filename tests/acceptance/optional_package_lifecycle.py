@@ -4,6 +4,7 @@ import hashlib
 import json
 import shutil
 import sys
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -28,7 +29,7 @@ def platform_name() -> str:
 
 def main() -> None:
     owner_source = Path(sys.argv[1]).resolve(strict=True)
-    revision = shutil.check_output(
+    revision = subprocess.check_output(
         ["git", "-C", str(owner_source), "rev-parse", "HEAD"], text=True
     ).strip()
     if revision != OWNER_REVISION:
