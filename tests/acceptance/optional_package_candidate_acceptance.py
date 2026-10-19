@@ -12,9 +12,9 @@ from aiverse_distribution.optional_packages import verify_optional_package_sourc
 from aiverse_distribution.release_catalog import Catalog
 
 
-CANDIDATE_ID = "core-local-upgrades-candidate-2026-10-19"
+CANDIDATE_ID = "core-local-upgrades-candidate-2026-10-19-v2"
 PACKAGE_ID = "ai-verse-codex-learning"
-OWNER_REVISION = "d1fecc8026445f96212a4f65a9932f5e7a301bf8"
+OWNER_REVISION = "b6d8c7c7eea07ce5a28163f67d59b4d69c1fcc9f"
 
 
 def digest(path: Path) -> str:

@@ -27,16 +27,26 @@ class U36ReleaseTests(unittest.TestCase):
     def test_release_is_in_forward_lineage_and_candidate_stays_explicit_only(self):
         lineage_ids = {item["id"] for item in self.catalog.core_lineage["release_sets"]}
         self.assertIn(CURRENT, lineage_ids)
-        candidate_id = "core-local-upgrades-candidate-2026-10-19"
-        candidate = next(
-            item for item in self.catalog.core_candidates["release_sets"] if item["id"] == candidate_id
-        )
-        self.assertEqual(candidate["classification"], "explicit-install-qualification-candidate")
-        promotion = candidate["promotion"]
-        self.assertFalse(promotion["default_channel"])
-        self.assertFalse(promotion["automatic_update"])
-        self.assertFalse(promotion["cross_release_transition_admitted"])
-        self.assertIn(candidate_id, self.catalog.core_candidates["compatibility"])
+        expected_candidates = {
+            "core-local-upgrades-candidate-2026-10-19": "d1fecc8026445f96212a4f65a9932f5e7a301bf8",
+            "core-local-upgrades-candidate-2026-10-19-v2": "b6d8c7c7eea07ce5a28163f67d59b4d69c1fcc9f",
+        }
+        candidates = {
+            item["id"]: item for item in self.catalog.core_candidates["release_sets"]
+        }
+        self.assertEqual(set(candidates), set(expected_candidates))
+        for candidate_id, os_revision in expected_candidates.items():
+            candidate = candidates[candidate_id]
+            self.assertEqual(candidate["classification"], "explicit-install-qualification-candidate")
+            os_component = next(
+                item for item in candidate["components"] if item["id"] == "ai-verse-os"
+            )
+            self.assertEqual(os_component["revision"], os_revision)
+            promotion = candidate["promotion"]
+            self.assertFalse(promotion["default_channel"])
+            self.assertFalse(promotion["automatic_update"])
+            self.assertFalse(promotion["cross_release_transition_admitted"])
+            self.assertIn(candidate_id, self.catalog.core_candidates["compatibility"])
 
     def test_release_qualification_is_accepted_and_member_bootstrap_gate_is_present(self):
         evidence = self.release.raw["evidence"]
