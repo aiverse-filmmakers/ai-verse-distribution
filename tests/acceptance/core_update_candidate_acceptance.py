@@ -267,6 +267,25 @@ def main() -> int:
     if doctor.get("ok") is not True:
         raise RuntimeError(f"updated member doctor did not pass: {doctor}")
 
+    status_components = status.get("components")
+    doctor_components = doctor.get("components")
+    expected_component_ids = set(expected_refs)
+    if not isinstance(status_components, dict) or set(status_components) != expected_component_ids:
+        raise RuntimeError(f"updated component status set differs from candidate pins: {status_components}")
+    if not isinstance(doctor_components, dict) or set(doctor_components) != expected_component_ids:
+        raise RuntimeError(f"updated component doctor set differs from candidate pins: {doctor_components}")
+    component_readiness = {}
+    for component_id, expected_revision in expected_refs.items():
+        status_record = status_components[component_id]
+        doctor_record = doctor_components[component_id]
+        if status_record.get("state") != "ready" or status_record.get("revision") != expected_revision:
+            raise RuntimeError(
+                f"{component_id} status is not ready at its exact candidate revision: {status_record}"
+            )
+        if doctor_record.get("ok") is not True or doctor_record.get("returncode") != 0:
+            raise RuntimeError(f"{component_id} doctor did not pass: {doctor_record}")
+        component_readiness[component_id] = {"status": "ready", "doctor": "ready"}
+
     version_result = _run_project_process(
         layout, "node", str(project / "scripts" / "os-version.mjs"), "--json"
     )
@@ -340,6 +359,7 @@ def main() -> int:
         "brain_owner_state_preserved": True,
         "skills_generation_preserved": True,
         "doctor": doctor.get("ok"),
+        "component_readiness": component_readiness,
         "version_reporter": "exact-installed-candidate",
         "unqualified_reverse_rollback": "blocked",
         "promotion_or_member_receipt_created": False,
