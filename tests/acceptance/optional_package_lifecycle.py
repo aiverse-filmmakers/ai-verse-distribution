@@ -14,7 +14,7 @@ from aiverse_distribution.optional_packages import (
     verify_optional_package_source,
 )
 
-OWNER_REVISION = "d1fecc8026445f96212a4f65a9932f5e7a301bf8"
+OWNER_REVISION = "558f4ecb2f6810b10a0e152bfcf610e725fc7032"
 PACKAGE_ID = "ai-verse-codex-learning"
 PACKAGE_PATH = Path("system/extensions/packages") / PACKAGE_ID
 
