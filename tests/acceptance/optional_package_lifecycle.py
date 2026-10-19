@@ -146,7 +146,7 @@ def main() -> None:
             "platform": platform,
             "owner_revision": OWNER_REVISION,
             "package_id": PACKAGE_ID,
-            "package_version": package["version"],
+            "package_version": package.version,
             "manifest_sha256": package.manifest_sha256,
             "payload_files": len(package.files),
             "install_verified": True,
