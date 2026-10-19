@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -86,7 +87,15 @@ def main() -> None:
     registry_path = root / ".aiverse" / "extensions" / "registry.json"
     registry_path.parent.mkdir(parents=True, exist_ok=True)
     if registry_path.exists():
-        raise RuntimeError("clean-machine candidate already contains local extension registry state")
+        registry_document = json.loads(registry_path.read_text(encoding="utf-8"))
+        if not isinstance(registry_document, dict):
+            raise RuntimeError("clean-machine candidate extension registry is malformed")
+    else:
+        registry_document = {"schema_version": "1.0", "extensions": {}}
+    extension_records = registry_document.setdefault("extensions", {})
+    if not isinstance(extension_records, dict):
+        raise RuntimeError("clean-machine candidate extension records are malformed")
+    original_extensions = copy.deepcopy(extension_records)
     unrelated_extension = {
         "id": "qualification-unrelated-extension",
         "supported": False,
@@ -94,10 +103,11 @@ def main() -> None:
         "enabled": False,
         "custom_note": "preserve-me",
     }
+    if unrelated_extension["id"] in extension_records:
+        raise RuntimeError("clean-machine candidate already contains the unrelated test extension")
+    extension_records[unrelated_extension["id"]] = unrelated_extension
     registry_path.write_text(
-        json.dumps({"schema_version": "1.0", "extensions": {
-            unrelated_extension["id"]: unrelated_extension,
-        }}, indent=2, sort_keys=True) + "\n",
+        json.dumps(registry_document, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 
@@ -159,8 +169,12 @@ def main() -> None:
 
     final_registry = json.loads(registry_path.read_text(encoding="utf-8"))
     final_hooks = json.loads(hooks_path.read_text(encoding="utf-8"))
-    if final_registry.get("extensions", {}).get(unrelated_extension["id"]) != unrelated_extension:
+    final_extensions = final_registry.get("extensions", {})
+    if final_extensions.get(unrelated_extension["id"]) != unrelated_extension:
         raise RuntimeError("package lifecycle changed an unrelated extension record")
+    for extension_id, original_record in original_extensions.items():
+        if final_extensions.get(extension_id) != original_record:
+            raise RuntimeError(f"package lifecycle changed preexisting extension record {extension_id!r}")
     if not any(
         unrelated_hook in group.get("hooks", [])
         for group in final_hooks.get("hooks", {}).get("UserPromptSubmit", [])
