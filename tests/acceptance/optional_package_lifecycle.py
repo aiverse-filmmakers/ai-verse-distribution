@@ -135,7 +135,7 @@ def main() -> None:
         final_hooks = json.loads(hooks_path.read_text(encoding="utf-8"))
         if final_registry.get("extensions", {}).get(unrelated_extension["id"]) != unrelated_extension:
             raise RuntimeError("package lifecycle changed an unrelated extension record")
-        if external_hook not in final_hooks.get("hooks", {}).get("UserPromptSubmit", [{}])[0].get("hooks", []):
+        if not any(external_hook in group.get("hooks", []) for group in final_hooks.get("hooks", {}).get("UserPromptSubmit", [])):
             raise RuntimeError("package lifecycle changed an unrelated host hook")
         if marker.read_text(encoding="utf-8") != "member-owned synthetic state\n":
             raise RuntimeError("package lifecycle changed member-owned project state")
