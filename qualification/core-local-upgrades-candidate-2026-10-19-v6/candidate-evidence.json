@@ -156,10 +156,10 @@
     "candidate_definition": {
       "path": "src/aiverse_distribution/catalog/core_candidates.json",
       "repository": "aiverse-filmmakers/ai-verse-distribution",
-      "revision": "4008fa9f0338c4f95331fa099000cf1a69271228",
-      "sha256": "ec0b75fb38de6aaa8af792876fd920a8205bf36cd7f53bfadc495a2682a8b7a5"
+      "revision": "2c588c195ba58442316e7aa91d2bb1e592c77f6b",
+      "sha256": "7136bc0aaff4e5894bf93078a56076be4c366482f2a331956b190933a4709e3c"
     },
-    "candidate_revision": "4008fa9f0338c4f95331fa099000cf1a69271228",
+    "candidate_revision": "2c588c195ba58442316e7aa91d2bb1e592c77f6b",
     "repository": "aiverse-filmmakers/ai-verse-distribution"
   },
   "drift": {
