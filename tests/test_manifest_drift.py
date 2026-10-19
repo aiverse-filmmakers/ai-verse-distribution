@@ -20,7 +20,18 @@ class ManifestDriftTests(unittest.TestCase):
     def test_root_compatibility_matches_effective_runtime_catalog(self):
         catalog = Catalog()
         public = json.loads((ROOT / "compatibility" / "matrix.json").read_text(encoding="utf-8"))
-        self.assertEqual(public, catalog.compatibility)
+        candidate_ids = set(catalog.core_candidates["compatibility"])
+        effective_runtime = dict(catalog.compatibility)
+        effective_runtime["release_sets"] = {
+            release_id: record
+            for release_id, record in catalog.compatibility["release_sets"].items()
+            if release_id not in candidate_ids
+        }
+        self.assertEqual(public, effective_runtime)
+        self.assertEqual(
+            candidate_ids,
+            {item["id"] for item in catalog.core_candidates["release_sets"]},
+        )
 
     def test_root_release_manifests_match_runtime_catalog(self):
         catalog = Catalog()

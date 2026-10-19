@@ -220,17 +220,21 @@ class WholeProductQualificationTests(unittest.TestCase):
                 root, candidate_id, preservation, composed, resolver=resolver
             )
 
-    def test_current_empty_overlay_cannot_invent_whole_product_qualification(self):
-        root = Path(__file__).resolve().parents[1]
-        preservation = _valid_preservation("not-a-candidate", "1" * 40)
-        composed = _valid_composed("not-a-candidate", "1" * 40)
-        with self.assertRaisesRegex(WholeProductQualificationError, "not in the exact admitted candidate set"):
-            build_whole_product_qualification(
-                root,
-                "not-a-candidate",
-                preservation,
-                composed,
-            )
+    def test_non_candidate_cannot_invent_whole_product_qualification(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            admitted_id, resolver, _ = exact_fixture(root)
+            self.assertNotEqual(admitted_id, "not-a-candidate")
+            preservation = _valid_preservation("not-a-candidate", "1" * 40)
+            composed = _valid_composed("not-a-candidate", "1" * 40)
+            with self.assertRaisesRegex(WholeProductQualificationError, "not in the exact admitted candidate set"):
+                build_whole_product_qualification(
+                    root,
+                    "not-a-candidate",
+                    preservation,
+                    composed,
+                    resolver=resolver,
+                )
 
 
 if __name__ == "__main__":
