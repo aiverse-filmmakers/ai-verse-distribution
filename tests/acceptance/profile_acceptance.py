@@ -257,11 +257,29 @@ def main() -> int:
         # until an immutable Agent release set exists and the full flow is implemented.
         return 3
 
-    install = run_cli("install", "--profile", "core", "--root", str(root))
+    candidate_id = os.environ.get("AI_VERSE_ACCEPTANCE_RELEASE_SET")
+    install_args = ["install", "--profile", "core"]
+    if candidate_id:
+        install_args.extend(["--release-set", candidate_id])
+    install_args.extend(["--root", str(root)])
+    install = run_cli(*install_args)
     if install.get("state") != "installed":
         raise RuntimeError(f"unexpected install state: {install.get('state')}")
+    if candidate_id and install.get("release_set_id") != candidate_id:
+        raise RuntimeError(
+            f"explicit Core candidate mismatch: {install.get('release_set_id')} != {candidate_id}"
+        )
 
     prove_exact_sources(install)
+    expected_refs_raw = os.environ.get("AI_VERSE_ACCEPTANCE_EXPECTED_REFS")
+    if expected_refs_raw:
+        expected_refs = json.loads(expected_refs_raw)
+        actual_refs = {
+            component_id: receipt.get("revision")
+            for component_id, receipt in install["components"].items()
+        }
+        if actual_refs != expected_refs:
+            raise RuntimeError(f"installed candidate refs differ from the frozen expectation: {actual_refs}")
     initial_data_tree = prove_data_dependency_lock(install)
 
     write_acceptance_workspace(root)
@@ -416,9 +434,27 @@ def main() -> int:
     if not doctor_reinstalled.get("ok"):
         raise RuntimeError("doctor failed after owner-safe uninstall/reinstall cycle")
 
-    update = run_cli("update", "--apply")
-    if update.get("changed") is not False:
-        raise RuntimeError(f"same-set update should be a no-op: {update}")
+    if candidate_id:
+        before_update = run_cli("status")
+        blocked_update = run_cli("update", "--apply", expect=2)
+        if blocked_update.get("error") != "DISTRIBUTION_ERROR":
+            raise RuntimeError(
+                f"default update must remain blocked for an explicit-only candidate: {blocked_update}"
+            )
+        after_update = run_cli("status")
+        after_refs = {
+            component_id: record.get("revision")
+            for component_id, record in after_update.get("components", {}).items()
+        }
+        if after_update.get("release_set_id") != candidate_id or after_refs != expected_refs:
+            raise RuntimeError(
+                "blocked default update changed the explicit candidate or its component pins: "
+                f"before={before_update}, after={after_update}"
+            )
+    else:
+        update = run_cli("update", "--apply")
+        if update.get("changed") is not False:
+            raise RuntimeError(f"same-set update should be a no-op: {update}")
 
     blocked_rollback = run_cli(
         "rollback",

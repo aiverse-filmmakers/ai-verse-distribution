@@ -19,7 +19,15 @@ class CoreFirstRunReleaseTests(unittest.TestCase):
     def test_u36_release_is_current_core_channel(self):
         self.assertEqual(self.catalog.resolve("core").id, RELEASE)
         self.assertEqual(self.catalog.core_promotions["current_release"], RELEASE)
-        self.assertEqual(self.catalog.core_candidates["release_sets"], [])
+        candidate_id = "core-local-upgrades-candidate-2026-10-19"
+        candidate = next(
+            item for item in self.catalog.core_candidates["release_sets"] if item["id"] == candidate_id
+        )
+        self.assertEqual(candidate["classification"], "explicit-install-qualification-candidate")
+        candidate_promotion = candidate["promotion"]
+        self.assertFalse(candidate_promotion["default_channel"])
+        self.assertFalse(candidate_promotion["automatic_update"])
+        self.assertFalse(candidate_promotion["cross_release_transition_admitted"])
         self.assertEqual(self.release.raw["classification"], "production-core-release")
         promotion = self.release.raw["promotion"]
         self.assertTrue(promotion["default_channel"])

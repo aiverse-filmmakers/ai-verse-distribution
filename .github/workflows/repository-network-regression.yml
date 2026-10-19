@@ -101,9 +101,18 @@ jobs:
           root = Path('.')
           candidates = json.loads((root / 'src/aiverse_distribution/catalog/core_candidates.json').read_text(encoding='utf-8'))
           promotions = json.loads((root / 'src/aiverse_distribution/catalog/core_promotions.json').read_text(encoding='utf-8'))
-          assert candidates.get('release_sets') == [], candidates
-          assert candidates.get('compatibility') == {}, candidates
-          assert candidates.get('candidate_evidence') == {}, candidates
+          release_sets = candidates.get('release_sets', [])
+          assert len(release_sets) == 1, candidates
+          candidate = release_sets[0]
+          assert candidate.get('id') == 'core-local-upgrades-candidate-2026-10-19', candidate
+          assert candidate.get('classification') == 'explicit-install-qualification-candidate', candidate
+          assert candidate.get('promotion') == {
+              'default_channel': False,
+              'automatic_update': False,
+              'cross_release_transition_admitted': False,
+          }, candidate
+          assert set(candidates.get('compatibility', {})) == {candidate['id']}, candidates
+          assert set(candidates.get('candidate_evidence', {})) == {candidate['id']}, candidates
           assert promotions.get('current_release') == 'core-first-run-rc1-2026-10-12', promotions
           assert promotions.get('system_sync_debts') == [], promotions
           PY

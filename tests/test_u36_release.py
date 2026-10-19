@@ -24,11 +24,19 @@ class U36ReleaseTests(unittest.TestCase):
         self.assertTrue(self.release.raw["promotion"]["default_channel"])
         self.assertTrue(self.release.raw["promotion"]["automatic_update"])
 
-    def test_release_is_in_forward_lineage_and_candidate_overlay_is_empty(self):
+    def test_release_is_in_forward_lineage_and_candidate_stays_explicit_only(self):
         lineage_ids = {item["id"] for item in self.catalog.core_lineage["release_sets"]}
         self.assertIn(CURRENT, lineage_ids)
-        self.assertEqual(self.catalog.core_candidates["release_sets"], [])
-        self.assertEqual(self.catalog.core_candidates["compatibility"], {})
+        candidate_id = "core-local-upgrades-candidate-2026-10-19"
+        candidate = next(
+            item for item in self.catalog.core_candidates["release_sets"] if item["id"] == candidate_id
+        )
+        self.assertEqual(candidate["classification"], "explicit-install-qualification-candidate")
+        promotion = candidate["promotion"]
+        self.assertFalse(promotion["default_channel"])
+        self.assertFalse(promotion["automatic_update"])
+        self.assertFalse(promotion["cross_release_transition_admitted"])
+        self.assertIn(candidate_id, self.catalog.core_candidates["compatibility"])
 
     def test_release_qualification_is_accepted_and_member_bootstrap_gate_is_present(self):
         evidence = self.release.raw["evidence"]

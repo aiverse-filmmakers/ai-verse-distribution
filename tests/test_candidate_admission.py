@@ -420,10 +420,18 @@ def exact_fixture(root: Path):
 
 
 class CandidateAdmissionTests(unittest.TestCase):
-    def test_current_empty_overlay_has_explicit_empty_evidence_map(self):
+    def test_current_candidate_requires_external_admission_evidence(self):
         root = Path(__file__).resolve().parents[1]
-        result = validate_candidate_admission(root, MemoryResolver())
-        self.assertEqual(result, [])
+        overlay = json.loads(
+            (root / "src/aiverse_distribution/catalog/core_candidates.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        candidate_ids = [item["id"] for item in overlay["release_sets"]]
+        self.assertEqual(candidate_ids, ["core-local-upgrades-candidate-2026-10-19"])
+        self.assertIn(candidate_ids[0], overlay["candidate_evidence"])
+        with self.assertRaises(CandidateAdmissionError):
+            validate_candidate_admission(root, MemoryResolver())
 
     def test_exact_frozen_candidate_can_enter_qualification_path(self):
         with tempfile.TemporaryDirectory() as tmp:
