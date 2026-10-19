@@ -21,8 +21,6 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-
-
 def replace_digest(value, old: str, new: str):
     if isinstance(value, str):
         return value.replace(old, new)
