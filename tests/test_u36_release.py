@@ -33,6 +33,7 @@ class U36ReleaseTests(unittest.TestCase):
             "core-local-upgrades-candidate-2026-10-19-v3": "98eed935a933239021e8f5cce2e729afa5e0216b",
             "core-local-upgrades-candidate-2026-10-19-v4": "558f4ecb2f6810b10a0e152bfcf610e725fc7032",
             "core-local-upgrades-candidate-2026-10-19-v5": "558f4ecb2f6810b10a0e152bfcf610e725fc7032",
+            "core-local-upgrades-candidate-2026-10-19-v6": "558f4ecb2f6810b10a0e152bfcf610e725fc7032",
         }
         candidates = {
             item["id"]: item for item in self.catalog.core_candidates["release_sets"]

@@ -1,0 +1,85 @@
+{
+  "schema_version": "ai-verse.release-preservation/v1",
+  "source_release_set": "core-first-run-rc1-2026-10-12",
+  "target_release_set": "core-local-upgrades-candidate-2026-10-19-v6",
+  "target_distribution_revision": "2c588c195ba58442316e7aa91d2bb1e592c77f6b",
+  "supported_platforms": [
+    "linux",
+    "macos",
+    "windows"
+  ],
+  "safe_for_update": true,
+  "platform_acceptance": {
+    "linux": "pass",
+    "macos": "pass",
+    "windows": "pass"
+  },
+  "clean_install": "pass",
+  "upgrade": "pass",
+  "restart_recovery": "pass",
+  "state_preservation": {
+    "brain": "pass",
+    "memory": "pass",
+    "data": "pass",
+    "skills": "pass",
+    "bots": "not-applicable",
+    "token": "not-applicable",
+    "workspace": "pass",
+    "user_files": "pass"
+  },
+  "authority_preservation": "pass",
+  "migration": {
+    "status": "none",
+    "owner_evidence": []
+  },
+  "rollback": {
+    "software_rollback": "blocked"
+  },
+  "negative_tests": {
+    "unsupported_migration": "pass",
+    "user_file_collision": "pass",
+    "disabled_component": "pass",
+    "permission_floor": "pass",
+    "brain_ownership": "pass",
+    "partial_failure": "pass",
+    "wrong_release_sha": "pass"
+  },
+  "evidence": [
+    {
+      "kind": "clean-machine-core-candidate-update-and-preservation",
+      "status": "pass",
+      "revision": "2c588c195ba58442316e7aa91d2bb1e592c77f6b",
+      "run_id": 39319791641,
+      "job_id": 118290589736,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/39319791641/job/118290589736"
+    },
+    {
+      "kind": "clean-machine-core-candidate-update-and-preservation",
+      "status": "pass",
+      "revision": "2c588c195ba58442316e7aa91d2bb1e592c77f6b",
+      "run_id": 39319791641,
+      "job_id": 118290590098,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/39319791641/job/118290590098"
+    },
+    {
+      "kind": "clean-machine-core-candidate-update-and-preservation",
+      "status": "pass",
+      "revision": "2c588c195ba58442316e7aa91d2bb1e592c77f6b",
+      "run_id": 39319791641,
+      "job_id": 118290590053,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/39319791641/job/118290590053"
+    },
+    {
+      "kind": "distribution-unit-regression-and-fail-closed-suite",
+      "status": "pass",
+      "revision": "2c588c195ba58442316e7aa91d2bb1e592c77f6b",
+      "run_id": 39319791661,
+      "job_id": 118290583735,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/39319791661/job/118290583735"
+    }
+  ],
+  "semantics": {
+    "acceptance_evidence_only": true,
+    "duplicates_canonical_state": false
+  }
+}

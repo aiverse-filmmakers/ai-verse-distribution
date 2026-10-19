@@ -46,7 +46,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     env:
-      AI_VERSE_ACCEPTANCE_RELEASE_SET: core-local-upgrades-candidate-2026-10-19-v5
+      AI_VERSE_ACCEPTANCE_RELEASE_SET: core-local-upgrades-candidate-2026-10-19-v6
       AI_VERSE_ACCEPTANCE_EXPECTED_REFS: '{"ai-verse-os":"558f4ecb2f6810b10a0e152bfcf610e725fc7032","ai-verse-brain":"f746806e4361c2b1cd67ee97810071cc86db7b9a","ai-verse-memory":"f1327be48ba2ee0043959021365e6dbb9dcb1d3a","ai-verse-skills":"afde5c06307fba7d074de2929c2eb6c3dc6bdab8","ai-verse-data":"f8978f8f7a1bc94edecddc2662112233289159a3"}'
       GITHUB_TOKEN: ${{ github.token }}
     steps:
@@ -71,5 +71,7 @@ jobs:
         run: python -m pip install .
       - name: Prove the exact local-upgrades Core candidate from a clean machine
         run: python tests/acceptance/profile_acceptance.py core
+      - name: Prove a populated update from current Core and preservation of member state
+        run: python tests/acceptance/core_update_candidate_acceptance.py
       - name: Prove optional package lifecycle and member-state preservation
         run: python tests/acceptance/optional_package_candidate_acceptance.py

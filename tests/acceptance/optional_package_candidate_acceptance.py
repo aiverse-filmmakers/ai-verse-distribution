@@ -12,7 +12,7 @@ from aiverse_distribution.optional_packages import verify_optional_package_sourc
 from aiverse_distribution.release_catalog import Catalog
 
 
-CANDIDATE_ID = "core-local-upgrades-candidate-2026-10-19-v5"
+CANDIDATE_ID = "core-local-upgrades-candidate-2026-10-19-v6"
 PACKAGE_ID = "ai-verse-codex-learning"
 OWNER_REVISION = "558f4ecb2f6810b10a0e152bfcf610e725fc7032"
 

@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from aiverse_distribution.whole_product_qualification import (
+    _required_platforms,
     COMPOSED_ACCEPTANCE_SCHEMA,
     PRESERVATION_SCHEMA,
     SCHEMA_ID,
@@ -107,6 +108,22 @@ def _valid_composed(candidate_id: str, revision: str):
 
 
 class WholeProductQualificationTests(unittest.TestCase):
+    def test_runtime_platform_aliases_normalize_to_canonical_contract_names(self):
+        self.assertEqual(
+            _required_platforms({"platforms": ["darwin", "linux", "win32"]}),
+            ["linux", "macos", "windows"],
+        )
+
+    def test_platform_alias_collision_is_rejected(self):
+        with self.assertRaisesRegex(
+            WholeProductQualificationError, "duplicate platforms after normalization"
+        ):
+            _required_platforms({"platforms": ["darwin", "macos"]})
+
+    def test_unknown_platform_is_rejected(self):
+        with self.assertRaisesRegex(WholeProductQualificationError, "unsupported platform"):
+            _required_platforms({"platforms": ["plan9"]})
+
     def fixture(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)

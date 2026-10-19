@@ -17,6 +17,8 @@ The gate consumes four existing evidence boundaries:
 3. one Distribution composed-acceptance result for the same exact candidate and Distribution revision;
 4. the candidate compatibility platform scope and exact component set.
 
+Candidate compatibility may use runtime platform identifiers such as `darwin` and `win32`. Qualification normalizes those to the canonical evidence names `macos` and `windows` (with `linux` unchanged) before comparing platform coverage. Unknown identifiers and aliases that collapse to duplicates fail closed.
+
 The composed-acceptance input uses `aiverse.distribution-composed-acceptance/v1`. For every supported platform it records the clean-install, status, doctor and health gates plus the exact component status/doctor outcome and executable run evidence.
 
 A component is qualification-ready only when its composed status and doctor outcome are both `ready`. Results such as `setup-required`, `degraded`, `blocked`, missing evidence, or a failed platform gate stop qualification.

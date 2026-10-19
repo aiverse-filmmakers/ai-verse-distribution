@@ -73,13 +73,28 @@ def _candidate_context(root: Path, candidate_id: str) -> tuple[dict[str, Any], d
     return candidate, compatibility_record, evidence_binding, candidate_evidence
 
 
+_PLATFORM_ALIASES = {
+    "darwin": "macos",
+    "linux": "linux",
+    "macos": "macos",
+    "win32": "windows",
+    "windows": "windows",
+}
+_PLATFORM_ORDER = {"linux": 0, "macos": 1, "windows": 2}
+
+
 def _required_platforms(compatibility: Mapping[str, Any]) -> list[str]:
     platforms = compatibility.get("platforms")
     if not isinstance(platforms, list) or not platforms or any(not isinstance(item, str) or not item for item in platforms):
         raise WholeProductQualificationError("candidate compatibility must declare supported platforms")
     if len(set(platforms)) != len(platforms):
         raise WholeProductQualificationError("candidate compatibility contains duplicate platforms")
-    return platforms
+    canonical = [_PLATFORM_ALIASES.get(item, item) for item in platforms]
+    if any(item not in _PLATFORM_ORDER for item in canonical):
+        raise WholeProductQualificationError("candidate compatibility declares an unsupported platform")
+    if len(set(canonical)) != len(canonical):
+        raise WholeProductQualificationError("candidate compatibility contains duplicate platforms after normalization")
+    return sorted(canonical, key=_PLATFORM_ORDER.__getitem__)
 
 
 def _validate_preservation(
