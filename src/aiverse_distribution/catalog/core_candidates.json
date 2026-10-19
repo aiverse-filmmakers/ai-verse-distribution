@@ -115,7 +115,7 @@
   "candidate_evidence": {
     "core-local-upgrades-candidate-2026-10-19": {
       "path": "qualification/core-local-upgrades-candidate-2026-10-19/candidate-evidence.json",
-      "sha256": "3d435d6edfd7578c2b22ae6ea89af9878bd4e2ed3473be07c4483704394107d3"
+      "sha256": "183143d6bd0dfdf33bf30e03801cd34496ca8a451770ac232741e350b6bd714c"
     }
   }
 }
