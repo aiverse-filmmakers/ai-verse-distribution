@@ -121,6 +121,44 @@ def _install_test_transition(layout: ProjectLayout) -> None:
     transitions_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _require_skills_generation_preserved(
+    before: dict,
+    after: dict,
+    *,
+    prior_generation_id: str,
+    active_generation_id: str,
+) -> None:
+    """Allow Core to activate a new immutable generation without losing the old one."""
+    before_skills = before.get("local_skills") or {}
+    after_skills = after.get("local_skills") or {}
+    active_pointer = ".aiverse/active.json"
+    if not prior_generation_id or not active_generation_id:
+        raise RuntimeError("Skills preservation check is missing a generation id")
+    prior_prefix = f".aiverse/generations/{prior_generation_id}"
+    new_prefix = f".aiverse/generations/{active_generation_id}"
+    if not any(
+        path.startswith(prior_prefix + "/") and value.get("type") == "file"
+        for path, value in before_skills.items()
+    ):
+        raise RuntimeError("pre-update Skills generation has no captured content")
+    if active_generation_id == prior_generation_id:
+        if before_skills != after_skills:
+            raise RuntimeError("personal reusable Skills changed without a new generation")
+        return
+    if after_skills.get(new_prefix, {}).get("type") != "directory":
+        raise RuntimeError("new active Skills generation is missing from the installed root")
+    if after_skills.get(active_pointer, {}).get("type") != "file":
+        raise RuntimeError("Skills active-generation pointer is missing after update")
+    for path, fingerprint in before_skills.items():
+        if path != active_pointer and after_skills.get(path) != fingerprint:
+            raise RuntimeError(f"pre-existing Skills content changed or disappeared: {path}")
+    for path in after_skills:
+        if path in before_skills or path == active_pointer:
+            continue
+        if path != new_prefix and not path.startswith(new_prefix + "/"):
+            raise RuntimeError(f"unexpected new content in Skills root: {path}")
+
+
 def main() -> int:
     base = Path(os.environ.get("RUNNER_TEMP") or tempfile.gettempdir()) / "aiverse-core-update-candidate"
     base.mkdir(parents=True, exist_ok=True)
@@ -260,32 +298,27 @@ def main() -> int:
             "--json",
         ]
     )
-    if skills_generation not in json.loads(skills_status.stdout).get("recoverable_generations", []) and skills_generation != json.loads(skills_status.stdout).get("generation_id"):
+    skills_status_payload = json.loads(skills_status.stdout)
+    if skills_generation not in skills_status_payload.get("recoverable_generations", []) and skills_generation != skills_status_payload.get("generation_id"):
         raise RuntimeError("member Skills generation was not preserved across the update")
+    active_skills_generation = str(skills_status_payload.get("generation_id") or "")
 
     after = snapshot_member_state(
         project,
         local_skills_root=layout.stack / "skills",
         distribution_history_root=layout.distribution_home / "history",
     )
-    if before.get("local_skills") != after.get("local_skills"):
-        before_skills = before.get("local_skills") or {}
-        after_skills = after.get("local_skills") or {}
-        changed_paths = sorted(
-            path
-            for path in set(before_skills) | set(after_skills)
-            if before_skills.get(path) != after_skills.get(path)
-        )
-        print(json.dumps({
-            "local_skills_preservation_diff": [
-                {
-                    "path": path,
-                    "before": before_skills.get(path),
-                    "after": after_skills.get(path),
-                }
-                for path in changed_paths
-            ]}, sort_keys=True))
-    require_member_state_preserved(before, after)
+    _require_skills_generation_preserved(
+        before,
+        after,
+        prior_generation_id=skills_generation,
+        active_generation_id=active_skills_generation,
+    )
+    # Skills owns immutable generations. Keep its verified historical generation
+    # exact while allowing the new release generation and active pointer.
+    other_state_before = dict(before)
+    other_state_before["local_skills"] = after.get("local_skills")
+    require_member_state_preserved(other_state_before, after)
 
     blocked = _run_project(layout, "rollback", "--to", CURRENT_RELEASE, "--apply", expect=2)
     if blocked.get("error") != "CORE_UPDATE_TRANSITION_UNSUPPORTED":
