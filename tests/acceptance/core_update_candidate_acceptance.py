@@ -23,11 +23,12 @@ TEST_EVIDENCE_REF = "temporary-clean-machine-update-fixture"
 
 
 def _run_project(layout: ProjectLayout, *arguments: str, expect: int = 0) -> dict:
-    executable = layout.stack / "tools" / "distribution-venv" / (
-        "Scripts/aiverse.exe" if os.name == "nt" else "bin/aiverse"
+    python = layout.stack / "tools" / "distribution-venv" / (
+        "Scripts/python.exe" if os.name == "nt" else "bin/python"
     )
+    launcher = layout.stack / "run.py"
     completed = subprocess.run(
-        [str(executable), *arguments, "--json"],
+        [str(python), str(launcher), *arguments, "--json"],
         cwd=layout.project,
         text=True,
         stdout=subprocess.PIPE,
