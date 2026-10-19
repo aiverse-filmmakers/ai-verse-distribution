@@ -268,6 +268,23 @@ def main() -> int:
         local_skills_root=layout.stack / "skills",
         distribution_history_root=layout.distribution_home / "history",
     )
+    if before.get("local_skills") != after.get("local_skills"):
+        before_skills = before.get("local_skills") or {}
+        after_skills = after.get("local_skills") or {}
+        changed_paths = sorted(
+            path
+            for path in set(before_skills) | set(after_skills)
+            if before_skills.get(path) != after_skills.get(path)
+        )
+        print(json.dumps({
+            "local_skills_preservation_diff": [
+                {
+                    "path": path,
+                    "before": before_skills.get(path),
+                    "after": after_skills.get(path),
+                }
+                for path in changed_paths
+            ]}, sort_keys=True))
     require_member_state_preserved(before, after)
 
     blocked = _run_project(layout, "rollback", "--to", CURRENT_RELEASE, "--apply", expect=2)
