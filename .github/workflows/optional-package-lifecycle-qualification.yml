@@ -33,11 +33,11 @@ jobs:
       - name: Preserve exact source bytes on Windows checkouts
         run: git config --global core.autocrlf false
 
-      - name: Check out the exact accepted OS package source
+      - name: Check out the exact proposed OS package source
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-OS
-          ref: 1f90aa75401dd27e89f7cf466bed14db311a4db1
+          ref: d1fecc8026445f96212a4f65a9932f5e7a301bf8
           path: .qualification/ai-verse-os
 
       - name: Install Distribution from this change
