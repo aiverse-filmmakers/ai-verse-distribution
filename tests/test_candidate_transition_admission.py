@@ -31,7 +31,23 @@ class CandidateTransitionAdmissionTests(unittest.TestCase):
         before_beta = fixture.sqlite_snapshot("beta")
         before_receipts = json.loads(json.dumps(fixture.store.load()["components"]))
 
-        with patch.object(fixture.app, "preflight", return_value={}), patch.object(
+        # This regression isolates populated-state preservation after admission;
+        # infrastructure gating has its own exact owner-contract tests.
+        with patch.object(
+            fixture.app.infrastructure_gate,
+            "evaluate",
+            return_value={
+                "state": "COMPATIBLE",
+                "activation_allowed": True,
+                "staging_allowed": True,
+                "requires_upgrade": False,
+                "optional_improvements": 0,
+                "blocked": 0,
+                "items": [],
+                "message": "No setup change is required for this software update.",
+                "evidence_scope": "non-runtime-fixture",
+            },
+        ), patch.object(fixture.app, "preflight", return_value={}), patch.object(
             fixture.app, "_verify_exact_source", return_value=None
         ), patch.object(
             fixture.app,

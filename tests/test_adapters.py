@@ -198,6 +198,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
             adapters.CONTEXT_LADDER_OS,
             adapters.FIRST_RUN_CORE_OS,
             adapters.LOCAL_UPGRADES_OS,
+            adapters.LOCAL_UPGRADES_OS_V4,
         ):
             mocked.reset_mock()
             adapters.owner_setup(
