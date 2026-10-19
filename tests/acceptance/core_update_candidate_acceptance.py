@@ -46,6 +46,27 @@ def _run_project(layout: ProjectLayout, *arguments: str, expect: int = 0) -> dic
         raise RuntimeError(f"project-bound aiverse emitted invalid JSON: {completed.stdout}") from exc
 
 
+def _run_project_process(layout: ProjectLayout, *arguments: str) -> subprocess.CompletedProcess[str]:
+    python = layout.stack / "tools" / "distribution-venv" / (
+        "Scripts/python.exe" if os.name == "nt" else "bin/python"
+    )
+    launcher = layout.stack / "run.py"
+    completed = subprocess.run(
+        [str(python), str(launcher), "--exec", *arguments],
+        cwd=layout.project,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if completed.returncode:
+        raise RuntimeError(
+            f"project-bound process {' '.join(arguments)} returned {completed.returncode}\n"
+            f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
+        )
+    return completed
+
+
 def _install_test_transition(layout: ProjectLayout) -> None:
     venv_python = layout.stack / "tools" / "distribution-venv" / (
         "Scripts/python.exe" if os.name == "nt" else "bin/python"
@@ -208,8 +229,8 @@ def main() -> int:
     if doctor.get("ok") is not True:
         raise RuntimeError(f"updated member doctor did not pass: {doctor}")
 
-    version_result = profile.run_process(
-        ["node", str(project / "scripts" / "os-version.mjs"), "--json"]
+    version_result = _run_project_process(
+        layout, "node", str(project / "scripts" / "os-version.mjs"), "--json"
     )
     version = json.loads(version_result.stdout)
     installed_version = version.get("installed") or {}
