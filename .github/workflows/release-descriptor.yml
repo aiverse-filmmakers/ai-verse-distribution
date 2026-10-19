@@ -1,0 +1,189 @@
+name: Release Descriptor
+
+on:
+  pull_request:
+    paths:
+      - "release/component-release.json"
+      - ".github/workflows/release-descriptor.yml"
+      - "docs/RELEASE-DESCRIPTOR.md"
+  push:
+    branches: [main]
+    paths:
+      - "release/component-release.json"
+      - ".github/workflows/release-descriptor.yml"
+      - "docs/RELEASE-DESCRIPTOR.md"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate release descriptor
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          import tomllib
+          from pathlib import Path
+
+          d = json.loads(Path("release/component-release.json").read_text(encoding="utf-8"))
+          required = {
+              "schema_version", "component_id", "version", "revision", "release_status",
+              "package", "supported_platforms", "runtime_requirements", "lifecycle",
+              "state", "migration", "authority", "evidence", "semantics",
+          }
+          assert set(d) == required, (set(d) - required, required - set(d))
+          assert d["schema_version"] == "ai-verse.component-release/v1"
+          assert d["component_id"] == "ai-verse-distribution"
+          assert d["version"] == tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+          revision = d["revision"]
+          assert isinstance(revision, str) and re.fullmatch(r"[0-9a-f]{40}", revision)
+          assert d["release_status"] in {"candidate", "accepted"}
+
+          package = d["package"]
+          package_required = {"repository", "source_type"}
+          package_allowed = package_required | {"package_name", "integrity"}
+          assert package_required <= set(package) <= package_allowed
+          assert package["repository"] == "aiverse-filmmakers/ai-verse-distribution"
+          assert package["source_type"] in {"git", "npm", "pypi", "archive"}
+          for key in ("package_name", "integrity"):
+              assert package.get(key) is None or isinstance(package.get(key), str), key
+
+          platforms = d["supported_platforms"]
+          assert isinstance(platforms, list) and platforms
+          assert len(platforms) == len(set(platforms))
+          assert set(platforms) <= {"linux", "macos", "windows"}
+
+          runtime = d["runtime_requirements"]
+          assert set(runtime) == {"python", "node", "other"}
+          assert all(runtime[key] is None or isinstance(runtime[key], str) for key in ("python", "node"))
+          assert isinstance(runtime["other"], list) and all(isinstance(item, str) for item in runtime["other"])
+          assert all(runtime["other"]), "runtime other entries must be non-empty"
+          assert len(runtime["other"]) == len(set(runtime["other"])), "runtime other entries must be unique"
+
+          lifecycle_keys = {
+              "install", "setup", "status", "doctor", "enable", "disable", "update", "uninstall",
+          }
+          assert set(d["lifecycle"]) == lifecycle_keys
+          assert all(type(value) is bool for value in d["lifecycle"].values())
+
+          state = d["state"]
+          assert {"canonical_state_owned", "preserve_on_update", "preserve_on_uninstall", "preserve_unknown_user_files"} <= set(state)
+          assert set(state) <= {
+              "canonical_state_owned", "preserve_on_update", "preserve_on_uninstall",
+              "preserve_unknown_user_files", "state_format",
+          }
+          assert type(state["canonical_state_owned"]) is bool
+          for key in ("preserve_on_update", "preserve_on_uninstall", "preserve_unknown_user_files"):
+              assert state[key] is True, key
+          assert state.get("state_format") is None or isinstance(state.get("state_format"), str)
+
+          migration = d["migration"]
+          migration_required = {
+              "compatibility", "change_classification", "from_versions",
+              "requires_explicit_migration", "owner_controlled", "checkpoint_policy",
+          }
+          assert migration_required <= set(migration)
+          assert set(migration) <= migration_required | {"infrastructure"}
+          assert migration["change_classification"] in {"non-breaking", "breaking"}
+          assert migration["compatibility"] in {"none-required", "compatible", "explicit-migration", "blocked"}
+          assert type(migration["requires_explicit_migration"]) is bool
+          assert migration["owner_controlled"] is True
+          assert migration["checkpoint_policy"] in {"not-required", "owner-evidence-required", "unsupported"}
+          from_versions = migration["from_versions"]
+          assert isinstance(from_versions, list)
+          assert all(isinstance(item, str) and item for item in from_versions)
+          assert len(from_versions) == len(set(from_versions)), "migration source versions must be unique"
+          if migration["compatibility"] == "explicit-migration":
+              assert migration["requires_explicit_migration"] is True
+          else:
+              assert migration["requires_explicit_migration"] is False
+          if migration["compatibility"] == "none-required":
+              assert not from_versions
+          if migration["change_classification"] == "breaking":
+              assert from_versions
+              assert migration["compatibility"] in {"explicit-migration", "blocked"}
+          if migration["compatibility"] == "blocked":
+              assert d["release_status"] != "accepted"
+          # This owner descriptor does not publish infrastructure-upgrade recipes.
+          # Fail closed until this gate validates that optional contract in full.
+          assert "infrastructure" not in migration
+
+          authority_keys = {
+              "grants_permissions", "changes_direction_owner", "changes_scope",
+              "enables_disabled_component", "exposes_remote_listener",
+          }
+          assert set(d["authority"]) == authority_keys
+          assert all(value is False for value in d["authority"].values())
+
+          evidence = d["evidence"]
+          assert set(evidence) == {"ci", "acceptance"}
+          for group in ("ci", "acceptance"):
+              assert isinstance(evidence[group], list) and evidence[group], f"missing {group} evidence"
+              for item in evidence[group]:
+                  required_item = {"kind", "status", "revision"}
+                  allowed_item = required_item | {"run_id", "url"}
+                  assert required_item <= set(item) <= allowed_item
+                  assert isinstance(item["kind"], str) and 1 <= len(item["kind"]) <= 80
+                  assert item["status"] == "pass", (group, item)
+                  if "run_id" in item:
+                      assert item["run_id"] is None or (not isinstance(item["run_id"], bool) and isinstance(item["run_id"], (str, int)))
+                  if "url" in item:
+                      assert item["url"] is None or isinstance(item["url"], str)
+                  assert item["status"] in {"pass", "fail"}
+                  assert item["revision"] == revision
+                  if d["release_status"] == "accepted":
+                      assert item["status"] == "pass", (group, item)
+
+          assert d["semantics"] == {"release_metadata_only": True, "live_health_truth": False}
+          Path("/tmp/component-revision").write_text(revision, encoding="ascii")
+          print("Distribution release descriptor structure and exact evidence refs: PASS", revision)
+          PY
+          git cat-file -e "$(cat /tmp/component-revision)^{commit}"
+
+      - name: Verify native owner CI and acceptance on exact descriptor revision
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REVISION="$(cat /tmp/component-revision)"
+          RELEASE_STATUS="$(python -c 'import json; print(json.load(open("release/component-release.json", encoding="utf-8"))["release_status"])')"
+          if [[ "$RELEASE_STATUS" != "accepted" ]]; then
+            echo "Candidate descriptor: native exact-revision acceptance checks are deferred until accepted."
+            exit 0
+          fi
+          for WORKFLOW in ci.yml repository-network-regression.yml; do
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW/runs?head_sha=$REVISION&status=success&per_page=100" \
+              -o "/tmp/$WORKFLOW-runs.json"
+            python - "$WORKFLOW" "$REVISION" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          workflow, revision = sys.argv[1:]
+          path = Path("/tmp") / f"{workflow}-runs.json"
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          expected_path = f".github/workflows/{workflow}"
+          matches = [
+              run for run in payload.get("workflow_runs", [])
+              if run.get("head_sha") == revision
+              and run.get("conclusion") == "success"
+              and run.get("path") == expected_path
+          ]
+          assert matches, f"no successful {expected_path} run on exact descriptor revision {revision}"
+          print(f"exact owner evidence PASS: {workflow} run {matches[0]['id']} on {revision}")
+          PY
+          done
+          echo "This proves Distribution owner acceptance only. It does not admit or promote a Core release."
