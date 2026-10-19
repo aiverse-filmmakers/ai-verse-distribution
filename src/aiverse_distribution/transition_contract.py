@@ -36,7 +36,60 @@ class CoreTransitionContract:
     ) -> None:
         self.catalog = catalog or Catalog()
         self.payload = payload if payload is not None else self._load_payload()
+        self._overlay_promoted_transitions()
         self._validate()
+
+    def _overlay_promoted_transitions(self) -> None:
+        """Read qualified future transitions from the same atomic Core promotion record.
+
+        The packaged transition file remains the authority for historical releases.
+        A newly promoted release carries its transition evidence inside the
+        append-only Core promotion ledger, so its channel and updater admission
+        cannot drift apart across two separately written catalog files.
+        """
+        releases = self.payload.get("releases")
+        promoted = self.catalog.core_promotions.get("release_sets", [])
+        if not isinstance(releases, dict) or not isinstance(promoted, list):
+            raise TransitionMetadataError("Core promotion transition overlay is malformed")
+        for release in promoted:
+            if not isinstance(release, dict):
+                continue
+            promotion = release.get("promotion")
+            if not isinstance(promotion, dict) or promotion.get("qualification_gate") != "whole-product-v1":
+                continue
+            release_id = release.get("id")
+            evidence = release.get("evidence")
+            transition = evidence.get("transition_policy") if isinstance(evidence, dict) else None
+            required = {
+                "status",
+                "qualification_ref",
+                "update_from",
+                "rollback_to",
+                "state_rule",
+                "rollback_rule",
+                "preservation_evidence",
+            }
+            if (
+                not isinstance(release_id, str)
+                or not isinstance(transition, dict)
+                or not required.issubset(transition)
+                or transition.get("status") != "accepted"
+            ):
+                raise TransitionMetadataError(
+                    f"{release_id or 'promoted Core release'}: qualified transition evidence is incomplete"
+                )
+            if release_id in releases:
+                raise TransitionMetadataError(
+                    f"{release_id}: transition metadata is duplicated between historical and promoted ledgers"
+                )
+            releases[release_id] = {
+                "profile": "core",
+                "update_from": transition["update_from"],
+                "rollback_to": transition["rollback_to"],
+                "state_rule": transition["state_rule"],
+                "rollback_rule": transition["rollback_rule"],
+                "preservation_evidence": transition["preservation_evidence"],
+            }
 
     @staticmethod
     def _load_payload() -> Dict[str, Any]:

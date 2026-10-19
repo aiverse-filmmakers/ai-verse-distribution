@@ -342,9 +342,13 @@ def _validate_forward_candidate(
     if compatibility.get("profile") != "core" or compatibility.get("status") != "released":
         raise CorePromotionError(f"{candidate_id}: candidate compatibility must be release-shaped Core")
     update_from = compatibility.get("update_from")
-    if not isinstance(update_from, list) or current_release not in update_from:
+    if update_from != [current_release, candidate_id]:
         raise CorePromotionError(
-            f"{candidate_id}: compatibility does not admit forward update from {current_release}"
+            f"{candidate_id}: compatibility must admit only the qualified source and its explicit self no-op"
+        )
+    if compatibility.get("rollback_to") != [candidate_id]:
+        raise CorePromotionError(
+            f"{candidate_id}: cross-release rollback requires separate reverse-transition qualification"
         )
 
 
@@ -388,6 +392,10 @@ def plan_core_promotion(
         raise CorePromotionError(f"{candidate_id}: candidate is already in the promotion ledger")
 
     _validate_forward_candidate(candidate_id, candidate, compatibility, current_release)
+    if qualification.get("source_release_set") != current_release:
+        raise CorePromotionError(
+            f"{candidate_id}: preservation source does not match current Core release {current_release}"
+        )
     if mode == "normal" and _open_debts(promotions):
         raise CorePromotionError(
             f"{candidate_id}: normal promotion is blocked by unresolved {SYSTEM_SYNC_DEBT}"
@@ -469,13 +477,42 @@ def plan_core_promotion(
         "qualification_schema": WHOLE_PRODUCT_QUALIFICATION_SCHEMA,
     }
     evidence["transition_policy"] = {
+        "status": "accepted",
+        "qualification_ref": qualification_ref,
         "cross_release_update_admitted": True,
-        "cross_release_rollback_admitted": current_release in compatibility.get("rollback_to", []),
+        "cross_release_rollback_admitted": False,
         "admission_ref": qualification_ref,
         "update_from": list(compatibility.get("update_from", [])),
         "rollback_to": list(compatibility.get("rollback_to", [])),
         "state_rule": compatibility.get("state_rule"),
         "rollback_rule": compatibility.get("rollback_rule"),
+        "preservation_evidence": {
+            "updates": {
+                current_release: {
+                    "status": "accepted",
+                    "kind": "whole-product-update-preservation",
+                    "from": current_release,
+                    "to": candidate_id,
+                    "qualification_ref": qualification_ref,
+                },
+                candidate_id: {
+                    "status": "accepted",
+                    "kind": "self-transition-noop",
+                    "from": candidate_id,
+                    "to": candidate_id,
+                    "qualification_ref": qualification_ref,
+                },
+            },
+            "rollbacks": {
+                candidate_id: {
+                    "status": "accepted",
+                    "kind": "self-transition-noop",
+                    "from": candidate_id,
+                    "to": candidate_id,
+                    "qualification_ref": qualification_ref,
+                },
+            },
+        },
     }
     evidence["system_sync"] = {
         "mode": mode,
