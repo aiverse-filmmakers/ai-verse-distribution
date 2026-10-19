@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 
 from aiverse_distribution.project_layout import ProjectLayout
+from aiverse_distribution.project_install import configure_project_git
 from aiverse_distribution.preservation import (
     require_member_state_preserved,
     snapshot_member_state,
@@ -106,6 +107,9 @@ def main() -> int:
     os.environ["HOME"] = str(isolated_home)
     os.environ["USERPROFILE"] = str(isolated_home)
     os.environ["AIVERSE_DISTRIBUTION_HOME"] = str(base / "distribution")
+    # Reuse the member launcher’s process-scoped Git settings for setup work;
+    # this keeps Windows long-path support private to the disposable test.
+    configure_project_git(os.environ)
     project = base / "member"
     layout = ProjectLayout.resolve(project)
 
@@ -117,6 +121,7 @@ def main() -> int:
     os.chdir(project)
     os.environ["AI_VERSE_SKILLS_ROOT"] = str(layout.stack / "skills")
     profile.write_acceptance_workspace(project)
+    skills_generation = profile.prove_skills(install)
     profile.run_cli("setup", "--workspace", "alpha")
 
     brain_marker = "core-update-candidate-brain-preservation"
@@ -127,7 +132,6 @@ def main() -> int:
     if not created_refs:
         raise RuntimeError(f"Brain did not create acceptance state before update: {brain_before}")
     profile.prove_memory(project)
-    skills_generation = profile.prove_skills(install)
     profile.prove_data(project)
     (project / "custom-notes.md").write_text("member-owned update preservation marker\n", encoding="utf-8")
 
@@ -160,6 +164,22 @@ def main() -> int:
     doctor = _run_project(layout, "doctor")
     if doctor.get("ok") is not True:
         raise RuntimeError(f"updated member doctor did not pass: {doctor}")
+
+    version_result = profile.run_process(
+        ["node", str(project / "scripts" / "os-version.mjs"), "--json"]
+    )
+    version = json.loads(version_result.stdout)
+    installed_version = version.get("installed") or {}
+    latest_version = version.get("latest") or {}
+    if (
+        installed_version.get("releaseSet") != CANDIDATE_ID
+        or installed_version.get("revision") != expected_refs["ai-verse-os"]
+    ):
+        raise RuntimeError(f"version reporter did not identify the installed candidate: {version}")
+    if latest_version.get("releaseSet") not in {CURRENT_RELEASE, CANDIDATE_ID}:
+        raise RuntimeError(f"version reporter returned an unexpected accepted Core release: {version}")
+    if latest_version.get("releaseSet") == CANDIDATE_ID and version.get("update") != "up-to-date":
+        raise RuntimeError(f"version reporter did not recognize the accepted installed release: {version}")
 
     brain_after = profile.brain_onboarding_payload(
         _run_project(layout, "onboard", "--practice", brain_marker)
@@ -199,6 +219,7 @@ def main() -> int:
         "brain_owner_state_preserved": True,
         "skills_generation_preserved": True,
         "doctor": doctor.get("ok"),
+        "version_reporter": "exact-installed-candidate",
         "unqualified_reverse_rollback": "blocked",
         "promotion_or_member_receipt_created": False,
     }, indent=2, sort_keys=True))
