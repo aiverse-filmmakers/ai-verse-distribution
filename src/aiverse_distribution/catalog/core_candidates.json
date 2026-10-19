@@ -533,6 +533,10 @@
         "grants_permissions": false,
         "transfers_brain_strategy": false,
         "initializes_all_workspaces": false
+      },
+      "lineage": {
+        "parent": "core-first-run-rc1-2026-10-12",
+        "policy": "same-or-descendant"
       }
     }
   ],
