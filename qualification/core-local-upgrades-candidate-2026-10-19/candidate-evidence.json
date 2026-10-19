@@ -8,7 +8,8 @@
     "candidate_definition": {
       "repository": "aiverse-filmmakers/ai-verse-distribution",
       "revision": "3ced190608b241003a336c1c392fb3b3f5d5eb51",
-      "path": "src/aiverse_distribution/catalog/core_candidates.json"
+      "path": "src/aiverse_distribution/catalog/core_candidates.json",
+      "sha256": "9ab06a84d244ca63653cd01a8ddc4020601248557c53c365cb44115dcba2140d"
     }
   },
   "system": {
@@ -18,12 +19,14 @@
       {
         "repository": "aiverse-filmmakers/AI-Verse-System",
         "revision": "c6e5e62b410f50acf231f70eecf4b3d83afc5dd2",
-        "path": "docs/REPOSITORY-NETWORK-GOVERNANCE-CONTRACT.md"
+        "path": "docs/REPOSITORY-NETWORK-GOVERNANCE-CONTRACT.md",
+        "sha256": "ef57343465e0b8dc45aadf7d29c7a69cac485f51823fd6d51c8533da8cf80e07"
       },
       {
         "repository": "aiverse-filmmakers/AI-Verse-System",
         "revision": "c6e5e62b410f50acf231f70eecf4b3d83afc5dd2",
-        "path": "docs/SAFE-UPDATE-AND-STATE-PRESERVATION-CONTRACT.md"
+        "path": "docs/SAFE-UPDATE-AND-STATE-PRESERVATION-CONTRACT.md",
+        "sha256": "c026818b118cd07c9539f6bbbc1d97be42493bdc680e824d1f0183811f6ec793"
       }
     ]
   },
@@ -64,6 +67,7 @@
       "descriptor": {
         "path": "release/component-release.json",
         "source_revision": "f6419cfd5d380796972cb56b568501ee72af7434",
+        "sha256": "83eea3b84fc3e3080fbcfb2c925ce3360a350dd421164b0dc999d92112db5199",
         "declared_revision": "d1fecc8026445f96212a4f65a9932f5e7a301bf8",
         "release_status": "accepted"
       },
@@ -83,6 +87,7 @@
       "descriptor": {
         "path": "release/component-release.json",
         "source_revision": "39336cd19eb4600d5ece58f5649f0c494cd02754",
+        "sha256": "817235a6a8ccd066025795b1923b0aa60c4ef0e9f8a030df6117c4a68830b463",
         "declared_revision": "f746806e4361c2b1cd67ee97810071cc86db7b9a",
         "release_status": "accepted"
       },
@@ -102,6 +107,7 @@
       "descriptor": {
         "path": "release/component-release.json",
         "source_revision": "09911eae0b4b0cbf7e7e7969230fe5b86647b841",
+        "sha256": "9d8e636691742c7be62b123a944bb16b1e274ae937fc8fabc9c7795539ff1efb",
         "declared_revision": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
         "release_status": "accepted"
       },
@@ -121,6 +127,7 @@
       "descriptor": {
         "path": "release/component-release.json",
         "source_revision": "23779f10515951ac92c83cba34a1a868c02c4d87",
+        "sha256": "2a68c5ca38a320184e13771bd891d7c82f992f20be0fd6f8d0ce6ca54b529ad4",
         "declared_revision": "afde5c06307fba7d074de2929c2eb6c3dc6bdab8",
         "release_status": "accepted"
       },
@@ -140,6 +147,7 @@
       "descriptor": {
         "path": "release/component-release.json",
         "source_revision": "7e9fadbd73752b24eb79e270aff6b311ad508109",
+        "sha256": "ac7f7231b63c234429c85281bfd36bd6371f739f394c37fcbaa682fe620a777d",
         "declared_revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
         "release_status": "accepted"
       },
@@ -157,29 +165,34 @@
     "authority": "owner-descriptors-and-distribution-compatibility",
     "inputs": [
       {
-        "repository": "aiverse-filmmakers/AI-Verse-OS",
+        "repository": "aiverse-filmmakers/AI-Verse-OS.git",
         "revision": "f6419cfd5d380796972cb56b568501ee72af7434",
-        "path": "release/component-release.json"
+        "path": "release/component-release.json",
+        "sha256": "83eea3b84fc3e3080fbcfb2c925ce3360a350dd421164b0dc999d92112db5199"
       },
       {
-        "repository": "aiverse-filmmakers/AI-Verse-Brain",
+        "repository": "aiverse-filmmakers/AI-Verse-Brain.git",
         "revision": "39336cd19eb4600d5ece58f5649f0c494cd02754",
-        "path": "release/component-release.json"
+        "path": "release/component-release.json",
+        "sha256": "817235a6a8ccd066025795b1923b0aa60c4ef0e9f8a030df6117c4a68830b463"
       },
       {
-        "repository": "aiverse-filmmakers/AI-Verse-Memory",
+        "repository": "aiverse-filmmakers/AI-Verse-Memory.git",
         "revision": "09911eae0b4b0cbf7e7e7969230fe5b86647b841",
-        "path": "release/component-release.json"
+        "path": "release/component-release.json",
+        "sha256": "9d8e636691742c7be62b123a944bb16b1e274ae937fc8fabc9c7795539ff1efb"
       },
       {
-        "repository": "aiverse-filmmakers/AI-Verse-Skills",
+        "repository": "aiverse-filmmakers/AI-Verse-Skills.git",
         "revision": "23779f10515951ac92c83cba34a1a868c02c4d87",
-        "path": "release/component-release.json"
+        "path": "release/component-release.json",
+        "sha256": "2a68c5ca38a320184e13771bd891d7c82f992f20be0fd6f8d0ce6ca54b529ad4"
       },
       {
-        "repository": "aiverse-filmmakers/AI-Verse-Data",
+        "repository": "aiverse-filmmakers/AI-Verse-Data.git",
         "revision": "7e9fadbd73752b24eb79e270aff6b311ad508109",
-        "path": "release/component-release.json"
+        "path": "release/component-release.json",
+        "sha256": "ac7f7231b63c234429c85281bfd36bd6371f739f394c37fcbaa682fe620a777d"
       },
       {
         "repository": "aiverse-filmmakers/ai-verse-distribution",
