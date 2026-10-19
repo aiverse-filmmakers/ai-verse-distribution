@@ -234,9 +234,9 @@
       "git_lfs": true,
       "node_min": "22",
       "platforms": [
+        "darwin",
         "linux",
-        "macos",
-        "windows"
+        "win32"
       ],
       "python_min": "3.11"
     }
