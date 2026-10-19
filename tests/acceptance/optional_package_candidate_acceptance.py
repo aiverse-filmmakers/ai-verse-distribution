@@ -175,6 +175,11 @@ def main() -> None:
     if owner_result.get("installed") is not True:
         raise RuntimeError(f"package install was not verified by the OS owner: {owner_result}")
 
+    config_path = root / ".aiverse" / "extensions" / PACKAGE_ID / "config.json"
+    member_config = json.loads(config_path.read_text(encoding="utf-8"))
+    member_config["review_mode"] = "meaningful"
+    config_path.write_text(json.dumps(member_config, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
     # Turn the installed candidate into a synthetic older receipt-owned build, then
     # exercise the same explicit package lifecycle used to update a member install.
     extension_root = root / ".aiverse" / "extensions" / PACKAGE_ID
@@ -219,6 +224,9 @@ def main() -> None:
     if previous_bridge_digest in json.dumps(upgraded_hooks, sort_keys=True):
         raise RuntimeError("package upgrade left a stale owned hook command behind")
 
+    upgraded_config = json.loads(config_path.read_text(encoding="utf-8"))
+    if upgraded_config.get("review_mode") != "meaningful":
+        raise RuntimeError("receipt-owned package upgrade changed the member's review setting")
     if state_snapshot(root) != before_state:
         raise RuntimeError("receipt-owned package upgrade changed member-owned state")
     if marker.read_text(encoding="utf-8") != "member-owned synthetic state\n":
