@@ -448,6 +448,10 @@
     "core-local-upgrades-candidate-2026-10-19-v3": {
       "path": "qualification/core-local-upgrades-candidate-2026-10-19-v3/candidate-evidence.json",
       "sha256": "595d1c8795a6be866d827dec8d0be2941d808bcbd34d0677609a80d3098b3b74"
+    },
+    "core-local-upgrades-candidate-2026-10-19-v4": {
+      "path": "qualification/core-local-upgrades-candidate-2026-10-19-v4/candidate-evidence.json",
+      "sha256": "787247901a8a65f880082caeb256c102339fc1f59b66a40e01ff9642f026cd66"
     }
   }
 }
