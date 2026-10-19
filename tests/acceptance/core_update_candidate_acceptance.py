@@ -121,6 +121,23 @@ def main() -> int:
     os.chdir(project)
     os.environ["AI_VERSE_SKILLS_ROOT"] = str(layout.stack / "skills")
     profile.write_acceptance_workspace(project)
+    skills_source = Path(install["components"]["ai-verse-skills"]["source"])
+    skills_installer = skills_source / "installer" / "aiverse_skills.py"
+    skills_install = profile.run_process(
+        [
+            sys.executable,
+            str(skills_installer),
+            "--root",
+            os.environ["AI_VERSE_SKILLS_ROOT"],
+            "install",
+            "--profile",
+            "universal",
+            "--json",
+        ]
+    )
+    skills_state = json.loads(skills_install.stdout)
+    if skills_state.get("state") not in {"installed", "setup-required", "ready"}:
+        raise RuntimeError(f"could not initialize representative member Skills state: {skills_state}")
     skills_generation = profile.prove_skills(install)
     profile.run_cli("setup", "--workspace", "alpha")
 
