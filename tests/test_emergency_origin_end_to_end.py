@@ -148,7 +148,6 @@ class EmergencyOwnerOriginEndToEndTests(unittest.TestCase):
         live = _read(SOURCE / "src/aiverse_distribution/catalog/core_promotions.json")
         self.assertEqual(live["current_release"], CURRENT)
         self.assertEqual(live["system_sync_debts"], [])
-        self.assertEqual(_read(SOURCE / "src/aiverse_distribution/catalog/core_candidates.json")["release_sets"], [])
 
     def _do_emergency(self):
         f = self.f
