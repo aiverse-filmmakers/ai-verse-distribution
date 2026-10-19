@@ -15,6 +15,8 @@ from aiverse_distribution.core_promotion import (
     validate_core_promotion_governance,
 )
 from aiverse_distribution.whole_product_qualification import SCHEMA_ID
+from aiverse_distribution.transition_contract import CoreTransitionContract
+from aiverse_distribution.release_catalog import Catalog
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -300,6 +302,27 @@ class CorePromotionTests(unittest.TestCase):
         )
         self.assertEqual(release["evidence"]["member_bootstrap"]["status"], "accepted")
         validate_core_promotion_governance(promotions)
+
+        transition = release["evidence"]["transition_policy"]
+        self.assertEqual(transition["update_from"], [CURRENT, candidate_id])
+        self.assertEqual(transition["rollback_to"], [candidate_id])
+        self.assertEqual(
+            transition["preservation_evidence"]["updates"][CURRENT]["qualification_ref"],
+            qualification_ref,
+        )
+        self.assertEqual(
+            transition["preservation_evidence"]["updates"][candidate_id]["kind"],
+            "self-transition-noop",
+        )
+
+        catalog = Catalog()
+        catalog.release_data["release_sets"].append(result["public_manifest"])
+        catalog.compatibility["release_sets"][candidate_id] = promotions["compatibility"][candidate_id]
+        catalog.core_lineage["release_sets"].append(result["public_manifest"])
+        catalog.core_lineage["compatibility"][candidate_id] = promotions["compatibility"][candidate_id]
+        catalog.core_promotions = promotions
+        admission = CoreTransitionContract(catalog=catalog).require_update(CURRENT, candidate_id)
+        self.assertEqual(admission.evidence["qualification_ref"], qualification_ref)
 
         candidates = json.loads(
             (root / "src/aiverse_distribution/catalog/core_candidates.json").read_text(

@@ -123,7 +123,7 @@ Goal: make the zero-loss promise machine-testable before changing updater behavi
 
 - [x] **U06 - Strengthen compatibility/admission metadata for update paths.**
   - New Core releases must explicitly declare and validate admitted `update_from` and `rollback_to` relationships plus preservation evidence.
-  - Evidence: `src/aiverse_distribution/catalog/core_update_transitions.json` is the explicit evidence-bound Core transition ledger; `src/aiverse_distribution/transition_contract.py` validates every released forward Core relationship against compatibility metadata and exact directional preservation evidence; `tests/test_transition_contract.py` proves missing/drifted evidence and inferred cross-release transitions fail closed. Distribution CI run `38187313729` passed the full Linux/macOS/Windows x Python 3.11/3.12 matrix.
+  - Evidence: `src/aiverse_distribution/catalog/core_update_transitions.json` is the explicit evidence-bound ledger for historical Core releases. `CoreTransitionContract` composes later admitted releases from their exact transition evidence embedded in the append-only Core promotion record, keeping a release and its update authority in one atomic catalog entry. `tests/test_transition_contract.py` and `tests/test_core_promotion.py` prove missing/drifted evidence and inferred cross-release transitions fail closed. Cross-release rollback stays unavailable until reverse-transition evidence is independently qualified.
 
 # Phase 2 - Transactional Core updater
 

@@ -111,7 +111,9 @@ def _restage_forward(f, previous_id, target_state):
     old = f.pre_emergency_compatibility
     compatibility = copy.deepcopy(old)
     compatibility["update_from"] = [previous_id, NEXT_CANDIDATE]
-    compatibility["rollback_to"] = [NEXT_CANDIDATE, previous_id]
+    # The emergency-debt scenario qualifies only the forward update. Keep
+    # rollback self-only until a separate reverse transition is proven.
+    compatibility["rollback_to"] = [NEXT_CANDIDATE]
     frozen = {"schema_version": 1, "release_sets": [new],
               "compatibility": {NEXT_CANDIDATE: compatibility}}
     frozen_bytes = _json_bytes(frozen)
@@ -259,7 +261,9 @@ class EmergencyOwnerOriginEndToEndTests(unittest.TestCase):
 
         # A later candidate remains blocked while prior debt is unresolved.
         _restage_forward(f, previous_id, debt_state_bytes)
-        ref, _ = _qualify(f)
+        preservation, _ = f.preservation_and_composed()
+        preservation["source_release_set"] = previous_id
+        ref, _ = _qualify(f, preservation=preservation)
         with self.assertRaisesRegex(CorePromotionError, "unresolved SYSTEM-SYNC-DEBT"):
             plan_core_promotion(f.root, f.id, ref, f.registry_bytes, f.state_bytes)
 
@@ -303,7 +307,9 @@ class EmergencyOwnerOriginEndToEndTests(unittest.TestCase):
         # New candidate must be separately frozen against synchronized State
         # before normal promotion is eligible again.
         _restage_forward(f, previous_id, synced_bytes)
-        ref2, new_qualification = _qualify(f)
+        preservation, _ = f.preservation_and_composed()
+        preservation["source_release_set"] = previous_id
+        ref2, new_qualification = _qualify(f, preservation=preservation)
         self.assertEqual(new_qualification["status"], "passed")
         plan = plan_core_promotion(f.root, f.id, ref2, f.registry_bytes, synced_bytes)
         self.assertEqual(plan["previous_release_id"], previous_id)
