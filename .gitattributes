@@ -8,3 +8,5 @@ src/aiverse_distribution/catalog/*.json text eol=lf
 release-sets/*.json text eol=lf
 profiles/*.json text eol=lf
 compatibility/*.json text eol=lf
+# Candidate evidence contains byte-bound snapshots; keep checkout bytes stable on every platform.
+qualification/**/candidate-evidence.json text eol=lf

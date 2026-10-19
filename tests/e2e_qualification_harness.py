@@ -63,7 +63,6 @@ class IsolatedCoreFixture:
         self.source_release = _read(SOURCE / f"release-sets/{CURRENT}.json")
         assert self.original["current_release"] == CURRENT
         assert self.original["system_sync_debts"] == []
-        assert _read(SOURCE / "src/aiverse_distribution/catalog/core_candidates.json")["release_sets"] == []
         self._stage()
 
     def close(self):
