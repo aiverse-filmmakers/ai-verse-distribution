@@ -102,7 +102,7 @@ jobs:
           candidates = json.loads((root / 'src/aiverse_distribution/catalog/core_candidates.json').read_text(encoding='utf-8'))
           promotions = json.loads((root / 'src/aiverse_distribution/catalog/core_promotions.json').read_text(encoding='utf-8'))
           release_sets = candidates.get('release_sets', [])
-          expected_ids = {'core-local-upgrades-candidate-2026-10-19', 'core-local-upgrades-candidate-2026-10-19-v2', 'core-local-upgrades-candidate-2026-10-19-v3', 'core-local-upgrades-candidate-2026-10-19-v4'}
+          expected_ids = {'core-local-upgrades-candidate-2026-10-19', 'core-local-upgrades-candidate-2026-10-19-v2', 'core-local-upgrades-candidate-2026-10-19-v3', 'core-local-upgrades-candidate-2026-10-19-v4', 'core-local-upgrades-candidate-2026-10-19-v5'}
           assert {item.get('id') for item in release_sets} == expected_ids, candidates
           for candidate in release_sets:
               assert candidate.get('classification') == 'explicit-install-qualification-candidate', candidate
@@ -113,7 +113,7 @@ jobs:
               }, candidate
           assert set(candidates.get('compatibility', {})) == expected_ids, candidates
           assert set(candidates.get('candidate_evidence', {})) == expected_ids, candidates
-          newest = next(item for item in release_sets if item['id'] == 'core-local-upgrades-candidate-2026-10-19-v4')
+          newest = next(item for item in release_sets if item['id'] == 'core-local-upgrades-candidate-2026-10-19-v5')
           os_component = next(item for item in newest['components'] if item['id'] == 'ai-verse-os')
           assert os_component['revision'] == '558f4ecb2f6810b10a0e152bfcf610e725fc7032', newest
           assert promotions.get('current_release') == 'core-first-run-rc1-2026-10-12', promotions

@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-OS
-          ref: d1fecc8026445f96212a4f65a9932f5e7a301bf8
+          ref: 558f4ecb2f6810b10a0e152bfcf610e725fc7032
           path: .qualification/ai-verse-os
 
       - name: Install Distribution from this change
