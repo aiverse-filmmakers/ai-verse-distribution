@@ -257,11 +257,29 @@ def main() -> int:
         # until an immutable Agent release set exists and the full flow is implemented.
         return 3
 
-    install = run_cli("install", "--profile", "core", "--root", str(root))
+    candidate_id = os.environ.get("AI_VERSE_ACCEPTANCE_RELEASE_SET")
+    install_args = ["install", "--profile", "core"]
+    if candidate_id:
+        install_args.extend(["--release-set", candidate_id])
+    install_args.extend(["--root", str(root)])
+    install = run_cli(*install_args)
     if install.get("state") != "installed":
         raise RuntimeError(f"unexpected install state: {install.get('state')}")
+    if candidate_id and install.get("release_set_id") != candidate_id:
+        raise RuntimeError(
+            f"explicit Core candidate mismatch: {install.get('release_set_id')} != {candidate_id}"
+        )
 
     prove_exact_sources(install)
+    expected_refs_raw = os.environ.get("AI_VERSE_ACCEPTANCE_EXPECTED_REFS")
+    if expected_refs_raw:
+        expected_refs = json.loads(expected_refs_raw)
+        actual_refs = {
+            component_id: receipt.get("revision")
+            for component_id, receipt in install["components"].items()
+        }
+        if actual_refs != expected_refs:
+            raise RuntimeError(f"installed candidate refs differ from the frozen expectation: {actual_refs}")
     initial_data_tree = prove_data_dependency_lock(install)
 
     write_acceptance_workspace(root)
