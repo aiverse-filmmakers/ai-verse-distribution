@@ -53,6 +53,8 @@ jobs:
           assert package_required <= set(package) <= package_allowed
           assert package["repository"] == "aiverse-filmmakers/ai-verse-distribution"
           assert package["source_type"] in {"git", "npm", "pypi", "archive"}
+          for key in ("package_name", "integrity"):
+              assert package.get(key) is None or isinstance(package.get(key), str), key
 
           platforms = d["supported_platforms"]
           assert isinstance(platforms, list) and platforms
@@ -63,6 +65,8 @@ jobs:
           assert set(runtime) == {"python", "node", "other"}
           assert all(runtime[key] is None or isinstance(runtime[key], str) for key in ("python", "node"))
           assert isinstance(runtime["other"], list) and all(isinstance(item, str) for item in runtime["other"])
+          assert all(runtime["other"]), "runtime other entries must be non-empty"
+          assert len(runtime["other"]) == len(set(runtime["other"])), "runtime other entries must be unique"
 
           lifecycle_keys = {
               "install", "setup", "status", "doctor", "enable", "disable", "update", "uninstall",
@@ -93,18 +97,24 @@ jobs:
           assert type(migration["requires_explicit_migration"]) is bool
           assert migration["owner_controlled"] is True
           assert migration["checkpoint_policy"] in {"not-required", "owner-evidence-required", "unsupported"}
-          assert isinstance(migration["from_versions"], list)
-          if migration["change_classification"] == "breaking":
-              assert migration["from_versions"]
-              assert migration["compatibility"] in {"explicit-migration", "blocked"}
-              if migration["compatibility"] == "explicit-migration":
-                  assert migration["requires_explicit_migration"] is True
-              if migration["compatibility"] == "blocked":
-                  assert d["release_status"] != "accepted"
+          from_versions = migration["from_versions"]
+          assert isinstance(from_versions, list)
+          assert all(isinstance(item, str) and item for item in from_versions)
+          assert len(from_versions) == len(set(from_versions)), "migration source versions must be unique"
+          if migration["compatibility"] == "explicit-migration":
+              assert migration["requires_explicit_migration"] is True
           else:
               assert migration["requires_explicit_migration"] is False
-              if migration["compatibility"] == "none-required":
-                  assert not migration["from_versions"]
+          if migration["compatibility"] == "none-required":
+              assert not from_versions
+          if migration["change_classification"] == "breaking":
+              assert from_versions
+              assert migration["compatibility"] in {"explicit-migration", "blocked"}
+          if migration["compatibility"] == "blocked":
+              assert d["release_status"] != "accepted"
+          # This owner descriptor does not publish infrastructure-upgrade recipes.
+          # Fail closed until this gate validates that optional contract in full.
+          assert "infrastructure" not in migration
 
           authority_keys = {
               "grants_permissions", "changes_direction_owner", "changes_scope",
@@ -118,6 +128,15 @@ jobs:
           for group in ("ci", "acceptance"):
               assert isinstance(evidence[group], list) and evidence[group], f"missing {group} evidence"
               for item in evidence[group]:
+                  required_item = {"kind", "status", "revision"}
+                  allowed_item = required_item | {"run_id", "url"}
+                  assert required_item <= set(item) <= allowed_item
+                  assert isinstance(item["kind"], str) and 1 <= len(item["kind"]) <= 80
+                  assert item["status"] == "pass", (group, item)
+                  if "run_id" in item:
+                      assert item["run_id"] is None or (not isinstance(item["run_id"], bool) and isinstance(item["run_id"], (str, int)))
+                  if "url" in item:
+                      assert item["url"] is None or isinstance(item["url"], str)
                   assert item["status"] in {"pass", "fail"}
                   assert item["revision"] == revision
                   if d["release_status"] == "accepted":
