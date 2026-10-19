@@ -96,9 +96,9 @@
       "profile": "core",
       "status": "released",
       "platforms": [
+        "darwin",
         "linux",
-        "macos",
-        "windows"
+        "win32"
       ],
       "python_min": "3.11",
       "node_min": "22",
