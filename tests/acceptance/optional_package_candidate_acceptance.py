@@ -62,6 +62,15 @@ def run_aiverse(root: Path, arguments: list[str], *, expected: tuple[int, ...] =
         raise RuntimeError(f"{' '.join(command)} did not emit JSON: {completed.stdout}") from exc
 
 
+def assert_core_healthy(root: Path, phase: str) -> None:
+    status = run_aiverse(root, ["status"])
+    doctor = run_aiverse(root, ["doctor"], expected=(0, 1))
+    if status.get("state") not in {"ready", "setup", "installed"} or doctor.get("ok") is not True:
+        raise RuntimeError(
+            f"Core became unhealthy {phase}: status={status}; doctor={doctor}"
+        )
+
+
 def main() -> None:
     base = Path(os.environ.get("RUNNER_TEMP") or Path.home() / "aiverse-candidate-acceptance")
     root = base / "AI-Verse-core"
@@ -111,6 +120,8 @@ def main() -> None:
         encoding="utf-8",
     )
 
+    assert_core_healthy(root, "after preserving and extending the local extension registry")
+
     hooks_path = root / ".codex" / "hooks.json"
     hooks_path.parent.mkdir(parents=True, exist_ok=True)
     if hooks_path.exists():
@@ -122,12 +133,29 @@ def main() -> None:
         encoding="utf-8",
     )
 
+    assert_core_healthy(root, "after adding an unrelated host hook")
+
     before_state = state_snapshot(root)
+    before_registry_digest = digest(registry_path)
+    before_hooks_digest = digest(hooks_path)
+    before_marker_digest = digest(marker)
     preview = run_aiverse(root, ["upgrade", "--package", PACKAGE_ID])
     if preview.get("mutated") is not False:
         raise RuntimeError(f"optional package preview mutated state: {preview}")
     if state_snapshot(root) != before_state:
         raise RuntimeError("optional package preview changed member-owned state")
+
+    if {
+        str(path.relative_to(root)): digest(path)
+        for path in (registry_path, hooks_path, marker)
+    } != {
+        str(path.relative_to(root)): digest
+        for path, digest in ((registry_path, before_registry_digest),
+                             (hooks_path, before_hooks_digest),
+                             (marker, before_marker_digest))
+    }:
+        raise RuntimeError("optional package preview changed local extension or host configuration")
+    assert_core_healthy(root, "after the read-only package preview")
 
     installed = run_aiverse(root, ["upgrade", "--package", PACKAGE_ID, "--apply"])
     if installed.get("state") != "SETUP_REQUIRED":
