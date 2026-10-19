@@ -113,15 +113,23 @@ def main() -> int:
     project = base / "member"
     layout = ProjectLayout.resolve(project)
 
+    distribution_source = Path(__file__).resolve().parents[2]
     install = profile.run_cli(
-        "install", "--profile", "core", "--release-set", CURRENT_RELEASE, "--root", str(project)
+        "project-init",
+        "--project",
+        str(project),
+        "--distribution-source",
+        str(distribution_source),
+        "--release-set",
+        CURRENT_RELEASE,
     )
     if install.get("release_set_id") != CURRENT_RELEASE:
-        raise RuntimeError(f"could not install exact current Core source: {install}")
+        raise RuntimeError(f"could not bootstrap exact current Core source: {install}")
+    current = json.loads((layout.distribution_home / "locks" / "current.json").read_text(encoding="utf-8"))
     os.chdir(project)
     os.environ["AI_VERSE_SKILLS_ROOT"] = str(layout.stack / "skills")
     profile.write_acceptance_workspace(project)
-    skills_source = Path(install["components"]["ai-verse-skills"]["source"])
+    skills_source = Path(current["components"]["ai-verse-skills"]["source"])
     skills_installer = skills_source / "installer" / "aiverse_skills.py"
     skills_install = profile.run_process(
         [
@@ -138,8 +146,8 @@ def main() -> int:
     skills_state = json.loads(skills_install.stdout)
     if skills_state.get("state") not in {"installed", "setup-required", "ready"}:
         raise RuntimeError(f"could not initialize representative member Skills state: {skills_state}")
-    skills_generation = profile.prove_skills(install)
-    profile.run_cli("setup", "--workspace", "alpha")
+    skills_generation = profile.prove_skills(current)
+    _run_project(layout, "setup", "--workspace", "alpha")
 
     brain_marker = "core-update-candidate-brain-preservation"
     brain_before = profile.brain_onboarding_payload(
@@ -206,7 +214,7 @@ def main() -> int:
     skills_status = profile.run_process(
         [
             sys.executable,
-            str(Path(install["components"]["ai-verse-skills"]["source"]) / "installer" / "aiverse_skills.py"),
+            str(Path(current["components"]["ai-verse-skills"]["source"]) / "installer" / "aiverse_skills.py"),
             "status",
             "--json",
         ]
