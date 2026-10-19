@@ -146,7 +146,24 @@ def main() -> int:
     skills_state = json.loads(skills_install.stdout)
     if skills_state.get("state") not in {"installed", "setup-required", "ready"}:
         raise RuntimeError(f"could not initialize representative member Skills state: {skills_state}")
-    skills_generation = profile.prove_skills(current)
+    skills_pin = profile.run_process(
+        [
+            sys.executable,
+            str(skills_installer),
+            "--root",
+            os.environ["AI_VERSE_SKILLS_ROOT"],
+            "pin",
+            "--package",
+            "weekly-review-planning",
+            "--json",
+        ]
+    )
+    skills_pin_payload = json.loads(skills_pin.stdout)
+    if skills_pin_payload.get("package_id") != "weekly-review-planning":
+        raise RuntimeError(f"Skills pin did not resolve the requested immutable package: {skills_pin_payload}")
+    skills_generation = skills_pin_payload.get("generation_id")
+    if not skills_generation:
+        raise RuntimeError("Skills pin did not return an immutable generation id")
     _run_project(layout, "setup", "--workspace", "alpha")
 
     brain_marker = "core-update-candidate-brain-preservation"
@@ -215,6 +232,8 @@ def main() -> int:
         [
             sys.executable,
             str(Path(current["components"]["ai-verse-skills"]["source"]) / "installer" / "aiverse_skills.py"),
+            "--root",
+            os.environ["AI_VERSE_SKILLS_ROOT"],
             "status",
             "--json",
         ]
