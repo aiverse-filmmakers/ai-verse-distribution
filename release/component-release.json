@@ -39,7 +39,7 @@
     "from_versions": [],
     "requires_explicit_migration": false,
     "owner_controlled": true,
-    "checkpoint_policy": "owner-evidence-required"
+    "checkpoint_policy": "not-required"
   },
   "authority": {
     "grants_permissions": false,
