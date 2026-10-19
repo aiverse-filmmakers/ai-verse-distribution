@@ -107,8 +107,8 @@ def main() -> None:
     original_extensions = copy.deepcopy(extension_records)
     unrelated_extension = {
         "id": "qualification-unrelated-extension",
-        "supported": False,
-        "installed": False,
+        "supported": True,
+        "installed": True,
         "enabled": False,
         "custom_note": "preserve-me",
     }
