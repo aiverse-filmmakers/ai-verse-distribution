@@ -12,6 +12,110 @@ from aiverse_distribution.state import StateStore
 
 
 class ExperienceEntrypointTests(unittest.TestCase):
+    def test_optional_package_selection_is_explicit_and_does_not_call_general_upgrade(self):
+        payload = {
+            "kind": "optional-package-preview",
+            "package_id": "ai-verse-codex-learning",
+            "action": "install",
+            "member_view": {"kind": "optional-package", "action": "install", "state": "READY",
+                            "message": "Nothing has changed yet."},
+        }
+        app = Mock()
+        app.optional_package_plan.return_value = payload
+        with patch("aiverse_distribution.experience_orchestrator.ExperienceOrchestrator", return_value=app):
+            output = io.StringIO()
+            with redirect_stdout(output):
+                code = entrypoint.main(["upgrade", "--package", "ai-verse-codex-learning"])
+        self.assertEqual(code, 0)
+        app.optional_package_plan.assert_called_once_with("ai-verse-codex-learning", "install")
+        app.upgrade_plan.assert_not_called()
+        self.assertIn("Nothing has changed yet.", output.getvalue())
+
+    def test_optional_package_apply_requires_selected_action_and_apply_flag(self):
+        payload = {
+            "kind": "optional-package-apply",
+            "state": "APPLIED",
+            "member_view": {"kind": "optional-package", "action": "remove", "state": "APPLIED",
+                            "message": "Removed safely."},
+        }
+        app = Mock()
+        app.optional_package_apply.return_value = payload
+        with patch("aiverse_distribution.experience_orchestrator.ExperienceOrchestrator", return_value=app):
+            output = io.StringIO()
+            with redirect_stdout(output):
+                code = entrypoint.main(["upgrade", "--remove-package", "ai-verse-codex-learning", "--apply"])
+        self.assertEqual(code, 0)
+        app.optional_package_apply.assert_called_once_with("ai-verse-codex-learning", "remove")
+        app.upgrade_apply.assert_not_called()
+        self.assertIn("Removed safely.", output.getvalue())
+
+    def test_setup_package_checks_owner_and_displays_guidance(self):
+        payload = {
+            "kind": "optional-package-check",
+            "state": "SETUP_REQUIRED",
+            "member_view": {
+                "kind": "optional-package-check",
+                "state": "SETUP_REQUIRED",
+                "message": "Approval is still missing.",
+                "hooks_discovered": 6,
+                "handlers_enabled": True,
+                "package_files_verified": True,
+                "approval_required": True,
+                "execution_observed": False,
+                "review_observed": False,
+                "guidance": "Open Codex Settings → Hooks and review the six project hooks.",
+            },
+        }
+        app = Mock()
+        app.optional_package_check.return_value = payload
+        with patch("aiverse_distribution.experience_orchestrator.ExperienceOrchestrator", return_value=app):
+            output = io.StringIO()
+            with redirect_stdout(output):
+                code = entrypoint.main(["setup", "--package", "ai-verse-codex-learning"])
+        self.assertEqual(code, 0)
+        app.optional_package_check.assert_called_once_with("ai-verse-codex-learning", "setup")
+        app.upgrade_apply.assert_not_called()
+        self.assertIn("Hook approval: approval needed", output.getvalue())
+        self.assertIn("Hook handlers enabled: yes", output.getvalue())
+        self.assertIn("Open Codex Settings", output.getvalue())
+
+    def test_doctor_package_reports_incomplete_read_only_check(self):
+        payload = {
+            "kind": "optional-package-check",
+            "state": "SETUP_REQUIRED",
+            "member_view": {"kind": "optional-package-check", "state": "SETUP_REQUIRED",
+                            "message": "The optional helper is installed but disabled.",
+                            "enabled": False},
+        }
+        app = Mock()
+        app.optional_package_check.return_value = payload
+        with patch("aiverse_distribution.experience_orchestrator.ExperienceOrchestrator", return_value=app):
+            output = io.StringIO()
+            with redirect_stdout(output):
+                code = entrypoint.main(["doctor", "--package", "ai-verse-codex-learning"])
+        self.assertEqual(code, 1)
+        app.optional_package_check.assert_called_once_with("ai-verse-codex-learning", "doctor")
+        self.assertIn("Package enabled: no", output.getvalue())
+        self.assertIn("Setup complete: no", output.getvalue())
+
+    def test_general_setup_without_package_keeps_existing_cli_route(self):
+        with patch.object(cli, "main", return_value=0) as cli_main, patch(
+            "aiverse_distribution.experience_orchestrator.ExperienceOrchestrator"
+        ) as package_orchestrator:
+            code = entrypoint.main(["setup", "--json"])
+        self.assertEqual(code, 0)
+        cli_main.assert_called_once_with(["setup", "--json"])
+        package_orchestrator.assert_not_called()
+
+    def test_ordinary_update_still_uses_software_update_entrypoint(self):
+        with patch.object(cli, "main", return_value=0) as software_update, patch(
+            "aiverse_distribution.experience_orchestrator.ExperienceOrchestrator"
+        ) as package_orchestrator:
+            code = entrypoint.main(["update", "--json"])
+        self.assertEqual(code, 0)
+        software_update.assert_called_once_with(["update", "--json"])
+        package_orchestrator.assert_not_called()
+
     def test_upgrade_entrypoint_is_preview_only(self):
         payload = {
             "kind": "upgrade-preview",

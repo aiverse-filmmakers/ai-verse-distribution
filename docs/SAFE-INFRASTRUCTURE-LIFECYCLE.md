@@ -15,8 +15,14 @@ The installed `aiverse` executable is bound to `aiverse_distribution.entrypoint:
 aiverse update
 aiverse update --plan
 aiverse doctor
+aiverse setup --package <id>
+aiverse doctor --package <id>
 aiverse upgrade
 aiverse upgrade --apply
+aiverse upgrade --package <id>
+aiverse upgrade --package <id> --apply
+aiverse upgrade --remove-package <id>
+aiverse upgrade --remove-package <id> --apply
 aiverse restore
 aiverse restore --apply
 aiverse status
@@ -28,8 +34,11 @@ Semantics:
 - `aiverse update` applies an explicitly admitted software transition. It does not silently perform optional structural convergence.
 - `aiverse update --plan` is read-only software-update preview.
 - `aiverse doctor` is the read-only whole-install health aggregate. Owner checks remain authoritative underneath it.
+- `aiverse setup --package <id>` displays the verified optional package owner's setup guidance and performs a read-only check. `aiverse doctor --package <id>` reports discovered hooks, enabled handlers, host approval, a real callback, and a completed original-turn review separately. A package is ready only when the owner observes all required evidence; installation alone never implies hook trust.
 - `aiverse upgrade` is read-only structural convergence preview.
 - `aiverse upgrade --apply` is the explicit whole-install structural mutation path. It revalidates the exact plan, protects the current installation with Last-Known-Good first, executes opaque owner operations, supports exact resume, verifies resulting identity/reference state, and finishes with whole-install health.
+- `aiverse upgrade --package <id>` and `--remove-package <id>` preview one exact optional package action admitted by the installed release. The matching `--apply` invokes only the verified package owner's install/remove API, records the action under the lifecycle lock, and resumes only that same action after interruption. Package installation never sets host trust; members review and trust hooks themselves.
+- Optional packages remain outside the Core component/profile list. `aiverse update` does not install, remove, enable, or change trust for them. A modified or unknown hook is preserved and reported by the package owner.
 - `aiverse restore` is read-only recovery preview.
 - `aiverse restore --apply` explicitly restores the single verified retained Last-Known-Good point according to declared recovery coverage.
 

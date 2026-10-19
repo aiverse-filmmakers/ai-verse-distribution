@@ -7,6 +7,38 @@ from .redaction import sanitize
 
 
 def format_experience(payload: Dict[str, Any]) -> Optional[str]:
+    if payload.get("kind") == "optional-package-check":
+        view = payload.get("member_view")
+        if not isinstance(view, dict):
+            return None
+        ready = view.get("state") == "READY"
+        hooks = view.get("hooks_discovered")
+        approval = view.get("approval_required")
+        lines = [
+            "AI-Verse Package Setup",
+            "",
+            str(view.get("message") or "AI-Verse could not confirm package setup."),
+            f"Package files match the admitted release: {'yes' if view.get('package_files_verified') is True else 'no'}",
+            f"Package enabled: {'yes' if view.get('enabled') is True else 'no'}",
+            f"Hooks found: {hooks if hooks is not None else 'not verified'}",
+            f"Hook handlers enabled: {'yes' if view.get('handlers_enabled') is True else 'no' if view.get('handlers_enabled') is False else 'not verified'}",
+            f"Hook approval: {'approved' if approval is False else 'approval needed' if approval is True else 'not verified'}",
+            f"Callback observed: {'yes' if view.get('execution_observed') is True else 'not observed'}",
+            f"Original-turn review: {'recorded' if view.get('review_observed') is True else 'not observed'}",
+            f"Setup complete: {'yes' if ready else 'no'}",
+        ]
+        guidance = view.get("guidance")
+        if isinstance(guidance, str) and guidance.strip():
+            lines.extend(["", guidance.strip()])
+        return "\n".join(lines)
+    if payload.get("kind") in {"optional-package-preview", "optional-package-apply"}:
+        view = payload.get("member_view")
+        if not isinstance(view, dict):
+            return None
+        action = str(view.get("action") or payload.get("action") or "install")
+        message = str(view.get("message") or "AI-Verse could not confirm the package action.")
+        title = "AI-Verse Optional Package"
+        return "\n".join([title, "", message])
     view = payload.get("member_view")
     if not isinstance(view, dict):
         return None
