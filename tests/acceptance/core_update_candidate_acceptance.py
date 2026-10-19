@@ -249,8 +249,9 @@ def main() -> int:
 
     # This evidence overlay exists only in this disposable member's private venv.
     # It exercises the real updater without creating a production promotion or receipt.
-    accepted_default = Catalog().resolve("core").id == CANDIDATE_ID
-    if not accepted_default:
+    distribution_default = Catalog().resolve("core").id
+    promotion_present_on_source = distribution_default == CANDIDATE_ID
+    if not promotion_present_on_source:
         _install_test_transition(layout)
     update = _run_project(layout, "update", "--to", CANDIDATE_ID, "--apply")
     if update.get("to") != CANDIDATE_ID:
@@ -295,17 +296,31 @@ def main() -> int:
     version = json.loads(version_result.stdout)
     installed_version = version.get("installed") or {}
     latest_version = version.get("latest") or {}
+    expected_latest_release = os.environ.get(
+        "AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE", CURRENT_RELEASE
+    )
+    if expected_latest_release not in {CURRENT_RELEASE, CANDIDATE_ID}:
+        raise RuntimeError(
+            "version acceptance expected an unsupported live Core release: "
+            f"{expected_latest_release}"
+        )
     if (
         installed_version.get("releaseSet") != CANDIDATE_ID
         or installed_version.get("revision") != expected_refs["ai-verse-os"]
     ):
         raise RuntimeError(f"version reporter did not identify the installed candidate: {version}")
-    if latest_version.get("releaseSet") not in {CURRENT_RELEASE, CANDIDATE_ID}:
-        raise RuntimeError(f"version reporter returned an unexpected accepted Core release: {version}")
-    if accepted_default and latest_version.get("releaseSet") != CANDIDATE_ID:
-        raise RuntimeError(f"version reporter did not identify the promoted Core default: {version}")
-    if latest_version.get("releaseSet") == CANDIDATE_ID and version.get("update") != "up-to-date":
+    if latest_version.get("releaseSet") != expected_latest_release:
+        raise RuntimeError(
+            "version reporter did not identify the expected live Core default "
+            f"{expected_latest_release}: {version}"
+        )
+    if expected_latest_release == CANDIDATE_ID and version.get("update") != "up-to-date":
         raise RuntimeError(f"version reporter did not recognize the accepted installed release: {version}")
+    if expected_latest_release == CURRENT_RELEASE and version.get("update") != "unconfirmed":
+        raise RuntimeError(
+            "the unmerged promotion must not be reported as the live accepted default: "
+            f"{version}"
+        )
 
     brain_after = profile.brain_onboarding_payload(
         _run_project(layout, "onboard", "--practice", brain_marker)
@@ -366,7 +381,7 @@ def main() -> int:
         "doctor": doctor.get("ok"),
         "component_readiness": component_readiness,
         "version_reporter": "exact-installed-candidate",
-        "used_real_promoted_transition": accepted_default,
+        "used_real_promoted_transition": promotion_present_on_source,
         "unqualified_reverse_rollback": "blocked",
         "promotion_or_member_receipt_created": False,
     }, indent=2, sort_keys=True))
