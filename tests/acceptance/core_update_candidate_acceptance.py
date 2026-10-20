@@ -23,6 +23,46 @@ CANDIDATE_ID = "core-local-upgrades-candidate-2026-10-19-v6"
 TEST_EVIDENCE_REF = "temporary-clean-machine-update-fixture"
 
 
+def _local_source_fixture(project: Path) -> dict:
+    """Synthetic equivalent of the pioneering member's fourteen tracked edits."""
+    target = json.loads(os.environ["AI_VERSE_ACCEPTANCE_EXPECTED_REFS"])["ai-verse-os"]
+    profile.run_process(["git", "-C", str(project), "fetch", "origin", target])
+    def released(name):
+        return subprocess.check_output(["git", "-C", str(project), "show", f"{target}:{name}"])
+    same = [
+        "scripts/capability-resolver-core.mjs", "scripts/purpose-context-core.mjs",
+        "scripts/purpose-context-profile.mjs", "scripts/purpose-context.mjs",
+        "scripts/test-capability-resolver-core.mjs", "scripts/test-purpose-context-rich-domains.mjs",
+        "scripts/test-purpose-context-semantic-acceptance.mjs", "skills/registry.yaml",
+        "system/architecture/capability-resolution.md", "system/contracts/capability-provider-v1/README.md",
+    ]
+    for name in same:
+        (project / name).write_bytes(released(name))
+    (project / "AGENTS.md").write_bytes(released("AGENTS.md").replace(b"installed OS version", b"installed AI-Verse OS version"))
+    ignore = project / ".gitignore"
+    ignore.write_bytes(ignore.read_bytes() + b"\n.aiverse/brain-purpose.json\noperator/brain/\n")
+    addition = b"\n## Local engineering references\n\n[Member document](member-reference.md)\n"
+    knowledge = project / "knowledge/README.md"
+    original = knowledge.read_bytes()
+    knowledge.write_bytes(original + addition)
+    (project / "knowledge/member-reference.md").write_text("member-owned reference\n")
+    document = project / "system/architecture/purpose-context.md"
+    document.write_bytes(released("system/architecture/purpose-context.md") + b"\nHistorical local development note; superseded by release.\n")
+    for name in [
+        ".agents/skills/version/SKILL.md", ".claude/skills/version/SKILL.md",
+        "scripts/brain-purpose-reader.mjs", "scripts/data-purpose-reader.mjs", "scripts/os-version.mjs",
+        "scripts/test-brain-purpose-reader.mjs", "scripts/test-os-version.mjs",
+        "scripts/test-purpose-context-cli-data.mjs", "system/capabilities/version/SKILL.md",
+    ]:
+        path = project / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(released(name))
+    changed = profile.run_process(["git", "-C", str(project), "diff", "--name-only"]).stdout.splitlines()
+    if len(changed) != 14:
+        raise RuntimeError(f"source fixture must reproduce exactly fourteen tracked edits: {changed}")
+    return {"original_index": original, "addition": addition}
+
+
 def _run_project(layout: ProjectLayout, *arguments: str, expect: int = 0) -> dict:
     python = layout.stack / "tools" / "distribution-venv" / (
         "Scripts/python.exe" if os.name == "nt" else "bin/python"
@@ -161,7 +201,8 @@ def _require_skills_generation_preserved(
 
 
 def main() -> int:
-    base = Path(os.environ.get("RUNNER_TEMP") or tempfile.gettempdir()) / "aiverse-core-update-candidate"
+    fixture_root = os.environ.get("AI_VERSE_ACCEPTANCE_FIXTURE_ROOT")
+    base = Path(fixture_root) if fixture_root else Path(os.environ.get("RUNNER_TEMP") or tempfile.gettempdir()) / "aiverse-core-update-candidate"
     base.mkdir(parents=True, exist_ok=True)
     isolated_home = base / "home"
     isolated_home.mkdir(parents=True, exist_ok=True)
@@ -238,8 +279,10 @@ def main() -> int:
     profile.prove_data(project)
     (project / "custom-notes.md").write_text("member-owned update preservation marker\n", encoding="utf-8")
 
-    before_status = _run_project(layout, "status")
-    if before_status.get("state") not in {"ready", "setup-required"}:
+    source_fixture = _local_source_fixture(project) if os.environ.get("AI_VERSE_ACCEPTANCE_LOCAL_SOURCE") == "1" else None
+    before_status = _run_project(layout, "status", expect=1 if source_fixture else 0)
+    expected_states = {"unhealthy"} if source_fixture else {"ready", "setup-required"}
+    if before_status.get("state") not in expected_states:
         raise RuntimeError(f"current Core has an unexpected state before update: {before_status}")
     before = snapshot_member_state(
         project,
@@ -253,7 +296,8 @@ def main() -> int:
     promotion_present_on_source = distribution_default == CANDIDATE_ID
     if not promotion_present_on_source:
         _install_test_transition(layout)
-    update = _run_project(layout, "update", "--to", CANDIDATE_ID, "--apply")
+    source_options = ["--local-source", "official"] if source_fixture else []
+    update = _run_project(layout, "update", "--to", CANDIDATE_ID, "--apply", *source_options)
     if update.get("to") != CANDIDATE_ID:
         raise RuntimeError(f"project updater did not apply the exact candidate: {update}")
 
@@ -364,6 +408,24 @@ def main() -> int:
     # exact while allowing the new release generation and active pointer.
     other_state_before = dict(before)
     other_state_before["local_skills"] = after.get("local_skills")
+    if source_fixture:
+        # Verify the two exact admitted knowledge outputs before adjusting only
+        # their expected fingerprints; every other member file stays exact.
+        if (project / "knowledge/README.md").read_bytes() != source_fixture["original_index"]:
+            raise RuntimeError("the canonical knowledge index was not restored exactly")
+        local_index = project / "knowledge/local-customizations.md"
+        expected_index = b"# Local knowledge additions\n\nPreserved from the project knowledge index during Core update.\n" + source_fixture["addition"]
+        if local_index.read_bytes() != expected_index:
+            raise RuntimeError("the local document route was not preserved exactly")
+        expected_files = dict(before["files"])
+        for name in ["knowledge/README.md", "knowledge/local-customizations.md"]:
+            expected_files[name] = after["files"][name]
+        other_state_before["files"] = expected_files
+        for name in [".aiverse/brain-purpose.json", "operator/brain/probe.json", "knowledge/local-customizations.md"]:
+            if not profile.run_process(["git", "-C", str(project), "check-ignore", name]).stdout.strip():
+                raise RuntimeError(f"privacy exclusion stopped applying: {name}")
+        if update.get("local_source", {}).get("state") != "completed":
+            raise RuntimeError("source preparation did not complete through the canonical updater")
     require_member_state_preserved(other_state_before, after)
 
     blocked = _run_project(layout, "rollback", "--to", CURRENT_RELEASE, "--apply", expect=2)
@@ -384,6 +446,7 @@ def main() -> int:
         "to": CANDIDATE_ID,
         "before_update_state": before_status.get("state"),
         "state_preserved": True,
+        "local_source_adoption": bool(source_fixture),
         "brain_owner_state_preserved": True,
         "skills_generation_preserved": True,
         "doctor": doctor.get("ok"),

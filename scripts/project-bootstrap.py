@@ -25,6 +25,10 @@ layout, release_set = bootstrap_route_args(sys.argv[1:])
 route = plan_existing_core_update(layout, source, release_set=release_set)
 if route is not None:
     subprocess.run(route.refresh_distribution_argv, check=True)
+    subprocess.run([
+        str(route.python), "-I", "-B", "-m", "aiverse_distribution.entrypoint",
+        "project-refresh", "--project", str(layout.project), "--stack", str(layout.stack),
+    ], check=True)
     raise SystemExit(subprocess.run(route.update_argv).returncode)
 
 raise SystemExit(main(["project-init", "--distribution-source", str(source), *sys.argv[1:]]))

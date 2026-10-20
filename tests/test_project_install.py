@@ -25,6 +25,33 @@ from aiverse_distribution.release_catalog import DistributionError
 
 
 class ProjectInstallTests(unittest.TestCase):
+    def test_legacy_owned_launcher_refreshes_without_touching_project_content(self):
+        with tempfile.TemporaryDirectory() as folder:
+            layout = ProjectLayout.resolve(Path(folder) / "member")
+            with claim(layout):
+                receipt = json.loads(layout.receipt.read_text())
+                layout.project.mkdir()
+                (layout.project / "personal.txt").write_text("keep me")
+                locks = layout.distribution_home / "locks"
+                locks.mkdir(parents=True)
+                (locks / "current.json").write_text(json.dumps({"root": str(layout.project), "profile": "core"}))
+                launcher = layout.stack / "run.py"
+                text = project_install._render_project_launcher(layout.project, {"PYTHONPATH": ""}, "private tools", require_lfs=True)
+                legacy = text.replace("from aiverse_distribution.entrypoint import main", "from aiverse_distribution.cli import main")
+                legacy = legacy.replace("os.path.dirname(sys.executable) + os.pathsep + ", "")
+                _write_owned(layout, launcher, legacy, receipt)
+                receipt.update(phase="installed", launcher=str(launcher))
+                layout.receipt.write_text(json.dumps(receipt))
+            result = project_install.refresh_project_launcher(layout)
+            self.assertTrue(result["changed"])
+            self.assertIn("from aiverse_distribution.entrypoint import main", launcher.read_text())
+            self.assertIn("os.path.dirname(sys.executable)", launcher.read_text())
+            self.assertEqual((layout.project / "personal.txt").read_text(), "keep me")
+            self.assertFalse(project_install.refresh_project_launcher(layout)["changed"])
+            launcher.write_text(launcher.read_text() + "# member customization\n")
+            with self.assertRaisesRegex(DistributionError, "locally edited"):
+                project_install.refresh_project_launcher(layout)
+
     def test_lfs_process_configuration_preserves_existing_entries(self):
         environment = {"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "http.extraheader", "GIT_CONFIG_VALUE_0": "existing-header"}
         configure_lfs(environment)

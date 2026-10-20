@@ -76,5 +76,10 @@ jobs:
         run: python tests/acceptance/profile_acceptance.py core
       - name: Prove a populated update from current Core and preservation of member state
         run: python tests/acceptance/core_update_candidate_acceptance.py
+      - name: Prove fourteen local source edits update with member preservation
+        env:
+          AI_VERSE_ACCEPTANCE_LOCAL_SOURCE: '1'
+          AI_VERSE_ACCEPTANCE_FIXTURE_ROOT: ${{ runner.temp }}/local-source-adoption-case
+        run: python tests/acceptance/core_update_candidate_acceptance.py
       - name: Prove optional package lifecycle and member-state preservation
         run: python tests/acceptance/optional_package_candidate_acceptance.py

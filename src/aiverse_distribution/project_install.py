@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import ast
 import json
 import os
 import shlex
@@ -61,7 +62,7 @@ def select_member_release(catalog: Catalog, release_set: str | None = None):
     return release
 
 
-def _write_owned(layout: ProjectLayout, path: Path, text: str, receipt: dict) -> None:
+def _write_owned(layout: ProjectLayout, path: Path, text: str, receipt: dict, *, lifecycle=LifecycleVerb.INSTALL) -> None:
     """Publish only receipt-bound bootstrap bytes through the shared payload guard."""
     key = str(path)
     files = receipt.setdefault("owned_files", {})
@@ -87,7 +88,7 @@ def _write_owned(layout: ProjectLayout, path: Path, text: str, receipt: dict) ->
     evidence = build_project_file_evidence(
         layout,
         path,
-        lifecycle=LifecycleVerb.INSTALL,
+        lifecycle=lifecycle,
         operation=operation,
         lifecycle_admitted=True,
         owner_authorized=True,
@@ -293,6 +294,44 @@ def _render_project_launcher(project: Path, overrides: dict, prefix: str, *, req
         "    raise SystemExit(subprocess.call(sys.argv[2:]))\n"
         "from aiverse_distribution.entrypoint import main\nraise SystemExit(main(sys.argv[1:]))\n"
     )
+
+
+def refresh_project_launcher(layout: ProjectLayout) -> dict:
+    """Refresh only an unchanged receipt-owned launcher after tooling upgrade.
+
+    Read the old generated environment as literal data, never execute it to
+    discover paths. Existing/local edits remain a supported refusal.
+    """
+    with claim(layout):
+        receipt = json.loads(layout.receipt.read_text())
+        if receipt.get("phase") != "installed":
+            raise DistributionError("Project tooling refresh requires a completed installation")
+        launcher = layout.stack / "run.py"
+        if receipt.get("launcher") != str(launcher) or launcher.is_symlink() or not launcher.is_file():
+            raise DistributionError("The project launcher is not at its recorded location")
+        old = launcher.read_text()
+        expected = receipt.get("owned_files", {}).get(str(launcher))
+        if hashlib.sha256(old.encode()).hexdigest() != expected:
+            raise DistributionError("Preserving a locally edited project launcher")
+        if not old.startswith("# Generated AI-Verse project launcher.\n"):
+            raise DistributionError("The recorded project launcher format is unsupported")
+        tree = ast.parse(old)
+        overrides, prefix, require_lfs = None, None, None
+        for node in tree.body:
+            if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
+                call = node.value
+                if ast.unparse(call.func) == "os.environ.update" and len(call.args) == 1:
+                    overrides = ast.literal_eval(call.args[0])
+                if ast.unparse(call.func) == "configure_project_git":
+                    require_lfs = next((ast.literal_eval(k.value) for k in call.keywords if k.arg == "require_lfs"), None)
+            if isinstance(node, ast.Assign) and any(ast.unparse(t) == "os.environ['PATH']" for t in node.targets):
+                literals = [n.value for n in ast.walk(node.value) if isinstance(n, ast.Constant) and isinstance(n.value, str) and n.value]
+                prefix = max(literals, key=len) if literals else None
+        if not isinstance(overrides, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in overrides.items()) or not isinstance(prefix, str) or not isinstance(require_lfs, bool):
+            raise DistributionError("The project launcher environment could not be verified")
+        text = _render_project_launcher(layout.project, overrides, prefix, require_lfs=require_lfs)
+        _write_owned(layout, launcher, text, receipt, lifecycle=LifecycleVerb.UPDATE)
+        return {"kind": "project-tooling-refresh", "launcher": str(launcher), "changed": text != old}
 
 
 def install_project(layout: ProjectLayout, source: Path, *, release_set: str | None = None,

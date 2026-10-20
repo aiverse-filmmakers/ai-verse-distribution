@@ -9,6 +9,28 @@ from aiverse_distribution.core_update_guard import CoreUpdateConflictError
 
 
 class CoreUpdateOutputTests(unittest.TestCase):
+    def test_source_preparation_plan_is_explained_without_recovery_internals(self):
+        from aiverse_distribution.update_output import format_core_update
+        result = format_core_update({"transition_kind": "update", "local_source": {
+            "ready": True, "actions": [{"path": "AGENTS.md"}], "plan_sha256": "private-hash",
+        }})
+        self.assertIn("supported preparation plan", result)
+        self.assertIn("saved for recovery", result)
+        self.assertNotIn("private-hash", result)
+
+    def test_source_conflict_does_not_claim_preparation_is_ready(self):
+        from aiverse_distribution.update_output import format_core_update
+        result = format_core_update({"transition_kind": "update", "local_source": {"ready": False}})
+        self.assertIn("need review", result)
+        self.assertNotIn("supported preparation plan", result)
+
+    def test_current_core_can_report_source_adoption_separately(self):
+        from aiverse_distribution.update_output import format_core_update
+        result = format_core_update({"transition_kind": "update", "applied": True, "noop": True,
+                                     "local_source": {"state": "completed"}})
+        self.assertIn("Official Core source is active", result)
+        self.assertIn("saved for recovery", result)
+
     @staticmethod
     def _success_payload():
         return {
