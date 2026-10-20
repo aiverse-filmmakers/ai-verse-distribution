@@ -191,6 +191,7 @@ def run_optional_package_owner(
     action: str,
     *,
     python: str,
+    runtime_python: str | None = None,
 ) -> Dict[str, Any]:
     """Invoke the verified OS package API with a fixed argv and verify its receipt."""
     if action not in {"install", "remove", "setup", "doctor"}:
@@ -211,6 +212,7 @@ def run_optional_package_owner(
                 "--root",
                 str(Path(project_root).resolve()),
                 "--json",
+                *(["--python", runtime_python] if action == "install" and runtime_python else []),
             ],
             cwd=Path(project_root).resolve(),
             env={"PYTHONPYCACHEPREFIX": cache},

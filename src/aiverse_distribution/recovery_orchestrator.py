@@ -189,7 +189,7 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
                     source = plan.get("local_source")
                     if source is not None:
                         if not source.get("ready"):
-                            raise SourceAdoptionConflict("Local source changes need review; use update --plan. Choose official source only to retire eligible code edits with recovery.")
+                            raise SourceAdoptionConflict("Local software changes need review before updating.", plan=source)
                         prepared = tx.prepare(source, target_source=self._source_adoption_target_source,
                                               source_release=lock["release_set_id"], target_release=plan["to"])
                         self._source_adoption_active_plan = source

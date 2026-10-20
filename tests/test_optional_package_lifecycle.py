@@ -58,6 +58,28 @@ def make_app(home: Path):
 
 
 class OptionalPackageLifecycleTests(unittest.TestCase):
+    def test_package_upgrade_binds_current_brain_runtime(self):
+        import os
+        with tempfile.TemporaryDirectory() as temporary:
+            app, state, package, root = make_app(Path(temporary))
+            lock = state.load()
+            revision = "2" * 40
+            lock["components"]["ai-verse-brain"] = {"revision": revision}
+            state.write(lock, archive_previous=False)
+            executable = state.venv_dir(revision) / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+            executable.parent.mkdir(parents=True)
+            executable.touch()
+            self.assertEqual(app._optional_package_runtime_options(), {"runtime_python": str(executable.absolute())})
+            with patch("aiverse_distribution.optional_packages.verify_optional_package_source"), patch(
+                "aiverse_distribution.experience_orchestrator.run_optional_package_owner",
+                return_value={"installed": True, "version": package.version, "state": "setup-required"},
+            ) as owner:
+                app.optional_package_apply(package.id, "install")
+            self.assertEqual(owner.call_args.kwargs["runtime_python"], str(executable.absolute()))
+            executable.unlink()
+            with self.assertRaisesRegex(Exception, "runtime is unavailable"):
+                app._optional_package_runtime_options()
+
     def test_package_setup_check_is_read_only_and_reports_owner_evidence(self):
         with tempfile.TemporaryDirectory() as temporary:
             app, state, package, root = make_app(Path(temporary))

@@ -476,6 +476,23 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
             },
         }
 
+    def _optional_package_runtime_options(self):
+        # Bootstrap checks describe the FIRST install. Bind an add-on upgrade to
+        # the current Core receipt instead, preserving the venv interpreter path.
+        lock = self.state.load() or {}
+        revision = lock.get("components", {}).get("ai-verse-brain", {}).get("revision")
+        if revision is None:
+            return {}
+        import re
+        import os
+        if not isinstance(revision, str) or not re.fullmatch(r"[a-f0-9]{40}", revision):
+            raise DistributionError("Cannot verify the current Brain runtime for package setup")
+        directory = self.state.venv_dir(revision)
+        executable = directory / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+        if not executable.is_file():
+            raise DistributionError("The current Core Python runtime is unavailable; check AI-Verse before changing helpers")
+        return {"runtime_python": str(executable.absolute())}
+
     def optional_package_apply(self, package_id: str, action: str) -> Dict[str, Any]:
         with self.state.lifecycle_transaction():
             if self.update_journal.load() is not None or self.infrastructure_upgrade_journal.load() is not None:
@@ -484,6 +501,7 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                 )
             plan = self._optional_package_plan(package_id, action)
             package = plan["package"]
+            runtime_options = self._optional_package_runtime_options() if action == "install" else {}
             marker_metadata = {
                 "release_set_id": plan["release"].id,
                 "package_id": package.id,
@@ -514,6 +532,7 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                     plan["root"],
                     action,
                     python=sys.executable,
+                    **runtime_options,
                 )
             except (OSError, ValueError) as exc:
                 raise DistributionError(f"OS optional-package API verification failed: {exc}") from exc
