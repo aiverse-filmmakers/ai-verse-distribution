@@ -339,6 +339,25 @@ class SourceAdoptionPlanTests(unittest.TestCase):
         self.assertIsNone(SourceAdoptionTransaction(app.state.home, self.root).load())
         self.assertEqual((self.root / "scripts/feature.mjs").read_text(), "released code\n")
 
+    def test_incoming_unignore_rule_cannot_expose_local_private_content(self):
+        self.git("checkout", self.target)
+        self.write(".gitignore", "runtime/\nknowledge/*.local.md\n!private.md\n")
+        self.git("add", ".gitignore")
+        self.git("commit", "-m", "target unignore rule")
+        self.target = self.git("rev-parse", "HEAD")
+        self.git("checkout", self.installed)
+        self.write(".gitignore", "runtime/\nknowledge/*.local.md\nprivate.md\n")
+        self.assertFalse(self.plan(policy="official")["ready"])
+
+    def test_local_nested_unignore_cannot_expose_migrated_knowledge(self):
+        self.write("knowledge/README.md", "Knowledge\nlocal private route\n")
+        self.write("knowledge/.gitignore", "!local-customizations.md\n")
+        self.assertFalse(self.plan()["ready"])
+
+    def test_unproven_privacy_glob_refuses_without_mutation(self):
+        self.write(".gitignore", "runtime/\nknowledge/*.local.md\nprivate-*\n")
+        self.assertFalse(self.plan()["ready"])
+
 
 if __name__ == "__main__":
     unittest.main()

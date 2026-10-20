@@ -108,6 +108,84 @@ def ignore_additions(original: bytes, current: bytes) -> bytes:
     return ("\n".join(additions) + "\n").encode("utf-8")
 
 
+def verify_privacy_exclusions(root: Path, exclusions: bytes, installed_tree: dict,
+                              target_tree: dict, target_source: Path) -> list[dict]:
+    """Prove literal privacy rules with Git itself before changing the member tree.
+
+    Root/nested unignore rules outrank info/exclude. Never assume moving patterns
+    between these files preserves privacy. Probes contain no member file bodies.
+    Complex patterns remain a reviewed migration rather than an unsafe guess.
+    """
+    probes = []
+    for line in exclusions.decode("utf-8").splitlines():
+        if not line or line.startswith("#"):
+            continue
+        rule = line.rstrip()
+        if any(c in rule for c in "!*?[\\"):
+            raise SourceAdoptionConflict("Complex local privacy patterns require a reviewed migration")
+        name = rule.strip("/")
+        if ".git" in PurePosixPath(name).parts:
+            raise SourceAdoptionConflict("Git metadata privacy rules require review")
+        safe_path(root, name)
+        probes.append({"path": name, "directory": rule.endswith("/")})
+    if len(probes) > 64:
+        raise SourceAdoptionConflict("Too many local privacy rules for bounded preparation")
+    if not probes:
+        return []
+    env = dict(os.environ)
+    for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES"):
+        env.pop(key, None)
+    case = subprocess.run(["git", "-C", str(root), "config", "--bool", "--get", "core.ignorecase"],
+                          env=env, capture_output=True, check=False)
+    if case.returncode not in {0, 1}:
+        raise SourceAdoptionConflict("Cannot verify the project's Git case policy")
+    ignore_case = "true" if case.stdout.strip() == b"true" else "false"
+    existing_exclude = SourceAdoptionTransaction._exclude(root)
+    local_exclude = existing_exclude.read_bytes() if existing_exclude.exists() else b""
+    for files, repository in ((installed_tree, root), (target_tree, target_source)):
+        with tempfile.TemporaryDirectory(prefix="aiverse-privacy-probe-") as directory:
+            shadow = Path(directory).resolve()
+            initialized = subprocess.run(["git", "init", "--quiet", "--template=", str(shadow)],
+                                         env=env, capture_output=True, check=False)
+            if initialized.returncode:
+                raise SourceAdoptionConflict("Cannot verify privacy exclusions in isolation")
+            (shadow / ".git/info").mkdir(exist_ok=True)
+            (shadow / ".git/info/exclude").write_bytes(local_exclude + b"\n" + exclusions)
+            ignore_names = {".gitignore"}
+            for probe in probes:
+                parts = PurePosixPath(probe["path"]).parts
+                limit = len(parts) if probe["directory"] else len(parts) - 1
+                for i in range(1, limit + 1):
+                    ignore_names.add(str(PurePosixPath(*parts[:i]) / ".gitignore"))
+            for name in ignore_names:
+                if name in files:
+                    content = blob(repository, files[name])
+                else:
+                    actual = safe_path(root, name)
+                    if not actual.exists():
+                        continue
+                    file_state(actual)
+                    content = actual.read_bytes()
+                path = safe_path(shadow, name)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+            for probe in probes:
+                path = safe_path(shadow, probe["path"])
+                if probe["directory"]:
+                    path.mkdir(parents=True, exist_ok=True)
+                elif not path.exists():
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b"")
+                argument = probe["path"] + ("/" if probe["directory"] else "")
+                checked = subprocess.run(["git", "--git-dir", str(shadow / ".git"), "--work-tree", str(shadow),
+                                          "-c", "core.ignorecase=" + ignore_case,
+                                          "check-ignore", "--no-index", "--quiet", "--", argument],
+                                         env=env, capture_output=True, check=False)
+                if checked.returncode != 0:
+                    raise SourceAdoptionConflict("A release or local unignore rule would weaken privacy; preserve this configuration for review")
+    return probes
+
+
 def plan_source_adoption(root: Path, installed: str, target: str, *, target_source: Path | None = None,
                          policy: str = "preserve") -> dict:
     """Read-only, hash-bound analysis. Public output never includes source bodies."""
@@ -130,7 +208,7 @@ def plan_source_adoption(root: Path, installed: str, target: str, *, target_sour
     changed = [p.decode("utf-8") for p in git(root, "diff", "--name-only", "-z", installed).split(b"\0") if p]
     if len(changed) > 128:
         raise SourceAdoptionConflict("Too many local source edits for bounded automatic preparation")
-    actions, conflicts = [], []
+    actions, conflicts, exclusions = [], [], b""
     for name in changed:
         try:
             path = safe_path(root, name)
@@ -148,6 +226,7 @@ def plan_source_adoption(root: Path, installed: str, target: str, *, target_sour
                       "installed_mode": before[name]["mode"], "target_oid": incoming[name]["oid"]}
             if name == contract["ignore_additions"]["source"]:
                 additions = ignore_additions(original, current)
+                exclusions += additions
                 action.update(kind="preserve-ignore-additions", additions_sha256=digest(additions))
             elif name in contract["append_only_documents"]:
                 if not current.startswith(original) or target_bytes != original:
@@ -158,6 +237,7 @@ def plan_source_adoption(root: Path, installed: str, target: str, *, target_sour
                     raise SourceAdoptionConflict("The local knowledge destination already exists")
                 action.update(kind="relocate-document-addition", destination=destination,
                               destination_before=file_state(dest), addition_sha256=digest(current[len(original):]))
+                exclusions += ("/" + destination + "\n").encode()
             elif generated and target_equal:
                 action.update(kind="already-in-target")
             elif software and (target_equal or policy == "official"):
@@ -182,9 +262,15 @@ def plan_source_adoption(root: Path, installed: str, target: str, *, target_sour
             collisions.append({"path": name, "before": state, "target_oid": incoming[name]["oid"]})
         except SourceAdoptionConflict as exc:
             conflicts.append({"path": name, "reason": str(exc)})
+    try:
+        privacy = verify_privacy_exclusions(root, exclusions, before, incoming, target_source)
+    except (SourceAdoptionConflict, OSError, UnicodeError) as exc:
+        conflicts.append({"path": ".gitignore", "reason": str(exc)})
+        privacy = []
     plan = {"schema_version": 1, "contract_id": contract["contract_id"], "root": str(root),
             "installed": installed, "target": target, "policy": policy, "actions": actions,
             "local_exclude": file_state(SourceAdoptionTransaction._exclude(root)),
+            "privacy_probes": privacy,
             "target_collisions": collisions, "conflicts": conflicts, "ready": not conflicts}
     plan["plan_sha256"] = digest(json.dumps(plan, sort_keys=True, separators=(",", ":")).encode())
     return plan
@@ -334,6 +420,7 @@ class SourceAdoptionTransaction:
         data = {"schema_version": 1, "kind": "local-source-preparation", "token": uuid.uuid4().hex,
                 "root": str(root), "installed": plan["installed"], "target": plan["target"],
                 "source_release": source_release, "target_release": target_release,
+                "privacy_probes": plan.get("privacy_probes", []),
                 "plan_sha256": plan["plan_sha256"], "phase": "captured", "changes": changes}
         if len(json.dumps(data).encode()) > 32 * 1024 * 1024:
             raise SourceAdoptionConflict("Source preparation exceeds its capture size limit")
@@ -401,4 +488,11 @@ class SourceAdoptionTransaction:
             if change["path"] == "git-local-exclude" or change["path"].startswith("knowledge/") and change["before"]["content"] is None:
                 if not self._matches(self._path(root, change), change["after"]):
                     raise LifecycleRecoveryRequired("Preserved local material changed during update")
+        for probe in data.get("privacy_probes", []):
+            safe_path(root, probe["path"])
+            argument = probe["path"] + ("/" if probe["directory"] else "")
+            verified = subprocess.run(["git", "-C", str(root), "check-ignore", "--no-index", "--quiet", "--", argument],
+                                      capture_output=True, check=False)
+            if verified.returncode != 0:
+                raise LifecycleRecoveryRequired("Preserved privacy exclusions did not verify after update")
         self._archive(data, "completed")

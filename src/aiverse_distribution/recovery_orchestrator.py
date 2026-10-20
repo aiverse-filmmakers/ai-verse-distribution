@@ -15,6 +15,7 @@ from .release_catalog import DistributionError
 from .state import LifecycleRecoveryRequired, now_iso
 from .source_adoption import (
     SourceAdoptionConflict, SourceAdoptionTransaction, git, plan_source_adoption,
+    tree, verify_privacy_exclusions,
 )
 
 
@@ -114,6 +115,13 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
                                      target_source=self._source_adoption_target_source, policy=plan["policy"])
         if not check["ready"] or check["actions"] or check["target_collisions"]:
             raise SourceAdoptionConflict("Local files changed after source preparation; preserving them")
+        privacy_rules = "".join("/" + p["path"] + ("/" if p["directory"] else "") + "\n"
+                                for p in plan.get("privacy_probes", []))
+        if privacy_rules:
+            target_source = self._source_adoption_target_source or Path(plan["root"])
+            verify_privacy_exclusions(Path(plan["root"]), privacy_rules.encode(),
+                                      tree(Path(plan["root"]), plan["installed"]),
+                                      tree(target_source, plan["target"]), target_source)
 
     def _current_lkg_health(self, lock: Dict[str, Any]) -> Dict[str, Any]:
         return require_final_health(
