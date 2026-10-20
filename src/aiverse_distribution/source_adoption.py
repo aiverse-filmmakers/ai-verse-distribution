@@ -20,6 +20,10 @@ from .update_journal import CoreUpdateJournal
 class SourceAdoptionConflict(DistributionError):
     code = "CORE_LOCAL_SOURCE_REVIEW_REQUIRED"
 
+    def __init__(self, message, *, plan=None):
+        super().__init__(message)
+        self.local_source = plan
+
 
 def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()

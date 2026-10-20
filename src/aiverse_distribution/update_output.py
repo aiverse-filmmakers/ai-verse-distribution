@@ -27,6 +27,40 @@ def _changed_components(payload: dict[str, Any]) -> list[str]:
     return sorted(set(result))
 
 
+def _source_review_lines(source: dict[str, Any]) -> list[str]:
+    lines = ["Local changes need review before this update can run."]
+    conflicts = source.get("conflicts")
+    if isinstance(conflicts, list):
+        rows = [item for item in conflicts if isinstance(item, dict)]
+        for item in rows[:8]:
+            name = str(item.get("path") or "Installation check")
+            reason = str(item.get("reason") or "Needs review")
+            # Render bounded single-line values; never include file bodies/hashes.
+            clean = lambda text: "".join(c for c in text if c.isprintable())[:240]
+            lines.append(f"- {clean(name)}: {clean(reason)}")
+        if len(rows) > 8:
+            lines.append(f"- {len(rows) - 8} more items; use the detailed plan to review them.")
+    lines.extend([
+        "", "AI-Verse will not overwrite an unreviewed customization.",
+        "Next: run `aiverse update --plan` to review the affected files.",
+        "To keep custom code, reconcile it with the release before updating.",
+        "To replace eligible custom code with official Core, first review "
+        "`aiverse update --plan --local-source official`. This saves old edits for recovery; "
+        "it does not keep those code overrides active.",
+        "Other conflicts still need review, even when official Core is selected.",
+    ])
+    return lines
+
+
+def format_update_conflict(payload: dict[str, Any]) -> Optional[str]:
+    if payload.get("error") != "CORE_LOCAL_SOURCE_REVIEW_REQUIRED":
+        return None
+    source = payload.get("local_source")
+    if not isinstance(source, dict):
+        source = {"conflicts": [{"reason": payload.get("message", "Local changes need review")}]}
+    return "\n".join(["AI-Verse update paused", "", *_source_review_lines(source)])
+
+
 def format_core_update(payload: dict[str, Any]) -> Optional[str]:
     """Return concise member-facing text for Core update plans/results.
 
@@ -57,11 +91,12 @@ def format_core_update(payload: dict[str, Any]) -> Optional[str]:
         infrastructure = payload.get("infrastructure")
         if isinstance(local_source, dict):
             if local_source.get("ready") is False:
-                lines.extend(["", "Local changes need review before this update can run.",
-                              "Review the affected files and choose which software customizations to retain."])
+                lines.extend(["", *_source_review_lines(local_source)])
             elif local_source.get("actions") or local_source.get("target_collisions"):
                 lines.extend(["", "Local changes have a supported preparation plan.",
-                              "Personal material will be retained; previous source edits will be saved for recovery."])
+                              "Personal material will be retained; previous source edits will be saved for recovery.",
+                              "Eligible software edits will be replaced by official Core; saved copies are recovery originals.",
+                              "Next: run `aiverse update --local-source official`." if local_source.get("policy") == "official" else "Next: run `aiverse update`."])
         if isinstance(infrastructure, dict):
             state = infrastructure.get("state")
             if state == "OPTIONAL":

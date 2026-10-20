@@ -14,7 +14,7 @@ from .diagnostics import create_support_bundle
 from .orchestrator import Orchestrator
 from .process import ProcessError
 from .redaction import sanitize, sanitize_text
-from .update_output import format_core_update
+from .update_output import format_core_update, format_update_conflict
 
 
 def _emit(payload: Any, as_json: bool = False) -> None:
@@ -25,7 +25,7 @@ def _emit(payload: Any, as_json: bool = False) -> None:
         print(json.dumps(payload, indent=2, sort_keys=True, default=str))
         return
     if isinstance(payload, dict):
-        update_text = format_core_update(payload)
+        update_text = format_update_conflict(payload) or format_core_update(payload)
         if update_text is not None:
             print(update_text)
             return
@@ -455,6 +455,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     except (DistributionError, ProcessError, RuntimeError) as exc:
         code = getattr(exc, "code", "DISTRIBUTION_FAILED")
         payload = {"error": code, "message": str(exc)}
+        if isinstance(getattr(exc, "local_source", None), dict):
+            payload["local_source"] = exc.local_source
         if isinstance(exc, ProcessError):
             payload["command"] = exc.argv
             payload["returncode"] = exc.returncode

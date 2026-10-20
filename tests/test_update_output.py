@@ -31,6 +31,47 @@ class CoreUpdateOutputTests(unittest.TestCase):
         self.assertIn("Official Core source is active", result)
         self.assertIn("saved for recovery", result)
 
+    def test_review_plan_lists_paths_and_safe_next_actions(self):
+        from aiverse_distribution.update_output import format_core_update
+        result = format_core_update({"transition_kind": "update", "local_source": {
+            "ready": False, "conflicts": [{"path": "scripts/custom.mjs", "reason": "Needs review"}],
+            "plan_sha256": "private-hash",
+        }})
+        self.assertIn("scripts/custom.mjs: Needs review", result)
+        self.assertIn("aiverse update --plan --local-source official", result)
+        self.assertIn("does not keep those code overrides active", result)
+        self.assertNotIn("private-hash", result)
+        self.assertNotIn("Health checks: PASS", result)
+
+    def test_conflict_error_carries_plan_in_json_and_plain_output(self):
+        from aiverse_distribution.source_adoption import SourceAdoptionConflict
+        plan = {"ready": False, "conflicts": [{"path": "AGENTS.md", "reason": "Needs review"}]}
+        app = Mock()
+        app.apply_update.side_effect = SourceAdoptionConflict("Local changes need review", plan=plan)
+        code, output = self._run(["update"], app)
+        self.assertEqual(code, 2)
+        self.assertIn("AI-Verse update paused", output)
+        self.assertIn("AGENTS.md: Needs review", output)
+        self.assertIn("will not overwrite", output)
+        code, output = self._run(["update", "--json"], app)
+        self.assertEqual(json.loads(output)["local_source"], plan)
+
+    def test_conflict_output_is_bounded_and_single_line(self):
+        from aiverse_distribution.update_output import format_update_conflict
+        result = format_update_conflict({"error": "CORE_LOCAL_SOURCE_REVIEW_REQUIRED", "local_source": {
+            "conflicts": [{"path": "file\npretend-success", "reason": "review"}] * 10,
+        }})
+        self.assertIn("2 more items", result)
+        self.assertNotIn("file\npretend-success", result)
+        self.assertEqual(result.count("- file"), 8)
+
+    def test_official_plan_recommends_same_policy_for_apply(self):
+        from aiverse_distribution.update_output import format_core_update
+        result = format_core_update({"transition_kind": "update", "local_source": {
+            "ready": True, "policy": "official", "actions": [{"path": "AGENTS.md"}],
+        }})
+        self.assertIn("Next: run `aiverse update --local-source official`", result)
+
     @staticmethod
     def _success_payload():
         return {
