@@ -649,7 +649,8 @@
       "state_rule": "owner-preserved",
       "rollback_rule": "software-only-owner-state-preserved",
       "update_from": [
-        "core-local-upgrades-candidate-2026-10-19-v6"
+        "core-local-upgrades-candidate-2026-10-19-v6",
+        "core-member-polish-candidate-2026-10-21"
       ],
       "rollback_to": [
         "core-member-polish-candidate-2026-10-21"
