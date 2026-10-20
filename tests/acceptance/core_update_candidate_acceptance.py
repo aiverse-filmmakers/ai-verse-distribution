@@ -268,11 +268,18 @@ def main() -> int:
     if actual_refs != expected_refs:
         raise RuntimeError(f"updated component refs differ from candidate pins: {actual_refs}")
     doctor = _run_project(layout, "doctor")
-    if doctor.get("ok") is not True:
+    if doctor.get("kind") != "doctor-overview" or doctor.get("ok") is not True:
         raise RuntimeError(f"updated member doctor did not pass: {doctor}")
 
+    # Project launchers use the public whole-installation entrypoint. Its
+    # component evidence is nested under doctor; retain the exact pin and
+    # per-component checks rather than accepting only the overview's boolean.
+    component_doctor = doctor.get("doctor")
+    if not isinstance(component_doctor, dict) or component_doctor.get("ok") is not True:
+        raise RuntimeError(f"updated member component doctor did not pass: {doctor}")
+
     status_components = status.get("components")
-    doctor_components = doctor.get("components")
+    doctor_components = component_doctor.get("components")
     expected_component_ids = set(expected_refs)
     if not isinstance(status_components, dict) or set(status_components) != expected_component_ids:
         raise RuntimeError(f"updated component status set differs from candidate pins: {status_components}")
