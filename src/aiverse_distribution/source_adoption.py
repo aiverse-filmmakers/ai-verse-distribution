@@ -173,6 +173,8 @@ def plan_source_adoption(root: Path, installed: str, target: str, *, target_sour
             path = safe_path(root, name)
             if not path.exists():
                 continue
+            if contract.get("target_collision_action") != "capture-and-park-exact-target-files":
+                raise SourceAdoptionConflict("The OS contract does not admit incoming file preparation")
             state = file_state(path)
             expected = blob(target_source, incoming[name])
             if state["sha256"] != digest(expected) or (os.name != "nt" and bool(state["mode"] & stat.S_IXUSR) != (incoming[name]["mode"] == "100755")):
@@ -319,7 +321,8 @@ class SourceAdoptionTransaction:
                             "after": self._output(original, (action["before"]["mode"] & ~0o111) | (0o111 if action["installed_mode"] == "100755" else 0))})
         for collision in plan["target_collisions"]:
             snapshot = self._snapshot(safe_path(root, collision["path"]))
-            changes.append({"path": collision["path"], "kind": "target-collision", "before": snapshot, "after": snapshot})
+            changes.append({"path": collision["path"], "kind": "target-collision", "before": snapshot,
+                            "after": {"sha256": None, "mode": None, "content": None}})
         if exclusions:
             exclude = self._exclude(root)
             before = self._snapshot(exclude)
@@ -366,30 +369,6 @@ class SourceAdoptionTransaction:
             raise LifecycleRecoveryRequired("Source recovery archive already exists")
         os.replace(self.active, destination)
 
-    def bind_core_update(self, token: str):
-        if not re.fullmatch(r"[0-9a-f]{32}", token):
-            raise LifecycleRecoveryRequired("Invalid Core recovery identity")
-        data = self.load()
-        if data:
-            data["core_update_token"] = token
-            self._save(data)
-
-    def _core_rolled_back(self, data: dict) -> bool:
-        token = data.get("core_update_token")
-        if not isinstance(token, str) or not re.fullmatch(r"[0-9a-f]{32}", token):
-            return False
-        history = self.directory.parent / "history/core-updates"
-        for path in history.glob(f"*-{token}-rolled-back.json"):
-            if path.is_symlink():
-                continue
-            record = json.loads(path.read_text())
-            if (record.get("token") == token and record.get("stage") == "rolled-back"
-                    and record.get("source_release") == data.get("source_release")
-                    and record.get("target_release") == data.get("target_release")
-                    and record.get("checkpoint", {}).get("root") == data["root"]):
-                return True
-        return False
-
     def rollback(self):
         data = self.load()
         if not data:
@@ -398,17 +377,14 @@ class SourceAdoptionTransaction:
         if git(root, "rev-parse", "HEAD").decode().strip() != data["installed"]:
             raise LifecycleRecoveryRequired("Recover the Core update before restoring local source edits")
         # Validate all paths before restoring any; never erase a later member edit.
-        core_rolled_back = self._core_rolled_back(data)
-        def removed_by_rollback(change, path):
-            return core_rolled_back and change.get("kind") == "target-collision" and file_state(path)["sha256"] is None
         for change in data["changes"]:
             path = self._path(root, change)
-            if not self._matches(path, change["before"]) and not self._matches(path, change["after"]) and not removed_by_rollback(change, path):
+            if not self._matches(path, change["before"]) and not self._matches(path, change["after"]):
                 raise LifecycleRecoveryRequired("Source recovery found a concurrent edit; preserving it")
         for change in reversed(data["changes"]):
             path = self._path(root, change)
             if not self._matches(path, change["before"]):
-                if not self._matches(path, change["after"]) and not removed_by_rollback(change, path):
+                if not self._matches(path, change["after"]):
                     raise LifecycleRecoveryRequired("A concurrent edit interrupted source restoration; preserving it")
                 self._write(path, change["before"])
         self._archive(data, "rolled-back")

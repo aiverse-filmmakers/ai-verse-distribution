@@ -275,23 +275,14 @@ class SourceAdoptionPlanTests(unittest.TestCase):
         health.assert_called_once()
         self.assertIsNone(tx.load())
 
-    def test_untracked_target_collision_is_restored_after_proven_core_rollback(self):
+    def test_exact_target_collision_is_parked_and_restored_after_core_rollback(self):
         self.write("scripts/new.mjs", "new file\n")
         tx = self.transaction()
         tx.prepare(self.plan(), source_release="source", target_release="target")
-        token = "a" * 32
-        tx.bind_core_update(token)
-        self.git("checkout", "--force", self.target)
+        self.assertFalse((self.root / "scripts/new.mjs").exists())
+        self.git("checkout", self.target)
         self.git("checkout", "--force", self.installed)
         self.assertFalse((self.root / "scripts/new.mjs").exists())
-        # Missing originals are not restored merely because a journal exists.
-        with self.assertRaises(LifecycleRecoveryRequired):
-            tx.rollback()
-        history = tx.directory.parent / "history/core-updates"
-        history.mkdir(parents=True)
-        record = {"token": token, "stage": "rolled-back", "source_release": "source",
-                  "target_release": "target", "checkpoint": {"root": str(self.root)}}
-        (history / f"fixture-{token}-rolled-back.json").write_text(json.dumps(record))
         tx.rollback()
         self.assertEqual((self.root / "scripts/new.mjs").read_text(), "new file\n")
 

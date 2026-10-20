@@ -73,11 +73,8 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
             return
         check = plan_source_adoption(Path(plan["root"]), plan["installed"], plan["target"],
                                      target_source=self._source_adoption_target_source, policy=plan["policy"])
-        if not check["ready"] or check["actions"] or check["target_collisions"] != plan["target_collisions"]:
+        if not check["ready"] or check["actions"] or check["target_collisions"]:
             raise SourceAdoptionConflict("Local files changed after source preparation; preserving them")
-        active = self.update_journal.load()
-        if active:
-            SourceAdoptionTransaction(self.state.home, Path(plan["root"])).bind_core_update(active["token"])
 
     def _current_lkg_health(self, lock: Dict[str, Any]) -> Dict[str, Any]:
         return require_final_health(
