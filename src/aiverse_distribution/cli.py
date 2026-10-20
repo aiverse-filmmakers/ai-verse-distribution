@@ -206,6 +206,11 @@ def _parser() -> argparse.ArgumentParser:
     q.add_argument("--release-set")
     q.add_argument("--json", action="store_true")
 
+    q = sub.add_parser("project-refresh", help="refresh the unchanged receipt-owned private launcher after a tooling update")
+    q.add_argument("--project", type=Path, default=Path.cwd())
+    q.add_argument("--stack", type=Path)
+    q.add_argument("--json", action="store_true")
+
     q = sub.add_parser("start", help="one-action first run using the exact released Agent profile")
     q.add_argument("--release-set", help="advanced exact released Agent set override")
     q.add_argument("--root", type=Path, help="installation root; defaults to ~/AI-Verse for a fresh install")
@@ -253,6 +258,7 @@ def _parser() -> argparse.ArgumentParser:
     q = sub.add_parser("update", help="update to the newest admitted Core; use --plan to preview")
     q.add_argument("--to", dest="release_set", help="advanced exact admitted Core target")
     q.add_argument("--plan", action="store_true", help="preview the admitted update without applying it")
+    q.add_argument("--local-source", choices=["preserve", "official"], help="keep custom source (default), or use official code while retaining old edits for recovery")
     q.add_argument("--apply", action="store_true", help=argparse.SUPPRESS)
     q.add_argument("--json", action="store_true")
 
@@ -307,6 +313,13 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                                     install_system_git=args.install_system_git)
             _emit(payload, args.json)
             return 0 if not payload["missing"] else 1
+
+        if args.command == "project-refresh":
+            from .project_install import refresh_project_launcher
+            from .project_layout import ProjectLayout
+            payload = refresh_project_launcher(ProjectLayout.resolve(args.project, args.stack))
+            _emit(payload, args.json)
+            return 0
 
         if args.command == "project-init":
             from .project_install import install_project
@@ -383,13 +396,18 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         if args.command == "update":
             if args.plan and args.apply:
                 raise DistributionError("--plan cannot be combined with legacy --apply")
+            source_kwargs = {}
+            if args.local_source is not None:
+                from .recovery_orchestrator import RecoveryOrchestrator
+                app = RecoveryOrchestrator(state=app.state, catalog=app.catalog)
+                source_kwargs["local_source_policy"] = args.local_source
             if args.plan:
-                payload = app.update_plan(args.release_set)
+                payload = app.update_plan(args.release_set, **source_kwargs)
             else:
                 if not args.json:
                     print("Updating AI-Verse...")
                     print()
-                payload = app.apply_update(args.release_set)
+                payload = app.apply_update(args.release_set, **source_kwargs)
             _emit(payload, args.json)
             return 0
 

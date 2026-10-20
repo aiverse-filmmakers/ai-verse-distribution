@@ -159,6 +159,10 @@ Recursive directory replacement is therefore forbidden unless the entire directo
 
 ## 4. Local modification rule
 
+### Supported source preparation
+
+The OS-owned `ai-verse-os/local-source-adoption-v1` contract adds a bounded owner operation before normal immutable-source qualification. It may retire target-identical source edits, or eligible software edits after explicit official-source choice, only after verified recovery capture. It may preserve additive ignore rules and relocate exact append-only starter-index additions through the declared OS host recipe. This is not a general permission for Distribution or agents to rewrite member knowledge. Unknown paths, arbitrary document edits, changed generated adapters and staged work remain conflicts. See `LOCAL-SOURCE-ADOPTION.md` for the exact transaction and recovery boundary. After preparation the existing clean-source proof must pass; the source verifier itself is not weakened.
+
 For `system-owned-replaceable` and `generated-system-owned-replaceable-with-receipt`, the clean proof is part of the classification.
 
 If current bytes, mode/type, path identity, generation identity, or receipt do not match the installed proof, classification changes to:

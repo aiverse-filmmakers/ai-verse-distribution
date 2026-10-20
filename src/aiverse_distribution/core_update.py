@@ -427,6 +427,9 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
 
             if os_changed and new_os:
                 run(["git", "-C", str(root), "fetch", "origin", new_os.revision])
+                validate_prepared = getattr(self, "_validate_prepared_source_collisions", None)
+                if callable(validate_prepared):
+                    validate_prepared()
                 run(["git", "-C", str(root), "checkout", "--detach", new_os.revision])
             self.update_journal.mark("software-applied")
 

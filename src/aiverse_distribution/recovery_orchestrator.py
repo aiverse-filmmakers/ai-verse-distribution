@@ -12,6 +12,9 @@ from .process import run
 from .recovery import LastKnownGoodStore
 from .release_catalog import DistributionError
 from .state import LifecycleRecoveryRequired, now_iso
+from .source_adoption import (
+    SourceAdoptionConflict, SourceAdoptionTransaction, git, plan_source_adoption,
+)
 
 
 class RecoveryOrchestrator(CoreUpdateOrchestrator):
@@ -25,6 +28,51 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.last_known_good = LastKnownGoodStore(self.state)
+        self._source_adoption_target_source = None
+        self._source_adoption_active_plan = None
+
+    def _local_source_plan(self, target_release_set=None, *, policy="preserve"):
+        lock = self.state.load()
+        if not lock or lock.get("profile") != "core":
+            return None
+        root = Path(lock["root"]).resolve()
+        if not (root / ".git").exists():
+            return None
+        if not git(root, "status", "--porcelain", "--untracked-files=no").strip():
+            return None
+        current = self.catalog.get_release(lock["release_set_id"], require_released=True)
+        target, _ = self.resolve_core_update_target(target_release_set)
+        old = next(c for c in current.components if c.id == "ai-verse-os")
+        new = next(c for c in target.components if c.id == "ai-verse-os")
+        receipt = lock.get("components", {}).get("ai-verse-os", {})
+        if receipt.get("revision") != old.revision or Path(receipt.get("source", "")).resolve() != root:
+            raise SourceAdoptionConflict("OS source does not match its installed receipt")
+        source = root if old.revision == new.revision else self._clone_exact(
+            new, self.state.sources / target.id / "ai-verse-os-source-adoption",
+        )
+        self._source_adoption_target_source = source
+        return plan_source_adoption(root, old.revision, new.revision,
+                                    target_source=source, policy=policy)
+
+    def update_plan(self, target_release_set=None, *, transition_kind="update", local_source_policy="preserve"):
+        plan = super().update_plan(target_release_set, transition_kind=transition_kind)
+        if transition_kind == "update":
+            try:
+                source = self._local_source_plan(target_release_set, policy=local_source_policy)
+            except SourceAdoptionConflict as exc:
+                source = {"ready": False, "conflicts": [{"reason": str(exc)}]}
+            if source is not None:
+                plan["local_source"] = source
+        return plan
+
+    def _validate_prepared_source_collisions(self):
+        plan = self._source_adoption_active_plan
+        if plan is None:
+            return
+        check = plan_source_adoption(Path(plan["root"]), plan["installed"], plan["target"],
+                                     target_source=self._source_adoption_target_source, policy=plan["policy"])
+        if not check["ready"] or check["actions"]:
+            raise SourceAdoptionConflict("Local files changed after source preparation; preserving them")
 
     def _current_lkg_health(self, lock: Dict[str, Any]) -> Dict[str, Any]:
         return require_final_health(
@@ -58,6 +106,7 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
         target_release_set: Optional[str] = None,
         *,
         transition_kind: str = "update",
+        local_source_policy: str = "preserve",
     ) -> dict:
         if transition_kind not in {"update", "rollback"}:
             raise DistributionError(f"unsupported transition kind: {transition_kind}")
@@ -66,28 +115,54 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
             return super().apply_update(target_release_set, transition_kind=transition_kind)
         with self.state.lifecycle_transaction():
             recovery = self._recover_interrupted_update()
-            plan = self.update_plan(target_release_set, transition_kind=transition_kind)
-            if plan.get("noop"):
-                result = self._apply_core_update(
-                    target_release_set,
-                    transition_kind=transition_kind,
-                )
+            tx = SourceAdoptionTransaction(self.state.home, Path(lock["root"]))
+            pending = tx.load()
+            if pending:
+                current_lock = self.state.load()
+                if current_lock.get("release_set_id") == pending.get("target_release") and pending["phase"] in {"prepared", "completed"}:
+                    self._current_lkg_health(self.state.load())
+                    tx.complete()
+                elif current_lock.get("release_set_id") == pending.get("source_release"):
+                    tx.rollback()
+                else:
+                    raise LifecycleRecoveryRequired("Source preparation and Core receipt need coordinated recovery")
+            plan_kwargs = {"transition_kind": transition_kind}
+            if local_source_policy != "preserve":
+                plan_kwargs["local_source_policy"] = local_source_policy
+            plan = self.update_plan(target_release_set, **plan_kwargs)
+            prepared = None
+            try:
+                if transition_kind == "update":
+                    require_update_activation(plan)
+                    source = plan.get("local_source")
+                    if source is not None:
+                        if not source.get("ready"):
+                            raise SourceAdoptionConflict("Local source changes need review; use update --plan. Choose official source only to retire eligible code edits with recovery.")
+                        prepared = tx.prepare(source, target_source=self._source_adoption_target_source,
+                                              source_release=lock["release_set_id"], target_release=plan["to"])
+                        self._source_adoption_active_plan = source
+                if plan.get("noop"):
+                    result = self._apply_core_update(target_release_set, transition_kind=transition_kind)
+                    if prepared:
+                        self._current_lkg_health(self.state.load())
+                else:
+                    lkg = self.ensure_last_known_good()
+                    self._validate_prepared_source_collisions()
+                    result = self._apply_core_update(target_release_set, transition_kind=transition_kind)
+                    result["last_known_good"] = lkg
+                if prepared:
+                    tx.complete()
+                    result["local_source"] = {**prepared, "state": "completed"}
                 if recovery:
                     result["recovery"] = recovery
                 return result
-
-            if transition_kind == "update":
-                require_update_activation(plan)
-
-            lkg = self.ensure_last_known_good()
-            result = self._apply_core_update(
-                target_release_set,
-                transition_kind=transition_kind,
-            )
-            result["last_known_good"] = lkg
-            if recovery:
-                result["recovery"] = recovery
-            return result
+            except Exception:
+                pending = tx.load()
+                if pending and not self.update_journal.load() and self.state.load().get("release_set_id") == pending.get("source_release"):
+                    tx.rollback()
+                raise
+            finally:
+                self._source_adoption_active_plan = None
 
     def restore_preview(self) -> Dict[str, Any]:
         preview = self.last_known_good.preview(self.state.load())

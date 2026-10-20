@@ -1,0 +1,41 @@
+{
+  "owner_repository": "aiverse-filmmakers/AI-Verse-OS",
+  "owner_revision": "6c7a0d9db2d10327a8092b21ed23a37a0efbce28",
+  "owner_path": "system/contracts/local-source-adoption-v1/contract.json",
+  "contract_sha256": "2682c38bd409319cfbc441dacbe8c83d618a8035ab247e53e25fb38b5d1ff8e2",
+  "contract": {
+    "schema_version": 1,
+    "contract_id": "ai-verse-os/local-source-adoption-v1",
+    "owner": "ai-verse-os",
+    "software_files": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "AI-VERSE.yaml",
+      "SKILL-AUTHORING.md",
+      "skills/registry.yaml"
+    ],
+    "software_prefixes": [
+      "scripts/",
+      "system/"
+    ],
+    "generated_prefixes": [
+      ".agents/skills/",
+      ".claude/skills/"
+    ],
+    "ignore_additions": {
+      "source": ".gitignore",
+      "destination": "git-local-exclude",
+      "allow_negations": false
+    },
+    "append_only_documents": {
+      "knowledge/README.md": "knowledge/local-customizations.md"
+    },
+    "default_source_policy": "preserve",
+    "explicit_source_policy": "official",
+    "recovery_required": true,
+    "untracked_policy": "preserve-and-check-target-collisions",
+    "staged_changes": "review-required",
+    "unknown_paths": "review-required"
+  },
+  "contract_canonical_sha256": "9692102f79b0f33b90b3137c5c734b893c0c07d41558c3ca45f3d2a9c5a722d9"
+}
