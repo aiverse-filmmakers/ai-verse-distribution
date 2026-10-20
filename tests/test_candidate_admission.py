@@ -433,6 +433,15 @@ class CandidateAdmissionTests(unittest.TestCase):
         with self.assertRaises(CandidateAdmissionError):
             validate_candidate_admission(root, MemoryResolver())
 
+    def test_polish_candidate_keeps_forward_and_self_transition_consistent(self):
+        root = Path(__file__).resolve().parents[1]
+        overlay = json.loads((root / "src/aiverse_distribution/catalog/core_candidates.json").read_text())
+        key = "core-member-polish-candidate-2026-10-21"
+        candidate = next(item for item in overlay["release_sets"] if item["id"] == key)
+        compatible = overlay["compatibility"][key]
+        self.assertEqual(set(compatible["update_from"]), {candidate["lineage"]["parent"], key})
+        self.assertEqual(compatible["rollback_to"], [key])
+
     def test_exact_frozen_candidate_can_enter_qualification_path(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
