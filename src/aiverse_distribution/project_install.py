@@ -268,11 +268,31 @@ def _prepare_managed_npm_shim(
 
 
 def _child_json(python: Path, arguments: list[str], environment: dict) -> dict:
-    result = run([str(python), "-I", "-B", "-m", "aiverse_distribution.cli", *arguments, "--json"], env=environment)
+    result = run([str(python), "-I", "-B", "-m", "aiverse_distribution.entrypoint", *arguments, "--json"], env=environment)
     try:
         return json.loads(result.stdout)
     except ValueError as exc:
         raise DistributionError("Owner lifecycle returned invalid structured output") from exc
+
+
+def _render_project_launcher(project: Path, overrides: dict, prefix: str, *, require_lfs: bool) -> str:
+    """Render the same lifecycle entrypoint used by the installed aiverse command."""
+    return (
+        "# Generated AI-Verse project launcher.\nimport os, subprocess, sys\n"
+        "if not sys.flags.isolated:\n"
+        "    if os.name == 'nt':\n        raise SystemExit(subprocess.call([sys.executable, '-I', __file__, *sys.argv[1:]]))\n"
+        "    os.execv(sys.executable, [sys.executable, '-I', __file__, *sys.argv[1:]])\n"
+        f"os.environ.update({overrides!r})\n"
+        "# Owner subprocesses must resolve this project's private aiverse command.\n"
+        f"os.environ['PATH'] = os.path.dirname(sys.executable) + os.pathsep + {prefix!r} + os.pathsep + os.environ.get('PATH', '')\n"
+        "from aiverse_distribution.project_install import configure_project_git\n"
+        f"configure_project_git(os.environ, require_lfs={require_lfs!r})\n"
+        f"os.chdir({str(project)!r})\n"
+        "if sys.argv[1:2] == ['--exec']:\n"
+        "    if len(sys.argv) < 3: raise SystemExit('Specify a project command after --exec')\n"
+        "    raise SystemExit(subprocess.call(sys.argv[2:]))\n"
+        "from aiverse_distribution.entrypoint import main\nraise SystemExit(main(sys.argv[1:]))\n"
+    )
 
 
 def install_project(layout: ProjectLayout, source: Path, *, release_set: str | None = None,
@@ -347,23 +367,8 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         if "AIVERSE_DISTRIBUTION_NPM" in environment:
             override_keys.append("AIVERSE_DISTRIBUTION_NPM")
         overrides = {key: environment[key] for key in override_keys}
-        git_config_code = (
-            "from aiverse_distribution.project_install import configure_project_git\n"
-            f"configure_project_git(os.environ, require_lfs={bool(tools.get('git-lfs'))!r})\n"
-        )
-        launcher_text = (
-            "# Generated AI-Verse project launcher.\nimport os, subprocess, sys\n"
-            "if not sys.flags.isolated:\n"
-            "    if os.name == 'nt':\n        raise SystemExit(subprocess.call([sys.executable, '-I', __file__, *sys.argv[1:]]))\n"
-            "    os.execv(sys.executable, [sys.executable, '-I', __file__, *sys.argv[1:]])\n"
-            f"os.environ.update({overrides!r})\n"
-            f"os.environ['PATH'] = {prefix!r} + os.pathsep + os.environ.get('PATH', '')\n"
-            + git_config_code +
-            f"os.chdir({str(layout.project)!r})\n"
-            "if sys.argv[1:2] == ['--exec']:\n"
-            "    if len(sys.argv) < 3: raise SystemExit('Specify a project command after --exec')\n"
-            "    raise SystemExit(subprocess.call(sys.argv[2:]))\n"
-            "from aiverse_distribution.cli import main\nraise SystemExit(main(sys.argv[1:]))\n"
+        launcher_text = _render_project_launcher(
+            layout.project, overrides, prefix, require_lfs=bool(tools.get('git-lfs')),
         )
         _write_owned(layout, launcher, launcher_text, receipt)
         instructions = layout.project / ".aiverse/extensions/project-bootstrap/INSTRUCTIONS.md"

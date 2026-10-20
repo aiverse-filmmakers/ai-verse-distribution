@@ -135,3 +135,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     # Component-scoped doctor remains an expert/internal compatibility surface.
     cli.Orchestrator = RecoveryOrchestrator
     return cli.main(values)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

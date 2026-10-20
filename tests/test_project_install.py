@@ -1,6 +1,8 @@
 import hashlib
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,6 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from aiverse_distribution.process import which
+from aiverse_distribution import project_install
 from aiverse_distribution.project_bootstrap import claim
 from aiverse_distribution.project_install import (
     _child_json,
@@ -86,7 +89,50 @@ class ProjectInstallTests(unittest.TestCase):
         with patch("aiverse_distribution.project_install.run", return_value=SimpleNamespace(stdout='{"state":"ready"}')) as run:
             result = _child_json(Path("private-python"), ["status"], {"PYTHONPATH": ""})
         self.assertEqual(run.call_args.args[0][:4], ["private-python", "-I", "-B", "-m"])
+        self.assertEqual(run.call_args.args[0][4], "aiverse_distribution.entrypoint")
         self.assertEqual(result["state"], "ready")
+
+    def test_module_entrypoint_exposes_structural_upgrade_instead_of_silent_success(self):
+        environment = dict(os.environ)
+        environment["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+        result = subprocess.run(
+            [sys.executable, "-m", "aiverse_distribution.entrypoint", "upgrade", "--help"],
+            env=environment, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--apply", result.stdout)
+        self.assertIn("--package", result.stdout)
+
+    def test_generated_project_launcher_uses_whole_install_entrypoint(self):
+        project = Path("member project")
+        source = project_install._render_project_launcher(
+            project, {"AIVERSE_DISTRIBUTION_HOME": "private home"}, "private tools", require_lfs=True,
+        )
+        with patch.object(sys, "argv", ["run.py", "update", "--json"]), \
+                patch.dict(os.environ, {}, clear=False), \
+                patch("os.chdir") as change_directory, \
+                patch("aiverse_distribution.project_install.configure_project_git") as configure_git, \
+                patch("aiverse_distribution.entrypoint.main", return_value=0) as lifecycle, \
+                patch("aiverse_distribution.cli.main") as legacy, \
+                patch.object(sys, "flags", SimpleNamespace(isolated=True)):
+            with self.assertRaises(SystemExit) as stopped:
+                exec(compile(source, "run.py", "exec"), {"__name__": "__main__"})
+            self.assertEqual(os.environ["PATH"].split(os.pathsep)[0], os.path.dirname(sys.executable))
+        self.assertEqual(stopped.exception.code, 0)
+        lifecycle.assert_called_once_with(["update", "--json"])
+        legacy.assert_not_called()
+        change_directory.assert_called_once_with(str(project))
+        configure_git.assert_called_once_with(os.environ, require_lfs=True)
+
+    def test_module_entrypoint_propagates_command_failure(self):
+        environment = dict(os.environ)
+        environment["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+        result = subprocess.run(
+            [sys.executable, "-m", "aiverse_distribution.entrypoint", "upgrade", "--not-a-real-option"],
+            env=environment, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("unrecognized arguments", result.stderr)
 
     def test_unqualified_release_is_not_a_member_release(self):
         catalog = SimpleNamespace(resolve=lambda *args: SimpleNamespace(id="historical", raw={}))
