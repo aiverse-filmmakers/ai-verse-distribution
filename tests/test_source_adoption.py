@@ -275,6 +275,37 @@ class SourceAdoptionPlanTests(unittest.TestCase):
         health.assert_called_once()
         self.assertIsNone(tx.load())
 
+    def test_untracked_target_collision_is_restored_after_proven_core_rollback(self):
+        self.write("scripts/new.mjs", "new file\n")
+        tx = self.transaction()
+        tx.prepare(self.plan(), source_release="source", target_release="target")
+        token = "a" * 32
+        tx.bind_core_update(token)
+        self.git("checkout", "--force", self.target)
+        self.git("checkout", "--force", self.installed)
+        self.assertFalse((self.root / "scripts/new.mjs").exists())
+        # Missing originals are not restored merely because a journal exists.
+        with self.assertRaises(LifecycleRecoveryRequired):
+            tx.rollback()
+        history = tx.directory.parent / "history/core-updates"
+        history.mkdir(parents=True)
+        record = {"token": token, "stage": "rolled-back", "source_release": "source",
+                  "target_release": "target", "checkpoint": {"root": str(self.root)}}
+        (history / f"fixture-{token}-rolled-back.json").write_text(json.dumps(record))
+        tx.rollback()
+        self.assertEqual((self.root / "scripts/new.mjs").read_text(), "new file\n")
+
+    @unittest.skipIf(os.name == "nt", "POSIX permission bits only")
+    def test_preparation_keeps_restrictive_source_permissions(self):
+        self.write("scripts/feature.mjs", "released code\n")
+        path = self.root / "scripts/feature.mjs"
+        path.chmod(0o600)
+        tx = self.transaction()
+        tx.prepare(self.plan())
+        self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+        tx.rollback()
+        self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+
 
 if __name__ == "__main__":
     unittest.main()

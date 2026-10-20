@@ -38,12 +38,13 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
         root = Path(lock["root"]).resolve()
         if not (root / ".git").exists():
             return None
-        if not git(root, "status", "--porcelain", "--untracked-files=no").strip():
-            return None
+        dirty = bool(git(root, "status", "--porcelain", "--untracked-files=no").strip())
         current = self.catalog.get_release(lock["release_set_id"], require_released=True)
         target, _ = self.resolve_core_update_target(target_release_set)
         old = next(c for c in current.components if c.id == "ai-verse-os")
         new = next(c for c in target.components if c.id == "ai-verse-os")
+        if not dirty and old.revision == new.revision:
+            return None
         receipt = lock.get("components", {}).get("ai-verse-os", {})
         if receipt.get("revision") != old.revision or Path(receipt.get("source", "")).resolve() != root:
             raise SourceAdoptionConflict("OS source does not match its installed receipt")
@@ -51,8 +52,9 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
             new, self.state.sources / target.id / "ai-verse-os-source-adoption",
         )
         self._source_adoption_target_source = source
-        return plan_source_adoption(root, old.revision, new.revision,
-                                    target_source=source, policy=policy)
+        report = plan_source_adoption(root, old.revision, new.revision,
+                                      target_source=source, policy=policy)
+        return report if dirty or report["target_collisions"] or not report["ready"] else None
 
     def update_plan(self, target_release_set=None, *, transition_kind="update", local_source_policy="preserve"):
         plan = super().update_plan(target_release_set, transition_kind=transition_kind)
@@ -71,8 +73,11 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
             return
         check = plan_source_adoption(Path(plan["root"]), plan["installed"], plan["target"],
                                      target_source=self._source_adoption_target_source, policy=plan["policy"])
-        if not check["ready"] or check["actions"]:
+        if not check["ready"] or check["actions"] or check["target_collisions"] != plan["target_collisions"]:
             raise SourceAdoptionConflict("Local files changed after source preparation; preserving them")
+        active = self.update_journal.load()
+        if active:
+            SourceAdoptionTransaction(self.state.home, Path(plan["root"])).bind_core_update(active["token"])
 
     def _current_lkg_health(self, lock: Dict[str, Any]) -> Dict[str, Any]:
         return require_final_health(

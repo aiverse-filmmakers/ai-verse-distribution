@@ -141,7 +141,7 @@ def plan_source_adoption(root: Path, installed: str, target: str, *, target_sour
             current = path.read_bytes()
             target_bytes = blob(target_source, incoming[name])
             executable = bool(state["mode"] & stat.S_IXUSR)
-            target_equal = current == target_bytes and executable == (incoming[name]["mode"] == "100755")
+            target_equal = current == target_bytes and (os.name == "nt" or executable == (incoming[name]["mode"] == "100755"))
             generated = any(name.startswith(p) for p in contract["generated_prefixes"])
             software = name in contract["software_files"] or any(name.startswith(p) for p in contract["software_prefixes"])
             action = {"path": name, "before": state, "installed_oid": before[name]["oid"],
@@ -175,7 +175,7 @@ def plan_source_adoption(root: Path, installed: str, target: str, *, target_sour
                 continue
             state = file_state(path)
             expected = blob(target_source, incoming[name])
-            if state["sha256"] != digest(expected) or bool(state["mode"] & stat.S_IXUSR) != (incoming[name]["mode"] == "100755"):
+            if state["sha256"] != digest(expected) or (os.name != "nt" and bool(state["mode"] & stat.S_IXUSR) != (incoming[name]["mode"] == "100755")):
                 raise SourceAdoptionConflict("A new release path collides with different local content or mode")
             collisions.append({"path": name, "before": state, "target_oid": incoming[name]["oid"]})
         except SourceAdoptionConflict as exc:
@@ -255,6 +255,8 @@ class SourceAdoptionTransaction:
 
     @staticmethod
     def _output(content: bytes, mode: int = 0o644) -> dict:
+        if os.name == "nt":
+            mode = 0o666 if mode & stat.S_IWUSR else 0o444
         return {"sha256": digest(content), "mode": mode, "content": base64.b64encode(content).decode()}
 
     @staticmethod
@@ -288,7 +290,7 @@ class SourceAdoptionTransaction:
             raise LifecycleRecoveryRequired("An earlier local source preparation needs recovery")
         if not plan.get("ready"):
             raise SourceAdoptionConflict("Local source changes require review; inspect the update plan")
-        if not plan["actions"]:
+        if not plan["actions"] and not plan["target_collisions"]:
             return None
         root = Path(plan["root"])
         if self.root is not None and root != self.root:
@@ -314,7 +316,10 @@ class SourceAdoptionTransaction:
                 changes.append({"path": action["destination"], "before": self._snapshot(destination), "after": self._output(output)})
                 exclusions += ("/" + action["destination"] + "\n").encode()
             changes.append({"path": name, "before": self._snapshot(path),
-                            "after": self._output(original, 0o755 if action["installed_mode"] == "100755" else 0o644)})
+                            "after": self._output(original, (action["before"]["mode"] & ~0o111) | (0o111 if action["installed_mode"] == "100755" else 0))})
+        for collision in plan["target_collisions"]:
+            snapshot = self._snapshot(safe_path(root, collision["path"]))
+            changes.append({"path": collision["path"], "kind": "target-collision", "before": snapshot, "after": snapshot})
         if exclusions:
             exclude = self._exclude(root)
             before = self._snapshot(exclude)
@@ -341,7 +346,8 @@ class SourceAdoptionTransaction:
                     raise SourceAdoptionConflict("Concurrent local edit during source preparation")
                 data.update(phase="preparing", write_intent=i)
                 self._save(data)
-                self._write(path, change["after"])
+                if change["before"] != change["after"]:
+                    self._write(path, change["after"])
                 if not self._matches(path, change["after"]):
                     raise LifecycleRecoveryRequired("Source preparation write did not verify")
             data.update(phase="prepared")
@@ -360,6 +366,30 @@ class SourceAdoptionTransaction:
             raise LifecycleRecoveryRequired("Source recovery archive already exists")
         os.replace(self.active, destination)
 
+    def bind_core_update(self, token: str):
+        if not re.fullmatch(r"[0-9a-f]{32}", token):
+            raise LifecycleRecoveryRequired("Invalid Core recovery identity")
+        data = self.load()
+        if data:
+            data["core_update_token"] = token
+            self._save(data)
+
+    def _core_rolled_back(self, data: dict) -> bool:
+        token = data.get("core_update_token")
+        if not isinstance(token, str) or not re.fullmatch(r"[0-9a-f]{32}", token):
+            return False
+        history = self.directory.parent / "history/core-updates"
+        for path in history.glob(f"*-{token}-rolled-back.json"):
+            if path.is_symlink():
+                continue
+            record = json.loads(path.read_text())
+            if (record.get("token") == token and record.get("stage") == "rolled-back"
+                    and record.get("source_release") == data.get("source_release")
+                    and record.get("target_release") == data.get("target_release")
+                    and record.get("checkpoint", {}).get("root") == data["root"]):
+                return True
+        return False
+
     def rollback(self):
         data = self.load()
         if not data:
@@ -368,14 +398,17 @@ class SourceAdoptionTransaction:
         if git(root, "rev-parse", "HEAD").decode().strip() != data["installed"]:
             raise LifecycleRecoveryRequired("Recover the Core update before restoring local source edits")
         # Validate all paths before restoring any; never erase a later member edit.
+        core_rolled_back = self._core_rolled_back(data)
+        def removed_by_rollback(change, path):
+            return core_rolled_back and change.get("kind") == "target-collision" and file_state(path)["sha256"] is None
         for change in data["changes"]:
             path = self._path(root, change)
-            if not self._matches(path, change["before"]) and not self._matches(path, change["after"]):
+            if not self._matches(path, change["before"]) and not self._matches(path, change["after"]) and not removed_by_rollback(change, path):
                 raise LifecycleRecoveryRequired("Source recovery found a concurrent edit; preserving it")
         for change in reversed(data["changes"]):
             path = self._path(root, change)
             if not self._matches(path, change["before"]):
-                if not self._matches(path, change["after"]):
+                if not self._matches(path, change["after"]) and not removed_by_rollback(change, path):
                     raise LifecycleRecoveryRequired("A concurrent edit interrupted source restoration; preserving it")
                 self._write(path, change["before"])
         self._archive(data, "rolled-back")
