@@ -123,6 +123,16 @@ class ProjectInstallTests(unittest.TestCase):
         change_directory.assert_called_once_with(str(project))
         configure_git.assert_called_once_with(os.environ, require_lfs=True)
 
+    def test_module_entrypoint_propagates_command_failure(self):
+        environment = dict(os.environ)
+        environment["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+        result = subprocess.run(
+            [sys.executable, "-m", "aiverse_distribution.entrypoint", "upgrade", "--not-a-real-option"],
+            env=environment, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("unrecognized arguments", result.stderr)
+
     def test_unqualified_release_is_not_a_member_release(self):
         catalog = SimpleNamespace(resolve=lambda *args: SimpleNamespace(id="historical", raw={}))
         with self.assertRaises(DistributionError):
