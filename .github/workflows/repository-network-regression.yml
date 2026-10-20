@@ -102,7 +102,7 @@ jobs:
           candidates = json.loads((root / 'src/aiverse_distribution/catalog/core_candidates.json').read_text(encoding='utf-8'))
           promotions = json.loads((root / 'src/aiverse_distribution/catalog/core_promotions.json').read_text(encoding='utf-8'))
           release_sets = candidates.get('release_sets', [])
-          expected_ids = {'core-local-upgrades-candidate-2026-10-19', 'core-local-upgrades-candidate-2026-10-19-v2', 'core-local-upgrades-candidate-2026-10-19-v3', 'core-local-upgrades-candidate-2026-10-19-v4', 'core-local-upgrades-candidate-2026-10-19-v5'}
+          expected_ids = {'core-local-upgrades-candidate-2026-10-19', 'core-local-upgrades-candidate-2026-10-19-v2', 'core-local-upgrades-candidate-2026-10-19-v3', 'core-local-upgrades-candidate-2026-10-19-v4', 'core-local-upgrades-candidate-2026-10-19-v5', 'core-member-polish-candidate-2026-10-21'}
           assert {item.get('id') for item in release_sets} == expected_ids, candidates
           for candidate in release_sets:
               assert candidate.get('classification') == 'explicit-install-qualification-candidate', candidate

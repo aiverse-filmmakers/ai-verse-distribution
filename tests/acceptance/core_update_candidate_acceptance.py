@@ -18,8 +18,8 @@ from aiverse_distribution.release_catalog import Catalog
 import profile_acceptance as profile
 
 
-CURRENT_RELEASE = "core-first-run-rc1-2026-10-12"
-CANDIDATE_ID = "core-local-upgrades-candidate-2026-10-19-v6"
+CURRENT_RELEASE = os.environ.get("AI_VERSE_ACCEPTANCE_PREVIOUS_RELEASE", "core-first-run-rc1-2026-10-12")
+CANDIDATE_ID = os.environ.get("AI_VERSE_ACCEPTANCE_RELEASE_SET", "core-local-upgrades-candidate-2026-10-19-v6")
 TEST_EVIDENCE_REF = "temporary-clean-machine-update-fixture"
 
 
