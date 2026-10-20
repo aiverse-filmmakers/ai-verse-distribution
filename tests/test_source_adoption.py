@@ -322,6 +322,23 @@ class SourceAdoptionPlanTests(unittest.TestCase):
                 raise SystemExit()
         self.assertFalse(app._source_preparation_health_allowed)
 
+    def test_preparation_binds_receipt_after_recovering_prior_update(self):
+        self.write("scripts/feature.mjs", "released code\n")
+        app = self.app()
+        plan = {"noop": False, "from": "recovered-source", "to": "target", "local_source": self.plan()}
+        def recover():
+            receipt = app.state.load()
+            receipt["release_set_id"] = "recovered-source"
+            app.state.write(receipt)
+        with patch.object(app, "_recover_interrupted_update", side_effect=recover), \
+             patch.object(app, "update_plan", return_value=plan), \
+             patch.object(app, "ensure_last_known_good", return_value={"ok": True}), \
+             patch.object(app, "_apply_core_update", side_effect=RuntimeError("synthetic update failure")):
+            with self.assertRaisesRegex(RuntimeError, "synthetic update failure"):
+                app.apply_update("target")
+        self.assertIsNone(SourceAdoptionTransaction(app.state.home, self.root).load())
+        self.assertEqual((self.root / "scripts/feature.mjs").read_text(), "released code\n")
+
 
 if __name__ == "__main__":
     unittest.main()

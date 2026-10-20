@@ -156,6 +156,9 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
             return super().apply_update(target_release_set, transition_kind=transition_kind)
         with self.state.lifecycle_transaction(), self._source_health_scope():
             recovery = self._recover_interrupted_update()
+            lock = self.state.load()
+            if not lock or lock.get("profile") != "core":
+                raise LifecycleRecoveryRequired("The installed Core receipt changed before source preparation")
             tx = SourceAdoptionTransaction(self.state.home, Path(lock["root"]))
             pending = tx.load()
             if pending:
