@@ -156,21 +156,21 @@
     "candidate_definition": {
       "path": "src/aiverse_distribution/catalog/core_candidates.json",
       "repository": "aiverse-filmmakers/ai-verse-distribution",
-      "revision": "166de94f6bdbe6eb35ac7f2a77ce463d1c8e677b",
-      "sha256": "7857f9c2e8643e6bbaed3784be8bae7dcb0d850edfe5fabdd585f0e96fc4324b"
+      "revision": "5ec1868642efa907561288dd7255fa56c3e9845b",
+      "sha256": "5f7864e6d628add2be36605089425dfdf437f91029ad8407d6ac16f9ea52f658"
     },
-    "candidate_revision": "166de94f6bdbe6eb35ac7f2a77ce463d1c8e677b",
+    "candidate_revision": "5ec1868642efa907561288dd7255fa56c3e9845b",
     "repository": "aiverse-filmmakers/ai-verse-distribution"
   },
   "drift": {
     "records": [],
-    "state_sha256": "25faaa0bd0bf7837f7e9aecdec848a80f4050f1896e58a741b47758d744d9ead"
+    "state_sha256": "31e6da5ca72e0d244990ebd6840bcd1239515df3beab06d617ef5bfc0da7e482"
   },
   "profile": "core",
   "registry": {
     "path": "governance/repository-registry.json",
     "repository": "aiverse-filmmakers/AI-Verse-System",
-    "revision": "b3e7fa00c084bf09c5ceb4196c497159c7aa2b3e",
+    "revision": "bd3bc63a6e6e4ed0f555f24a12bc722882866efc",
     "sha256": "d0cd07396aaf849cf5baae155f1389cf93f0b0f881ffb96d0595de2b229050ab"
   },
   "repository_state": {
@@ -185,9 +185,9 @@
       "aiverse-filmmakers/ai-verse-distribution"
     ],
     "repository": "aiverse-filmmakers/AI-Verse-System",
-    "revision": "b3e7fa00c084bf09c5ceb4196c497159c7aa2b3e",
+    "revision": "bd3bc63a6e6e4ed0f555f24a12bc722882866efc",
     "scope": "core",
-    "sha256": "25faaa0bd0bf7837f7e9aecdec848a80f4050f1896e58a741b47758d744d9ead"
+    "sha256": "31e6da5ca72e0d244990ebd6840bcd1239515df3beab06d617ef5bfc0da7e482"
   },
   "schema": "aiverse.distribution-candidate-evidence/v1",
   "system": {
@@ -195,18 +195,18 @@
       {
         "path": "docs/REPOSITORY-NETWORK-GOVERNANCE-CONTRACT.md",
         "repository": "aiverse-filmmakers/AI-Verse-System",
-        "revision": "b3e7fa00c084bf09c5ceb4196c497159c7aa2b3e",
+        "revision": "bd3bc63a6e6e4ed0f555f24a12bc722882866efc",
         "sha256": "176e31dcf30e68c3c5934667d23e02ddf40a1a2de11d12dcc49b80c7f8117235"
       },
       {
         "path": "docs/SAFE-UPDATE-AND-STATE-PRESERVATION-CONTRACT.md",
         "repository": "aiverse-filmmakers/AI-Verse-System",
-        "revision": "b3e7fa00c084bf09c5ceb4196c497159c7aa2b3e",
+        "revision": "bd3bc63a6e6e4ed0f555f24a12bc722882866efc",
         "sha256": "c026818b118cd07c9539f6bbbc1d97be42493bdc680e824d1f0183811f6ec793"
       }
     ],
     "repository": "aiverse-filmmakers/AI-Verse-System",
-    "revision": "b3e7fa00c084bf09c5ceb4196c497159c7aa2b3e"
+    "revision": "bd3bc63a6e6e4ed0f555f24a12bc722882866efc"
   },
   "toolchain": {
     "dependency_locks": [
