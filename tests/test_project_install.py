@@ -117,6 +117,7 @@ class ProjectInstallTests(unittest.TestCase):
                 patch.object(sys, "flags", SimpleNamespace(isolated=True)):
             with self.assertRaises(SystemExit) as stopped:
                 exec(compile(source, "run.py", "exec"), {"__name__": "__main__"})
+            self.assertEqual(os.environ["PATH"].split(os.pathsep)[0], os.path.dirname(sys.executable))
         self.assertEqual(stopped.exception.code, 0)
         lifecycle.assert_called_once_with(["update", "--json"])
         legacy.assert_not_called()
