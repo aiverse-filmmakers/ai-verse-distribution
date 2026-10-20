@@ -350,11 +350,6 @@ def main() -> int:
     expected_latest_release = os.environ.get(
         "AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE", CURRENT_RELEASE
     )
-    if expected_latest_release not in {CURRENT_RELEASE, CANDIDATE_ID}:
-        raise RuntimeError(
-            "version acceptance expected an unsupported live Core release: "
-            f"{expected_latest_release}"
-        )
     if (
         installed_version.get("releaseSet") != CANDIDATE_ID
         or installed_version.get("revision") != expected_refs["ai-verse-os"]
@@ -365,6 +360,11 @@ def main() -> int:
             "version reporter did not identify the expected live Core default "
             f"{expected_latest_release}: {version}"
         )
+    expected_label = os.environ.get("AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION")
+    if expected_label and expected_latest_release == CANDIDATE_ID and (
+        installed_version.get("version") != expected_label or latest_version.get("version") != expected_label
+    ):
+        raise RuntimeError(f"accepted friendly version label did not verify: {version}")
     if expected_latest_release == CANDIDATE_ID and version.get("update") != "up-to-date":
         raise RuntimeError(f"version reporter did not recognize the accepted installed release: {version}")
     if expected_latest_release == CURRENT_RELEASE and version.get("update") != "unconfirmed":

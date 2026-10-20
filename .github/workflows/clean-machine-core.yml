@@ -97,6 +97,7 @@ jobs:
       AI_VERSE_ACCEPTANCE_EXPECTED_REFS: '{"ai-verse-os":"36a85bdb6233622b90812a2bb6ea32a99d517c97","ai-verse-brain":"f746806e4361c2b1cd67ee97810071cc86db7b9a","ai-verse-memory":"f1327be48ba2ee0043959021365e6dbb9dcb1d3a","ai-verse-skills":"afde5c06307fba7d074de2929c2eb6c3dc6bdab8","ai-verse-data":"f8978f8f7a1bc94edecddc2662112233289159a3"}'
       AI_VERSE_ACCEPTANCE_PREVIOUS_RELEASE: core-local-upgrades-candidate-2026-10-19-v6
       AI_VERSE_ACCEPTANCE_OS_REVISION: 36a85bdb6233622b90812a2bb6ea32a99d517c97
+      AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION: 0.3.5
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
