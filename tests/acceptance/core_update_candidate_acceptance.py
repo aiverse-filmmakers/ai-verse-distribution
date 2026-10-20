@@ -201,7 +201,8 @@ def _require_skills_generation_preserved(
 
 
 def main() -> int:
-    base = Path(os.environ.get("RUNNER_TEMP") or tempfile.gettempdir()) / "aiverse-core-update-candidate"
+    fixture_root = os.environ.get("AI_VERSE_ACCEPTANCE_FIXTURE_ROOT")
+    base = Path(fixture_root) if fixture_root else Path(os.environ.get("RUNNER_TEMP") or tempfile.gettempdir()) / "aiverse-core-update-candidate"
     base.mkdir(parents=True, exist_ok=True)
     isolated_home = base / "home"
     isolated_home.mkdir(parents=True, exist_ok=True)

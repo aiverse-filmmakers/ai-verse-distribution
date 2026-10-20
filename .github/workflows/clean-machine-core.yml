@@ -79,7 +79,7 @@ jobs:
       - name: Prove fourteen local source edits update with member preservation
         env:
           AI_VERSE_ACCEPTANCE_LOCAL_SOURCE: '1'
-          RUNNER_TEMP: ${{ runner.temp }}/local-source-adoption
+          AI_VERSE_ACCEPTANCE_FIXTURE_ROOT: ${{ runner.temp }}/local-source-adoption-case
         run: python tests/acceptance/core_update_candidate_acceptance.py
       - name: Prove optional package lifecycle and member-state preservation
         run: python tests/acceptance/optional_package_candidate_acceptance.py
