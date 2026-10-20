@@ -291,11 +291,36 @@ class SourceAdoptionPlanTests(unittest.TestCase):
         self.write("scripts/feature.mjs", "released code\n")
         path = self.root / "scripts/feature.mjs"
         path.chmod(0o600)
+        self.write("knowledge/README.md", "Knowledge\nprivate local route\n")
+        (self.root / "knowledge/README.md").chmod(0o600)
         tx = self.transaction()
         tx.prepare(self.plan())
         self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+        self.assertEqual((self.root / "knowledge/local-customizations.md").stat().st_mode & 0o777, 0o600)
         tx.rollback()
         self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+
+    def test_interrupted_preparation_is_reported_without_executing_owner_health(self):
+        self.write("scripts/feature.mjs", "released code\n")
+        app = self.app()
+        tx = SourceAdoptionTransaction(app.state.home, self.root)
+        tx.prepare(self.plan(), source_release="source", target_release="target")
+        self.assertEqual(app.status()["state"], "recovery-required")
+        self.assertFalse(app.doctor()["ok"])
+        self.assertFalse(app.restore_preview()["safe_to_apply"])
+        with self.assertRaises(LifecycleRecoveryRequired):
+            app.rollback("another", apply=True)
+        with self.assertRaises(LifecycleRecoveryRequired):
+            app.restore(apply=True)
+        tx.rollback()
+
+    def test_owned_health_scope_is_reset_after_interruption(self):
+        app = self.app()
+        with self.assertRaises(SystemExit):
+            with app._source_health_scope():
+                self.assertTrue(app._source_preparation_health_allowed)
+                raise SystemExit()
+        self.assertFalse(app._source_preparation_health_allowed)
 
 
 if __name__ == "__main__":

@@ -315,7 +315,8 @@ class SourceAdoptionTransaction:
                 destination = safe_path(root, action["destination"])
                 addition = path.read_bytes()[len(original):]
                 output = b"# Local knowledge additions\n\nPreserved from the project knowledge index during Core update.\n" + addition
-                changes.append({"path": action["destination"], "before": self._snapshot(destination), "after": self._output(output)})
+                changes.append({"path": action["destination"], "before": self._snapshot(destination),
+                                "after": self._output(output, action["before"]["mode"])})
                 exclusions += ("/" + action["destination"] + "\n").encode()
             changes.append({"path": name, "before": self._snapshot(path),
                             "after": self._output(original, (action["before"]["mode"] & ~0o111) | (0o111 if action["installed_mode"] == "100755" else 0))})
