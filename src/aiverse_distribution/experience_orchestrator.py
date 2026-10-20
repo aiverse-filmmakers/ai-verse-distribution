@@ -487,11 +487,40 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
         import os
         if not isinstance(revision, str) or not re.fullmatch(r"[a-f0-9]{40}", revision):
             raise DistributionError("Cannot verify the current Brain runtime for package setup")
+        release = self.catalog.get_release(lock["release_set_id"], require_released=True)
+        brain_component = next((c for c in release.components if c.id == "ai-verse-brain"), None)
+        if brain_component is None or brain_component.revision != revision:
+            raise DistributionError("Cannot verify the current Brain runtime against the installed Core release")
         directory = self.state.venv_dir(revision)
         executable = directory / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
         if not executable.is_file():
             raise DistributionError("The current Core Python runtime is unavailable; check AI-Verse before changing helpers")
-        return {"runtime_python": str(executable.absolute())}
+        options = {"runtime_python": str(executable.absolute())}
+        skills = lock.get("components", {}).get("ai-verse-skills")
+        if isinstance(skills, dict):
+            import json
+            from .adapters import owner_status
+            component = next((c for c in release.components if c.id == "ai-verse-skills"), None)
+            if component is None or component.revision != skills.get("revision"):
+                raise DistributionError("Cannot verify the current Skills runtime for package setup")
+            source_text = skills.get("source")
+            if not isinstance(source_text, str) or not source_text:
+                raise DistributionError("Cannot verify the current Skills source for package setup")
+            source = Path(source_text).resolve()
+            self._verify_exact_source(component, source)
+            status = owner_status("ai-verse-skills", root=Path(lock["root"]), source=source,
+                                  revision=component.revision, state=self.state)
+            try:
+                value = json.loads(status.stdout)
+                discovery = value.get("discoverability")
+                active_root = Path(discovery["root"] if isinstance(discovery, dict) else value["root"])
+            except (ValueError, KeyError, TypeError):
+                raise DistributionError("Cannot discover the current Skills location for package setup")
+            entrypoint = source / "installer/aiverse_skills.py"
+            if status.returncode or not active_root.is_absolute() or not active_root.is_dir() or not entrypoint.is_file():
+                raise DistributionError("The current Skills runtime is unavailable; check AI-Verse before changing helpers")
+            options.update(skills_root=str(active_root.resolve()), skills_entrypoint=str(entrypoint))
+        return options
 
     def optional_package_apply(self, package_id: str, action: str) -> Dict[str, Any]:
         with self.state.lifecycle_transaction():
@@ -501,7 +530,6 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                 )
             plan = self._optional_package_plan(package_id, action)
             package = plan["package"]
-            runtime_options = self._optional_package_runtime_options() if action == "install" else {}
             marker_metadata = {
                 "release_set_id": plan["release"].id,
                 "package_id": package.id,
@@ -524,6 +552,7 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                 if pending
                 else self.ensure_last_known_good()
             )
+            runtime_options = self._optional_package_runtime_options() if action == "install" else {}
             marker = self.state.begin_effect(operation_key, metadata=marker_metadata)
             try:
                 result = run_optional_package_owner(

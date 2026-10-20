@@ -192,6 +192,8 @@ def run_optional_package_owner(
     *,
     python: str,
     runtime_python: str | None = None,
+    skills_root: str | None = None,
+    skills_entrypoint: str | None = None,
 ) -> Dict[str, Any]:
     """Invoke the verified OS package API with a fixed argv and verify its receipt."""
     if action not in {"install", "remove", "setup", "doctor"}:
@@ -213,6 +215,8 @@ def run_optional_package_owner(
                 str(Path(project_root).resolve()),
                 "--json",
                 *(["--python", runtime_python] if action == "install" and runtime_python else []),
+                *(["--skills-root", skills_root, "--skills-entrypoint", skills_entrypoint]
+                  if action == "install" and skills_root and skills_entrypoint else []),
             ],
             cwd=Path(project_root).resolve(),
             env={"PYTHONPYCACHEPREFIX": cache},

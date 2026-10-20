@@ -121,7 +121,9 @@ def _install_test_transition(layout: ProjectLayout) -> None:
     )
     if probe.returncode:
         raise RuntimeError(f"could not locate the project-bound Distribution package: {probe.stderr}")
-    package = Path(probe.stdout.strip())
+    package = Path(probe.stdout.strip()).resolve()
+    if layout.stack.resolve() not in package.parents:
+        raise RuntimeError("test admission must remain inside the disposable tool stack; clear inherited PYTHONPATH")
     transitions_path = package / "catalog" / "core_update_transitions.json"
     payload = json.loads(transitions_path.read_text(encoding="utf-8"))
     updates = {

@@ -60,11 +60,15 @@ def make_app(home: Path):
 class OptionalPackageLifecycleTests(unittest.TestCase):
     def test_package_upgrade_binds_current_brain_runtime(self):
         import os
+        from dataclasses import replace
         with tempfile.TemporaryDirectory() as temporary:
             app, state, package, root = make_app(Path(temporary))
             lock = state.load()
             revision = "2" * 40
             lock["components"]["ai-verse-brain"] = {"revision": revision}
+            release = app.catalog.get_release.return_value
+            brain_component = ComponentRef("ai-verse-brain", "https://github.com/aiverse-filmmakers/AI-Verse-Brain", revision, 2)
+            app.catalog.get_release.return_value = replace(release, components=release.components + (brain_component,))
             state.write(lock, archive_previous=False)
             executable = state.venv_dir(revision) / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
             executable.parent.mkdir(parents=True)
@@ -79,6 +83,42 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             executable.unlink()
             with self.assertRaisesRegex(Exception, "runtime is unavailable"):
                 app._optional_package_runtime_options()
+
+    def test_package_upgrade_uses_live_skills_owner_location(self):
+        import os
+        import json
+        from dataclasses import replace
+        with tempfile.TemporaryDirectory() as temporary:
+            app, state, package, root = make_app(Path(temporary))
+            lock = state.load()
+            revision = "2" * 40
+            lock["components"]["ai-verse-brain"] = {"revision": revision}
+            release = app.catalog.get_release.return_value
+            brain_component = ComponentRef("ai-verse-brain", "https://github.com/aiverse-filmmakers/AI-Verse-Brain", revision, 2)
+            app.catalog.get_release.return_value = replace(release, components=release.components + (brain_component,))
+            python = state.venv_dir(revision) / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+            python.parent.mkdir(parents=True)
+            python.touch()
+            source = state.home / "skills-source"
+            entrypoint = source / "installer/aiverse_skills.py"
+            entrypoint.parent.mkdir(parents=True)
+            entrypoint.touch()
+            active = state.home / "member-skills"
+            active.mkdir()
+            lock["components"]["ai-verse-skills"] = {"revision": "3" * 40, "source": str(source)}
+            state.write(lock, archive_previous=False)
+            release = app.catalog.get_release.return_value
+            component = ComponentRef("ai-verse-skills", "https://github.com/aiverse-filmmakers/AI-Verse-Skills", "3" * 40, 2)
+            app.catalog.get_release.return_value = replace(release, components=release.components + (component,))
+            status = Mock(returncode=0, stdout=json.dumps({"discoverability": {"root": str(active)}}))
+            with patch("aiverse_distribution.adapters.owner_status", return_value=status):
+                options = app._optional_package_runtime_options()
+            self.assertEqual(options["skills_root"], str(active))
+            self.assertEqual(options["skills_entrypoint"], str(entrypoint))
+            app._verify_exact_source.assert_called_with(component, source)
+            with patch("aiverse_distribution.adapters.owner_status", return_value=Mock(returncode=0, stdout='{}')):
+                with self.assertRaisesRegex(Exception, "discover the current Skills"):
+                    app._optional_package_runtime_options()
 
     def test_package_setup_check_is_read_only_and_reports_owner_evidence(self):
         with tempfile.TemporaryDirectory() as temporary:
