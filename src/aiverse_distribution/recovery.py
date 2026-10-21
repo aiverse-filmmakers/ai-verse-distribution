@@ -142,8 +142,14 @@ class LastKnownGoodStore:
         # Reuse the Distribution receipt writer's temp+fsync+atomic-replace semantics.
         self.state._atomic_json(path, payload)
 
-    @staticmethod
-    def _personal_skills_root() -> Path:
+    def _personal_skills_root(self) -> Path:
+        from .member_skills import provider_configuration
+        lock = self.state.load() or {}
+        root = lock.get("root")
+        if root:
+            config = provider_configuration(Path(root))
+            if config and config.get("configured"):
+                return Path(config["localSkillsRoot"])
         configured = os.environ.get("AI_VERSE_LOCAL_SKILLS_ROOT")
         return Path(configured).expanduser().resolve() if configured else (Path.home() / ".aiverse" / "local-skills").resolve()
 

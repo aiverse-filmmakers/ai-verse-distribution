@@ -186,6 +186,7 @@ def canonical_preserved_paths(project_root: Path) -> list[str]:
         "apps/member-app",
         "agents/member-agent",
         ".aiverse/extensions/registry.json",
+        ".aiverse/capability-sources.json",
         ".aiverse/extensions/member-extension",
     ]
     for workspace in _workspace_ids(project_root):
@@ -224,6 +225,14 @@ def snapshot_member_state(
         database = project_root / "workspaces" / workspace / "data" / "ai-verse-data.sqlite"
         if database.is_file():
             data_records[workspace] = snapshot_sqlite_records(database)
+    provider_roots = {}
+    if (project_root / ".aiverse/capability-providers.json").exists():
+        from .member_skills import provider_configuration
+        configuration = provider_configuration(project_root)
+        if configuration and configuration.get("configured"):
+            provider_roots = {"managed": configuration["skillsRoot"], "personal": configuration["localSkillsRoot"]}
+            if local_skills_root is None:
+                local_skills_root = Path(configuration["localSkillsRoot"])
     local_skills = (
         fingerprint_tree(Path(local_skills_root).expanduser().resolve(), ["."])
         if local_skills_root is not None
@@ -239,6 +248,7 @@ def snapshot_member_state(
         "files": fingerprint_tree(project_root, canonical_preserved_paths(project_root)),
         "data_records": data_records,
         "local_skills": local_skills,
+        "provider_roots": provider_roots,
         "distribution_history": history,
     }
 
@@ -250,6 +260,8 @@ def require_member_state_preserved(before: dict[str, Any], after: dict[str, Any]
     require_preserved(before.get("files"), after.get("files"), label="canonical member files")
     require_preserved(before.get("local_skills"), after.get("local_skills"), label="personal reusable Skills")
 
+    if before.get("provider_roots"):
+        require_preserved(before["provider_roots"], after.get("provider_roots"), label="configured provider roots")
     before_data = before.get("data_records", {})
     after_data = after.get("data_records", {})
     if set(before_data) != set(after_data):

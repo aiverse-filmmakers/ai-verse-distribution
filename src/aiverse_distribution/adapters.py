@@ -272,8 +272,10 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
         return results
 
     if component_id == "ai-verse-skills":
-        if revision in SUPPORTED_SKILLS_REVISIONS:
+        if revision in SUPPORTED_SKILLS_REVISIONS or (source / "installer/member_library.py").is_file():
             results.append(run(_skills(source, "setup", "--json"), cwd=source))
+            from .member_skills import configure_member_skills
+            results.extend(configure_member_skills(root, source, _skills(source), _skills(source, "status", "--json")))
             return results
         # The frozen Core Skills generation predates the later explicit setup verb.
         # Read-only owner doctor/readiness is the safe setup verification for this exact artifact.
