@@ -108,6 +108,11 @@ def _run_project_process(layout: ProjectLayout, *arguments: str) -> subprocess.C
     return completed
 
 
+def source_promotion_present(catalog, target_release: str) -> bool:
+    """Current and historical promotions both retain real transition authority."""
+    return any(item.get("id") == target_release for item in catalog.core_promotions.get("release_sets", []))
+
+
 def _install_test_transition(layout: ProjectLayout) -> None:
     venv_python = layout.stack / "tools" / "distribution-venv" / (
         "Scripts/python.exe" if os.name == "nt" else "bin/python"
@@ -124,6 +129,11 @@ def _install_test_transition(layout: ProjectLayout) -> None:
     package = Path(probe.stdout.strip()).resolve()
     if layout.stack.resolve() not in package.parents:
         raise RuntimeError("test admission must remain inside the disposable tool stack; clear inherited PYTHONPATH")
+    promotions_path = package / "catalog" / "core_promotions.json"
+    if promotions_path.exists():
+        promotions = json.loads(promotions_path.read_text(encoding="utf-8"))
+        if any(item.get("id") == CANDIDATE_ID for item in promotions.get("release_sets", [])):
+            raise RuntimeError("temporary test admission must not shadow a current or historical promoted release")
     transitions_path = package / "catalog" / "core_update_transitions.json"
     payload = json.loads(transitions_path.read_text(encoding="utf-8"))
     updates = {
@@ -294,8 +304,7 @@ def main() -> int:
 
     # This evidence overlay exists only in this disposable member's private venv.
     # It exercises the real updater without creating a production promotion or receipt.
-    distribution_default = Catalog().resolve("core").id
-    promotion_present_on_source = distribution_default == CANDIDATE_ID
+    promotion_present_on_source = source_promotion_present(Catalog(), CANDIDATE_ID)
     if not promotion_present_on_source:
         _install_test_transition(layout)
     source_options = ["--local-source", "official"] if source_fixture else []
