@@ -20,6 +20,8 @@ aiverse update
 
 That is enough. Members do not need release IDs, component SHAs, branches, prerequisite versions, installer folders, migration commands, setup commands, or doctor commands.
 
+Current Core maintenance release: [21 October member fixes](docs/CORE-MEMBER-POLISH-2026-10-21.md).
+
 ## Install vs update
 
 **Fresh install stays one action.** Use `INSTALL.md` and the platform bootstrap. Distribution resolves the admitted Core, prepares private tools, installs the exact component revisions, runs owner setup, and verifies final health.

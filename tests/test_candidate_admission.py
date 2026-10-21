@@ -428,17 +428,17 @@ class CandidateAdmissionTests(unittest.TestCase):
             )
         )
         candidate_ids = [item["id"] for item in overlay["release_sets"]]
-        self.assertEqual(candidate_ids, ["core-local-upgrades-candidate-2026-10-19", "core-local-upgrades-candidate-2026-10-19-v2", "core-local-upgrades-candidate-2026-10-19-v3", "core-local-upgrades-candidate-2026-10-19-v4", "core-local-upgrades-candidate-2026-10-19-v5", "core-member-polish-candidate-2026-10-21"])
+        self.assertEqual(candidate_ids, ["core-local-upgrades-candidate-2026-10-19", "core-local-upgrades-candidate-2026-10-19-v2", "core-local-upgrades-candidate-2026-10-19-v3", "core-local-upgrades-candidate-2026-10-19-v4", "core-local-upgrades-candidate-2026-10-19-v5"])
         self.assertIn(candidate_ids[0], overlay["candidate_evidence"])
         with self.assertRaises(CandidateAdmissionError):
             validate_candidate_admission(root, MemoryResolver())
 
     def test_polish_candidate_keeps_forward_and_self_transition_consistent(self):
         root = Path(__file__).resolve().parents[1]
-        overlay = json.loads((root / "src/aiverse_distribution/catalog/core_candidates.json").read_text())
+        catalog = Catalog()
         key = "core-member-polish-candidate-2026-10-21"
-        candidate = next(item for item in overlay["release_sets"] if item["id"] == key)
-        compatible = overlay["compatibility"][key]
+        candidate = catalog.get_release(key).raw
+        compatible = catalog.compatibility_for(key)
         self.assertEqual(set(compatible["update_from"]), {candidate["lineage"]["parent"], key})
         self.assertEqual(compatible["rollback_to"], [key])
 

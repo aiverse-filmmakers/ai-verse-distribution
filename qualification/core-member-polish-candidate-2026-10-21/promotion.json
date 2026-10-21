@@ -1,0 +1,31 @@
+{
+  "schema_version": "aiverse.distribution-core-promotion/v1",
+  "release_id": "core-member-polish-candidate-2026-10-21",
+  "previous_release_id": "core-local-upgrades-candidate-2026-10-19-v6",
+  "status": "applied",
+  "mode": "normal",
+  "qualification": {
+    "schema_version": "aiverse.distribution-whole-product-qualification/v1",
+    "ref": "qualification/core-member-polish-candidate-2026-10-21/whole-product-qualification.json",
+    "sha256": "94f06c0b090b0e06b57b89a0100d133b4ebfc49af995cff8e60315bc8fd849e7"
+  },
+  "system_sync": {
+    "status": "synchronized",
+    "repository_state_sha256": "31e6da5ca72e0d244990ebd6840bcd1239515df3beab06d617ef5bfc0da7e482",
+    "debt_ids": []
+  },
+  "writes": [
+    "src/aiverse_distribution/catalog/core_promotions.json",
+    "src/aiverse_distribution/catalog/core_candidates.json",
+    "release-sets/core-member-polish-candidate-2026-10-21.json",
+    "qualification/core-member-polish-candidate-2026-10-21/release-receipt.json",
+    "qualification/core-member-polish-candidate-2026-10-21/promotion.json"
+  ],
+  "authority": {
+    "promotion_decision": true,
+    "registry_authority": false,
+    "repository_state_authority": false,
+    "owner_acceptance_authority": false,
+    "member_state_authority": false
+  }
+}
