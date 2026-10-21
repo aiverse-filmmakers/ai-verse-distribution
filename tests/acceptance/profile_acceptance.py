@@ -10,6 +10,18 @@ from pathlib import Path
 from typing import Optional
 
 from aiverse_distribution.release_catalog import Catalog
+from aiverse_distribution.transition_contract import CoreTransitionContract, UnsupportedCoreTransition
+
+
+def default_update_mode(catalog, installed_release):
+    target = catalog.resolve("core").id
+    if target == installed_release:
+        return "current"
+    try:
+        CoreTransitionContract(catalog).require_update(installed_release, target)
+    except UnsupportedCoreTransition:
+        return "unadmitted"
+    return "admitted-forward"
 
 
 def run_process(argv: list[str], *, input_text: Optional[str] = None, expect: int = 0) -> subprocess.CompletedProcess:
@@ -236,6 +248,17 @@ def prove_data(root: Path) -> None:
         raise RuntimeError(f"Data representative read did not return the acceptance marker: {listed}")
 
 
+def configure_profile_environment(base: Path, profile: str) -> Path:
+    """Bind all fixture-owned runtime roots before invoking any component owner."""
+    os.environ["AIVERSE_DISTRIBUTION_HOME"] = str(base / f"distribution-{profile}")
+    isolated_home = base / f"home-{profile}"
+    isolated_home.mkdir(parents=True, exist_ok=True)
+    os.environ["HOME"] = str(isolated_home)
+    os.environ["USERPROFILE"] = str(isolated_home)
+    os.environ["AI_VERSE_SKILLS_ROOT"] = str(isolated_home / ".aiverse" / "skills")
+    return base / f"AI-Verse-{profile}"
+
+
 def main() -> int:
     if len(sys.argv) != 2 or sys.argv[1] not in {"core", "agent"}:
         print("usage: profile_acceptance.py core|agent", file=sys.stderr)
@@ -243,12 +266,7 @@ def main() -> int:
 
     profile = sys.argv[1]
     base = Path(os.environ.get("RUNNER_TEMP") or tempfile.mkdtemp(prefix="aiverse-acceptance-"))
-    os.environ["AIVERSE_DISTRIBUTION_HOME"] = str(base / f"distribution-{profile}")
-    isolated_home = base / f"home-{profile}"
-    isolated_home.mkdir(parents=True, exist_ok=True)
-    os.environ["HOME"] = str(isolated_home)
-    os.environ["USERPROFILE"] = str(isolated_home)
-    root = base / f"AI-Verse-{profile}"
+    root = configure_profile_environment(base, profile)
 
     if profile == "agent":
         blocked = run_cli("install", "--profile", "agent", "--root", str(root), expect=3)
@@ -438,8 +456,9 @@ def main() -> int:
 
     if candidate_id:
         before_update = run_cli("status")
-        accepted_default = Catalog().resolve("core").id == candidate_id
-        if accepted_default:
+        catalog = Catalog()
+        mode = default_update_mode(catalog, candidate_id)
+        if mode == "current":
             update = run_cli("update", "--apply")
             after_update = run_cli("status")
             after_refs = {
@@ -453,11 +472,25 @@ def main() -> int:
                     "default update changed the accepted Core release or its exact component pins: "
                     f"before={before_update}, after={after_update}"
                 )
+        elif mode == "admitted-forward":
+            # Keep this clean-install fixture on its selected historical release.
+            # The populated-update job separately applies the admitted forward path.
+            forward = run_cli("update", "--plan")
+            if forward.get("from") != candidate_id or forward.get("to") != catalog.resolve("core").id:
+                raise RuntimeError(f"historical release did not resolve the admitted forward plan: {forward}")
+            update = run_cli("update", "--to", candidate_id, "--apply")
+            after_update = run_cli("status")
+            after_refs = {
+                component_id: record.get("revision")
+                for component_id, record in after_update.get("components", {}).items()
+            }
+            if update.get("changed") is not False or after_update.get("release_set_id") != candidate_id or after_refs != expected_refs:
+                raise RuntimeError(f"historical release self-update changed the selected release or exact pins: {update}, {after_update}")
         else:
             blocked_update = run_cli("update", "--apply", expect=2)
             if blocked_update.get("error") != "DISTRIBUTION_ERROR":
                 raise RuntimeError(
-                    f"default update must remain blocked for an explicit-only candidate: {blocked_update}"
+                    f"default update must remain blocked for an unadmitted transition: {blocked_update}"
                 )
             after_update = run_cli("status")
             after_refs = {

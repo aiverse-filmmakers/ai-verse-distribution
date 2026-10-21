@@ -28,14 +28,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-System
-          ref: 28b596ba802ddc1a882e4d5971a85c407dbe5aa6
+          ref: bd3bc63a6e6e4ed0f555f24a12bc722882866efc
           path: .qualification/System
 
       - name: Checkout exact State-observed OS owner head
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-OS
-          ref: 37f14c85e480c405be573bb3aeab54dd4bc1e3da
+          ref: 906d70d0c89621a805515d769ee601027c294ef4
           path: .qualification/OS
 
       - name: Checkout exact State-observed Brain owner head
@@ -114,14 +114,15 @@ jobs:
           assert set(candidates.get('compatibility', {})) == expected_ids, candidates
           assert set(candidates.get('candidate_evidence', {})) == expected_ids, candidates
           assert 'core-local-upgrades-candidate-2026-10-19-v6' not in {item.get('id') for item in release_sets}, candidates
-          promoted_id = 'core-local-upgrades-candidate-2026-10-19-v6'
+          promoted_id = 'core-member-polish-candidate-2026-10-21'
           promoted = next(item for item in promotions.get('release_sets', []) if item.get('id') == promoted_id)
           assert promotions.get('current_release') == promoted_id, promotions
-          assert promoted.get('lineage', {}).get('parent') == 'core-first-run-rc1-2026-10-12', promoted
+          assert 'core-first-run-rc1-2026-10-12' in {item['id'] for item in promotions['release_sets']}, promotions
+          assert promoted.get('lineage', {}).get('parent') == 'core-local-upgrades-candidate-2026-10-19-v6', promoted
           assert promoted.get('evidence', {}).get('whole_product_qualification', {}).get('status') == 'accepted', promoted
           assert promoted.get('evidence', {}).get('transition_policy', {}).get('cross_release_update_admitted') is True, promoted
           os_component = next(item for item in promoted['components'] if item['id'] == 'ai-verse-os')
-          assert os_component['revision'] == '558f4ecb2f6810b10a0e152bfcf610e725fc7032', promoted
+          assert os_component['revision'] == '36a85bdb6233622b90812a2bb6ea32a99d517c97', promoted
           assert promotions.get('system_sync_debts') == [], promotions
           PY
 

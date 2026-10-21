@@ -19,7 +19,7 @@ class CoreLineageCatalogTests(unittest.TestCase):
         self.assertEqual(release.id, self.current_id)
         self.assertEqual(
             release.raw["lineage"],
-            {"parent": "core-first-run-rc1-2026-10-12", "policy": "same-or-descendant"},
+            {"parent": "core-local-upgrades-candidate-2026-10-19-v6", "policy": "same-or-descendant"},
         )
 
     def test_protected_component_cannot_disappear(self):

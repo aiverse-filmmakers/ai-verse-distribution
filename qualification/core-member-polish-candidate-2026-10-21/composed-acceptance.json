@@ -1,0 +1,120 @@
+{
+  "schema_version": "aiverse.distribution-composed-acceptance/v1",
+  "candidate_id": "core-member-polish-candidate-2026-10-21",
+  "distribution_revision": "d1ac94e39283cf8ae88168fce7b814cf48eade73",
+  "platforms": {
+    "linux": {
+      "clean_install": "pass",
+      "status": "pass",
+      "doctor": "pass",
+      "health": "pass",
+      "components": {
+        "ai-verse-os": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-brain": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-memory": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-skills": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-data": {
+          "status": "ready",
+          "doctor": "ready"
+        }
+      }
+    },
+    "macos": {
+      "clean_install": "pass",
+      "status": "pass",
+      "doctor": "pass",
+      "health": "pass",
+      "components": {
+        "ai-verse-os": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-brain": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-memory": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-skills": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-data": {
+          "status": "ready",
+          "doctor": "ready"
+        }
+      }
+    },
+    "windows": {
+      "clean_install": "pass",
+      "status": "pass",
+      "doctor": "pass",
+      "health": "pass",
+      "components": {
+        "ai-verse-os": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-brain": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-memory": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-skills": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-data": {
+          "status": "ready",
+          "doctor": "ready"
+        }
+      }
+    }
+  },
+  "evidence": [
+    {
+      "kind": "clean-machine-core-candidate-acceptance",
+      "status": "pass",
+      "revision": "d1ac94e39283cf8ae88168fce7b814cf48eade73",
+      "run_id": 39511095762,
+      "job_id": 118932493426,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/39511095762/job/118932493426",
+      "platform": "linux"
+    },
+    {
+      "kind": "clean-machine-core-candidate-acceptance",
+      "status": "pass",
+      "revision": "d1ac94e39283cf8ae88168fce7b814cf48eade73",
+      "run_id": 39511095762,
+      "job_id": 118932493623,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/39511095762/job/118932493623",
+      "platform": "macos"
+    },
+    {
+      "kind": "clean-machine-core-candidate-acceptance",
+      "status": "pass",
+      "revision": "d1ac94e39283cf8ae88168fce7b814cf48eade73",
+      "run_id": 39511095762,
+      "job_id": 118932493704,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/39511095762/job/118932493704",
+      "platform": "windows"
+    }
+  ]
+}

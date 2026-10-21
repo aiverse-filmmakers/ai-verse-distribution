@@ -9,7 +9,8 @@ from aiverse_distribution.transition_contract import CoreTransitionContract, Uns
 ROOT = Path(__file__).resolve().parents[1]
 STABLE = "core-stable-2026-10-10"
 HISTORICAL = "core-first-run-rc1-2026-10-12"
-CURRENT = "core-local-upgrades-candidate-2026-10-19-v6"
+PREVIOUS = "core-local-upgrades-candidate-2026-10-19-v6"
+CURRENT = "core-member-polish-candidate-2026-10-21"
 
 
 class U36ReleaseTests(unittest.TestCase):
@@ -29,7 +30,7 @@ class U36ReleaseTests(unittest.TestCase):
             "64f7325444d18f94c9d4755d32eb89f3468bda6b",
         )
         self.assertEqual(self.release.raw["classification"], "production-core-release")
-        self.assertEqual(self.release.raw["lineage"]["parent"], HISTORICAL)
+        self.assertEqual(self.release.raw["lineage"]["parent"], PREVIOUS)
         self.assertTrue(self.release.raw["promotion"]["default_channel"])
         self.assertTrue(self.release.raw["promotion"]["automatic_update"])
 
@@ -72,11 +73,11 @@ class U36ReleaseTests(unittest.TestCase):
 
     def test_forward_update_remains_admitted_and_reverse_rollback_remains_closed(self):
         contract = CoreTransitionContract(self.catalog)
-        forward = contract.require_update(HISTORICAL, CURRENT)
-        self.assertEqual(forward.source_release, HISTORICAL)
+        forward = contract.require_update(PREVIOUS, CURRENT)
+        self.assertEqual(forward.source_release, PREVIOUS)
         self.assertEqual(forward.target_release, CURRENT)
         with self.assertRaises(UnsupportedCoreTransition):
-            contract.require_rollback(CURRENT, HISTORICAL)
+            contract.require_rollback(CURRENT, PREVIOUS)
 
     def test_public_manifest_matches_promoted_release(self):
         public = json.loads(

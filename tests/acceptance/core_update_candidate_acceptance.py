@@ -18,8 +18,8 @@ from aiverse_distribution.release_catalog import Catalog
 import profile_acceptance as profile
 
 
-CURRENT_RELEASE = "core-first-run-rc1-2026-10-12"
-CANDIDATE_ID = "core-local-upgrades-candidate-2026-10-19-v6"
+CURRENT_RELEASE = os.environ.get("AI_VERSE_ACCEPTANCE_PREVIOUS_RELEASE", "core-first-run-rc1-2026-10-12")
+CANDIDATE_ID = os.environ.get("AI_VERSE_ACCEPTANCE_RELEASE_SET", "core-local-upgrades-candidate-2026-10-19-v6")
 TEST_EVIDENCE_REF = "temporary-clean-machine-update-fixture"
 
 
@@ -108,6 +108,11 @@ def _run_project_process(layout: ProjectLayout, *arguments: str) -> subprocess.C
     return completed
 
 
+def source_promotion_present(catalog, target_release: str) -> bool:
+    """Current and historical promotions both retain real transition authority."""
+    return any(item.get("id") == target_release for item in catalog.core_promotions.get("release_sets", []))
+
+
 def _install_test_transition(layout: ProjectLayout) -> None:
     venv_python = layout.stack / "tools" / "distribution-venv" / (
         "Scripts/python.exe" if os.name == "nt" else "bin/python"
@@ -121,7 +126,14 @@ def _install_test_transition(layout: ProjectLayout) -> None:
     )
     if probe.returncode:
         raise RuntimeError(f"could not locate the project-bound Distribution package: {probe.stderr}")
-    package = Path(probe.stdout.strip())
+    package = Path(probe.stdout.strip()).resolve()
+    if layout.stack.resolve() not in package.parents:
+        raise RuntimeError("test admission must remain inside the disposable tool stack; clear inherited PYTHONPATH")
+    promotions_path = package / "catalog" / "core_promotions.json"
+    if promotions_path.exists():
+        promotions = json.loads(promotions_path.read_text(encoding="utf-8"))
+        if any(item.get("id") == CANDIDATE_ID for item in promotions.get("release_sets", [])):
+            raise RuntimeError("temporary test admission must not shadow a current or historical promoted release")
     transitions_path = package / "catalog" / "core_update_transitions.json"
     payload = json.loads(transitions_path.read_text(encoding="utf-8"))
     updates = {
@@ -292,8 +304,7 @@ def main() -> int:
 
     # This evidence overlay exists only in this disposable member's private venv.
     # It exercises the real updater without creating a production promotion or receipt.
-    distribution_default = Catalog().resolve("core").id
-    promotion_present_on_source = distribution_default == CANDIDATE_ID
+    promotion_present_on_source = source_promotion_present(Catalog(), CANDIDATE_ID)
     if not promotion_present_on_source:
         _install_test_transition(layout)
     source_options = ["--local-source", "official"] if source_fixture else []
@@ -350,11 +361,6 @@ def main() -> int:
     expected_latest_release = os.environ.get(
         "AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE", CURRENT_RELEASE
     )
-    if expected_latest_release not in {CURRENT_RELEASE, CANDIDATE_ID}:
-        raise RuntimeError(
-            "version acceptance expected an unsupported live Core release: "
-            f"{expected_latest_release}"
-        )
     if (
         installed_version.get("releaseSet") != CANDIDATE_ID
         or installed_version.get("revision") != expected_refs["ai-verse-os"]
@@ -365,6 +371,11 @@ def main() -> int:
             "version reporter did not identify the expected live Core default "
             f"{expected_latest_release}: {version}"
         )
+    expected_label = os.environ.get("AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION")
+    if expected_label and expected_latest_release == CANDIDATE_ID and (
+        installed_version.get("version") != expected_label or latest_version.get("version") != expected_label
+    ):
+        raise RuntimeError(f"accepted friendly version label did not verify: {version}")
     if expected_latest_release == CANDIDATE_ID and version.get("update") != "up-to-date":
         raise RuntimeError(f"version reporter did not recognize the accepted installed release: {version}")
     if expected_latest_release == CURRENT_RELEASE and version.get("update") != "unconfirmed":
