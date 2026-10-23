@@ -48,6 +48,7 @@ class U36ReleaseTests(unittest.TestCase):
         candidates = {
             item["id"]: item for item in self.catalog.core_candidates["release_sets"]
         }
+        expected_candidates["core-tool-placement-candidate-2026-10-23"] = "7bb6226783396ef7a00b325306da26b0f4b17474"
         self.assertEqual(set(candidates), set(expected_candidates))
         for candidate_id, os_revision in expected_candidates.items():
             candidate = candidates[candidate_id]
