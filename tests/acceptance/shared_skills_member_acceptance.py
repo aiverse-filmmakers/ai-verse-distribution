@@ -51,6 +51,13 @@ def verify_member_library(root: Path, *, fresh: bool):
         selected = run_json(cli,{"operation":"select","scope":scope,"qualified_id":identity})
         if selected.get("status") != "selected":
             raise RuntimeError(f"shared package unavailable in {scope}: {selected}")
+    if not fresh:
+        legacy = run_json(cli,{"operation":"select","scope":"workspace:alpha","qualified_id":"local:acceptance-legacy"})
+        if legacy.get("status") != "selected":
+            raise RuntimeError("populated update lost the old personal qualified reference")
+        ambiguous = run_json(cli,{"operation":"select","scope":"workspace:alpha","query":"acceptance-portable-method"})
+        if ambiguous.get("status") != "ambiguous":
+            raise RuntimeError("same-name old/new member skills were silently shadowed")
     scope="workspace:shared-skills-acceptance"
     planned=run_json(cli,{"operation":"plan-binding","scope":scope,"qualified_id":identity,"alias":"acceptance-portable-method","binding":{"inputs":{"locale":"acceptance"}}})
     run_json(cli,{"operation":"apply-binding","scope":scope,"plan":planned})

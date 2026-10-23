@@ -180,10 +180,17 @@ def _require_skills_generation_preserved(
     *,
     prior_generation_id: str,
     active_generation_id: str,
+    admitted_new_metadata: tuple[str, ...] = (),
 ) -> None:
     """Allow Core to activate a new immutable generation without losing the old one."""
     before_skills = before.get("local_skills") or {}
-    after_skills = after.get("local_skills") or {}
+    after_skills = dict(after.get("local_skills") or {})
+    allowed = {".aiverse/learning", ".aiverse/learning/member-library.json"}
+    if not set(admitted_new_metadata).issubset(allowed):
+        raise RuntimeError("unrecognized owner metadata preservation exception")
+    for name in admitted_new_metadata:
+        if name not in before_skills:
+            after_skills.pop(name, None)
     active_pointer = ".aiverse/active.json"
     if not prior_generation_id or not active_generation_id:
         raise RuntimeError("Skills preservation check is missing a generation id")
@@ -296,6 +303,13 @@ def main() -> int:
     profile.prove_memory(project)
     profile.prove_data(project)
     (project / "custom-notes.md").write_text("member-owned update preservation marker\n", encoding="utf-8")
+
+    legacy_skill = None
+    if os.environ.get("AI_VERSE_ACCEPTANCE_SHARED_SKILLS") == "1":
+        legacy_skill = isolated_home / ".aiverse/local-skills/acceptance-legacy/SKILL.md"
+        legacy_skill.parent.mkdir(parents=True)
+        legacy_skill.write_text("---\nname: acceptance-portable-method\ndescription: Existing member procedure retained through update\n---\nUse explicit inputs and verify the result.\n", encoding="utf-8")
+        legacy_original = legacy_skill.read_bytes()
 
     source_fixture = _local_source_fixture(project) if os.environ.get("AI_VERSE_ACCEPTANCE_LOCAL_SOURCE") == "1" else None
     before_status = _run_project(layout, "status", expect=1 if source_fixture else 0)
@@ -415,11 +429,23 @@ def main() -> int:
         local_skills_root=layout.stack / "skills",
         distribution_history_root=layout.distribution_home / "history",
     )
+    admitted_metadata = ()
+    if legacy_skill is not None:
+        if legacy_skill.read_bytes() != legacy_original:
+            raise RuntimeError("populated update altered the pre-existing personal skill")
+        configuration = json.loads((project / ".aiverse/capability-providers.json").read_text(encoding="utf-8"))
+        if Path(configuration["local_skills_root"]).resolve() != legacy_skill.parents[1].resolve():
+            raise RuntimeError("populated update relocated the prior canonical personal library")
+        route = json.loads((layout.stack / "skills/.aiverse/learning/member-library.json").read_text(encoding="utf-8"))
+        if route != {"contract":"aiverse-member-learning-route-v1", "library_root":configuration["local_skills_root"]}:
+            raise RuntimeError("new Skills owner metadata does not bind the preserved personal library")
+        admitted_metadata = (".aiverse/learning", ".aiverse/learning/member-library.json")
     _require_skills_generation_preserved(
         before,
         after,
         prior_generation_id=skills_generation,
         active_generation_id=active_skills_generation,
+        admitted_new_metadata=admitted_metadata,
     )
     # Skills owns immutable generations. Keep its verified historical generation
     # exact while allowing the new release generation and active pointer.
