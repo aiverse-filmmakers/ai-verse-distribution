@@ -69,5 +69,37 @@ class GoalBridgeTests(unittest.TestCase):
         self.assertEqual(seen["input"]["evidence_refs"][0]["scope"], "workspace:alpha")
 
 
+    @patch("aiverse_distribution.goal_bridge._run_json")
+    def test_invalid_goal_version_or_evidence_never_invokes_brain(self, mocked):
+        base = {
+            "protocol": goal_bridge.PROTOCOL,
+            "request_id": "req_invalid",
+            "operation": "goal.evaluate",
+            "payload": {
+                "goal_id": "goal_test",
+                "scope": "workspace:alpha",
+                "expected_version": 1,
+                "evidence": {"run_id": "run_invalid", "turn": 1, "output": "ignored"},
+            },
+        }
+        for version in (True, "1", None, 1.5):
+            request = json.loads(json.dumps(base))
+            request["payload"]["expected_version"] = version
+            with self.subTest(version=version):
+                with self.assertRaisesRegex(RuntimeError, "expected_version"):
+                    goal_bridge.handle(request, brain="unused", root="/unused")
+                mocked.assert_not_called()
+        request = json.loads(json.dumps(base))
+        request["payload"]["evidence"] = None
+        with self.assertRaisesRegex(RuntimeError, "requires evidence"):
+            goal_bridge.handle(request, brain="unused", root="/unused")
+        mocked.assert_not_called()
+        request = json.loads(json.dumps(base))
+        request["operation"] = "goal.delete"
+        with self.assertRaisesRegex(RuntimeError, "unsupported Goal owner operation"):
+            goal_bridge.handle(request, brain="unused", root="/unused")
+        mocked.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
