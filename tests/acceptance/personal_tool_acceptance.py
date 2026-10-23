@@ -23,6 +23,9 @@ def verify_tool_placement(root: Path):
             assert (directory / 'node_modules/is-number/package.json').is_file()
         else:
             assert (directory / '.venv/pyvenv.cfg').is_file()
+            installed = (directory / '.venv/Lib/site-packages/idna/__init__.py').is_file()
+            installed = installed or any(directory.glob('.venv/lib/python*/site-packages/idna/__init__.py'))
+            assert installed, 'Python dependency is missing from the tool-owned environment'
         refused = subprocess.run(command + ['install'] + args + ['--package', '--prefix=/tmp'], capture_output=True)
         assert refused.returncode != 0
     assert before == {str(p): p.read_bytes() if p.exists() else None for p in files}

@@ -1,0 +1,31 @@
+{
+  "schema_version": "aiverse.distribution-core-promotion/v1",
+  "release_id": "core-tool-placement-candidate-2026-10-23",
+  "previous_release_id": "core-shared-skills-candidate-2026-10-23-v4",
+  "status": "applied",
+  "mode": "normal",
+  "qualification": {
+    "schema_version": "aiverse.distribution-whole-product-qualification/v1",
+    "ref": "qualification/core-tool-placement-candidate-2026-10-23/whole-product-qualification.json",
+    "sha256": "fdb4d3db02cf1727d62549c7153f703faafa1c3580e0e82b42a843309fccce0b"
+  },
+  "system_sync": {
+    "status": "synchronized",
+    "repository_state_sha256": "feeec53473e466836af5c89121684c04026b2852aef1da800115b5f10b92db06",
+    "debt_ids": []
+  },
+  "writes": [
+    "src/aiverse_distribution/catalog/core_promotions.json",
+    "src/aiverse_distribution/catalog/core_candidates.json",
+    "release-sets/core-tool-placement-candidate-2026-10-23.json",
+    "qualification/core-tool-placement-candidate-2026-10-23/release-receipt.json",
+    "qualification/core-tool-placement-candidate-2026-10-23/promotion.json"
+  ],
+  "authority": {
+    "promotion_decision": true,
+    "registry_authority": false,
+    "repository_state_authority": false,
+    "owner_acceptance_authority": false,
+    "member_state_authority": false
+  }
+}
