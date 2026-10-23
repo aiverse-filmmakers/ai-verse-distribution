@@ -332,6 +332,9 @@ def main() -> int:
 
     prove_memory(root)
     initial_skills_generation = prove_skills(install)
+    if os.environ.get("AI_VERSE_ACCEPTANCE_TOOL_PLACEMENT") == "1":
+        from personal_tool_acceptance import verify_tool_placement
+        print(json.dumps({"personal_tool_placement": verify_tool_placement(root)}))
     if os.environ.get("AI_VERSE_ACCEPTANCE_SHARED_SKILLS") == "1":
         from shared_skills_member_acceptance import verify_member_library
         print(json.dumps({"shared_member_skills": verify_member_library(root, fresh=True)}))

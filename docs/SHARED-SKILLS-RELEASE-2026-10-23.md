@@ -2,7 +2,7 @@
 
 Release: `core-shared-skills-candidate-2026-10-23-v4`.
 Predecessor: `core-member-polish-candidate-2026-10-21`.
-Publication status: prepared in PR75; public rollout starts after merge.
+Publication status: released through merged PR75; historical predecessor of the personal-tool placement release.
 
 ## What changes
 

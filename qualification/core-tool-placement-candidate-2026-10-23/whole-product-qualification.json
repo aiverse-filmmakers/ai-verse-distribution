@@ -1,0 +1,120 @@
+{
+  "authority": {
+    "channel_authority": false,
+    "member_state_authority": false,
+    "owner_health_authority": false,
+    "promotion_authority": false,
+    "qualification_evidence_only": true,
+    "registry_authority": false,
+    "repository_state_authority": false
+  },
+  "bindings": {
+    "candidate_evidence": {
+      "path": "qualification/core-tool-placement-candidate-2026-10-23/candidate-evidence.json",
+      "sha256": "69e3a854df12fa4d4f57e5bc1944bf586a6025b51a16273d2210530c16862860"
+    },
+    "compatibility_sha256": "59b674f365490304bf3f16e8cd1b989cc71f403bad51cfe36f80a9c9e9129ffa",
+    "composed_acceptance": {
+      "path": "qualification/core-tool-placement-candidate-2026-10-23/composed-acceptance.json",
+      "sha256": "9ee980980df48819873b01dc44ad534e262359742d0e727cb0f8a42c48562fcb"
+    },
+    "composed_acceptance_sha256": "9ee980980df48819873b01dc44ad534e262359742d0e727cb0f8a42c48562fcb",
+    "owners": [
+      {
+        "component_id": "ai-verse-os",
+        "descriptor_sha256": "5aa599cb159892f899c4344a44287a5e4d81a4a523955c361f98e019e0ebcd12",
+        "descriptor_source_revision": "d490db4c02e7b72c5cc8eae07080eccfa4dc3989",
+        "native_run_id": 39974961996,
+        "native_workflow": "Capability Placement Contract",
+        "revision": "7bb6226783396ef7a00b325306da26b0f4b17474"
+      },
+      {
+        "component_id": "ai-verse-brain",
+        "descriptor_sha256": "f24d2d3f74ca22f7205f6d6e8c2778263908dd489bbf9528f762b5d39acea82d",
+        "descriptor_source_revision": "6ad408e38b6b876cc8049f207fcba1e86ffd6554",
+        "native_run_id": 39903370916,
+        "native_workflow": "CI",
+        "revision": "7e6f7a7e8a3d541815bc7f65c11dca7824c35d8f"
+      },
+      {
+        "component_id": "ai-verse-memory",
+        "descriptor_sha256": "9d8e636691742c7be62b123a944bb16b1e274ae937fc8fabc9c7795539ff1efb",
+        "descriptor_source_revision": "09911eae0b4b0cbf7e7e7969230fe5b86647b841",
+        "native_run_id": 37686666851,
+        "native_workflow": "Test",
+        "revision": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a"
+      },
+      {
+        "component_id": "ai-verse-skills",
+        "descriptor_sha256": "94baa36b0cd1a0c5469438447b9293b6b1567f58eb951c802ddcd40509960d38",
+        "descriptor_source_revision": "297c63a5be95f8319cc5755f287329c2e4387b02",
+        "native_run_id": 39927631275,
+        "native_workflow": "Runtime Readiness",
+        "revision": "390c6e1633afc809040bd1159840045f4f9ff27e"
+      },
+      {
+        "component_id": "ai-verse-data",
+        "descriptor_sha256": "ac7f7231b63c234429c85281bfd36bd6371f739f394c37fcbaa682fe620a777d",
+        "descriptor_source_revision": "7e9fadbd73752b24eb79e270aff6b311ad508109",
+        "native_run_id": 37645269881,
+        "native_workflow": "CI",
+        "revision": "f8978f8f7a1bc94edecddc2662112233289159a3"
+      }
+    ],
+    "preservation": {
+      "path": "qualification/core-tool-placement-candidate-2026-10-23/preservation-result.json",
+      "sha256": "4f8f9844a09c0de4c9e39bca30b0430e280c78bdfaf64be1384c3b6feb3a38d7"
+    },
+    "preservation_sha256": "4f8f9844a09c0de4c9e39bca30b0430e280c78bdfaf64be1384c3b6feb3a38d7",
+    "registry": {
+      "path": "governance/repository-registry.json",
+      "revision": "343a13b1d8fade4553878a4deefb7c9da6f44cfe",
+      "sha256": "d0cd07396aaf849cf5baae155f1389cf93f0b0f881ffb96d0595de2b229050ab"
+    },
+    "repository_state": {
+      "path": "governance/repository-state.json",
+      "revision": "343a13b1d8fade4553878a4deefb7c9da6f44cfe",
+      "scope": "core",
+      "sha256": "feeec53473e466836af5c89121684c04026b2852aef1da800115b5f10b92db06"
+    },
+    "system": {
+      "governance_contracts": [
+        {
+          "path": "docs/REPOSITORY-NETWORK-GOVERNANCE-CONTRACT.md",
+          "repository": "aiverse-filmmakers/AI-Verse-System",
+          "revision": "343a13b1d8fade4553878a4deefb7c9da6f44cfe",
+          "sha256": "176e31dcf30e68c3c5934667d23e02ddf40a1a2de11d12dcc49b80c7f8117235"
+        },
+        {
+          "path": "docs/SAFE-UPDATE-AND-STATE-PRESERVATION-CONTRACT.md",
+          "repository": "aiverse-filmmakers/AI-Verse-System",
+          "revision": "343a13b1d8fade4553878a4deefb7c9da6f44cfe",
+          "sha256": "c026818b118cd07c9539f6bbbc1d97be42493bdc680e824d1f0183811f6ec793"
+        }
+      ],
+      "revision": "343a13b1d8fade4553878a4deefb7c9da6f44cfe"
+    }
+  },
+  "candidate_id": "core-tool-placement-candidate-2026-10-23",
+  "distribution_revision": "d9e7c85f397a8515b9aaec7c45001ede99d01e47",
+  "gates": {
+    "candidate_admission": "passed",
+    "clean_install": "passed",
+    "compatibility": "passed",
+    "doctor": "passed",
+    "health": "passed",
+    "owner_acceptance": "passed",
+    "preservation": "passed",
+    "repository_state_and_drift": "passed",
+    "status": "passed"
+  },
+  "platforms": [
+    "linux",
+    "macos",
+    "windows"
+  ],
+  "profile": "core",
+  "schema_version": "aiverse.distribution-whole-product-qualification/v1",
+  "source_release_set": "core-shared-skills-candidate-2026-10-23-v4",
+  "status": "passed"
+}

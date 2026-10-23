@@ -9,8 +9,8 @@ from aiverse_distribution.transition_contract import CoreTransitionContract, Uns
 ROOT = Path(__file__).resolve().parents[1]
 STABLE = "core-stable-2026-10-10"
 HISTORICAL = "core-first-run-rc1-2026-10-12"
-PREVIOUS = "core-member-polish-candidate-2026-10-21"
-CURRENT = "core-shared-skills-candidate-2026-10-23-v4"
+PREVIOUS = "core-shared-skills-candidate-2026-10-23-v4"
+CURRENT = "core-tool-placement-candidate-2026-10-23"
 
 
 class U36ReleaseTests(unittest.TestCase):

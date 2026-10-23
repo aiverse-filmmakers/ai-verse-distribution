@@ -1,0 +1,129 @@
+{
+  "schema_version": "aiverse.distribution-composed-acceptance/v1",
+  "candidate_id": "core-tool-placement-candidate-2026-10-23",
+  "distribution_revision": "d9e7c85f397a8515b9aaec7c45001ede99d01e47",
+  "platforms": {
+    "linux": {
+      "clean_install": "pass",
+      "status": "pass",
+      "doctor": "pass",
+      "health": "pass",
+      "components": {
+        "ai-verse-os": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-brain": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-memory": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-skills": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-data": {
+          "status": "ready",
+          "doctor": "ready"
+        }
+      }
+    },
+    "macos": {
+      "clean_install": "pass",
+      "status": "pass",
+      "doctor": "pass",
+      "health": "pass",
+      "components": {
+        "ai-verse-os": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-brain": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-memory": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-skills": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-data": {
+          "status": "ready",
+          "doctor": "ready"
+        }
+      }
+    },
+    "windows": {
+      "clean_install": "pass",
+      "status": "pass",
+      "doctor": "pass",
+      "health": "pass",
+      "components": {
+        "ai-verse-os": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-brain": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-memory": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-skills": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-data": {
+          "status": "ready",
+          "doctor": "ready"
+        }
+      }
+    }
+  },
+  "evidence": [
+    {
+      "kind": "clean-machine-core-candidate-acceptance",
+      "status": "pass",
+      "revision": "d9e7c85f397a8515b9aaec7c45001ede99d01e47",
+      "tested_revision": "4346b8aa494284bc6b8a318d4b955f7b1cbc495b",
+      "run_id": 40014222597,
+      "job_id": 120622025605,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/40014222597/job/120622025605",
+      "platform": "windows"
+    },
+    {
+      "kind": "clean-machine-core-candidate-acceptance",
+      "status": "pass",
+      "revision": "d9e7c85f397a8515b9aaec7c45001ede99d01e47",
+      "tested_revision": "4346b8aa494284bc6b8a318d4b955f7b1cbc495b",
+      "run_id": 40014222597,
+      "job_id": 120622025616,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/40014222597/job/120622025616",
+      "platform": "linux"
+    },
+    {
+      "kind": "clean-machine-core-candidate-acceptance",
+      "status": "pass",
+      "revision": "d9e7c85f397a8515b9aaec7c45001ede99d01e47",
+      "tested_revision": "4346b8aa494284bc6b8a318d4b955f7b1cbc495b",
+      "run_id": 40014222597,
+      "job_id": 120622025728,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/40014222597/job/120622025728",
+      "platform": "macos"
+    }
+  ],
+  "coverage_notes": {
+    "revision_binding": "Verified identical executable src/aiverse_distribution code excluding catalog metadata between admitted definition and actual tested revision. Both immutable revisions are retained.",
+    "personal_tools": "Each real platform job executes fresh install and populated canonical update, actual tool-local npm/pip installation, unsafe argument refusal, Core-manifest preservation, shared Skills imports and separate optional package convergence.",
+    "restart_recovery": "Native Distribution unit suites cover interrupted/repeated updates and fail-closed cases; no additional populated-platform interruption drill is claimed.",
+    "optional_desktop": "Package lifecycle checks do not independently verify human hook trust or fresh-chat callbacks."
+  }
+}

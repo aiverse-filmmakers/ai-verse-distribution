@@ -13,10 +13,10 @@ spec.loader.exec_module(profile)
 
 class ProfileAcceptanceModeTests(unittest.TestCase):
     def test_current_release_uses_noop_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-shared-skills-candidate-2026-10-23-v4"), "current")
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-tool-placement-candidate-2026-10-23"), "current")
 
     def test_accepted_parent_uses_forward_plan_and_self_update_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-member-polish-candidate-2026-10-21"), "admitted-forward")
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-shared-skills-candidate-2026-10-23-v4"), "admitted-forward")
 
     def test_explicit_only_candidate_keeps_blocked_update_check(self):
         self.assertEqual(profile.default_update_mode(Catalog(), "core-local-upgrades-candidate-2026-10-19-v5"), "unadmitted")
@@ -34,5 +34,26 @@ class PublicationDefaultExpectationTests(unittest.TestCase):
     def test_premerge_checks_keep_live_default_and_main_verifies_promoted_default(self):
         from pathlib import Path
         workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/clean-machine-core.yml").read_text()
-        expectation = "AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE: ${{ github.ref == 'refs/heads/main' && 'core-shared-skills-candidate-2026-10-23-v4' || 'core-member-polish-candidate-2026-10-21' }}"
-        self.assertEqual(workflow.count(expectation), 3)
+        expectation = "AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE: ${{ github.ref == 'refs/heads/main' && 'core-tool-placement-candidate-2026-10-23' || 'core-shared-skills-candidate-2026-10-23-v4' }}"
+        self.assertEqual(workflow.count(expectation), 4)
+
+
+class PriorPersonalLibraryFixtureTests(unittest.TestCase):
+    def test_newer_prior_installation_preserves_its_configured_root(self):
+        import json
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        spec = importlib.util.spec_from_file_location("update_acceptance_fixture", Path(__file__).parent / "acceptance/core_update_candidate_acceptance.py")
+        update = importlib.util.module_from_spec(spec)
+        with patch.dict("sys.modules", {"profile_acceptance":profile}):
+            spec.loader.exec_module(update)
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            project, home = root / "project", root / "home"
+            config = project / ".aiverse/capability-providers.json"
+            config.parent.mkdir(parents=True)
+            canonical = root / "member-skills"
+            config.write_text(json.dumps({"local_skills_root":str(canonical)}))
+            self.assertEqual(update.existing_personal_skill_path(project, home), canonical / "acceptance-legacy/SKILL.md")
+            config.unlink()
+            self.assertEqual(update.existing_personal_skill_path(project, home), home / ".aiverse/local-skills/acceptance-legacy/SKILL.md")
