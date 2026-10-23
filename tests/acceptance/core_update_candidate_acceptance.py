@@ -175,6 +175,19 @@ def _install_test_transition(layout: ProjectLayout) -> None:
     transitions_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _admit_registry_serialization(before_document, after_document, before_snapshot, after_snapshot):
+    if (not isinstance(before_document, dict) or before_document.get("schema_version") != "1.0"
+            or not isinstance(before_document.get("extensions"), dict) or before_document != after_document):
+        raise RuntimeError("Core update changed extension registration values or member metadata")
+    result = dict(before_snapshot)
+    result["files"] = dict(before_snapshot["files"])
+    name = ".aiverse/extensions/registry.json"
+    if name not in before_snapshot["files"] or name not in after_snapshot["files"]:
+        raise RuntimeError("extension registry missing before or after update")
+    result["files"][name] = after_snapshot["files"][name]
+    return result
+
+
 def _verified_skills_owner_metadata(before, after, prior_generation, active_generation):
     """Admit timestamp refreshes, not changed policy or member content."""
     for name, timestamp in (("integration.json", "updated_at"), ("setup.json", "setup_at")):
@@ -348,6 +361,7 @@ def main() -> int:
         distribution_history_root=layout.distribution_home / "history",
     )
 
+    extension_registry_before = json.loads((project / ".aiverse/extensions/registry.json").read_text(encoding="utf-8"))
     skills_metadata_before = {name: json.loads((layout.stack / "skills/.aiverse" / name).read_text(encoding="utf-8"))
                               for name in ("integration.json", "setup.json")}
 
@@ -503,6 +517,9 @@ def main() -> int:
                 raise RuntimeError(f"privacy exclusion stopped applying: {name}")
         if update.get("local_source", {}).get("state") != "completed":
             raise RuntimeError("source preparation did not complete through the canonical updater")
+    extension_registry_after = json.loads((project / ".aiverse/extensions/registry.json").read_text(encoding="utf-8"))
+    other_state_before = _admit_registry_serialization(
+        extension_registry_before, extension_registry_after, other_state_before, after)
     require_member_state_preserved(other_state_before, after)
 
     blocked = _run_project(layout, "rollback", "--to", CURRENT_RELEASE, "--apply", expect=2)

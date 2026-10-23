@@ -59,3 +59,23 @@ class OwnerMetadataReconciliationTests(unittest.TestCase):
     def test_permission_expansion_is_refused(self):
         old=self.metadata();new=self.metadata();new["setup.json"]["permissions_granted"]=True
         with self.assertRaises(RuntimeError):fixture._verified_skills_owner_metadata(old,new,"prior","prior")
+
+class ExtensionRegistrySerializationTests(unittest.TestCase):
+    def value(self):
+        return {"schema_version":"1.0","extensions":{"member":{"enabled":False,"custom":{"preserve":"yes"}}}}
+
+    def test_same_values_allow_json_formatting_change_only(self):
+        before={"files":{".aiverse/extensions/registry.json":{"sha256":"compact"},"member.txt":{"sha256":"exact"}}}
+        after={"files":{".aiverse/extensions/registry.json":{"sha256":"pretty"},"member.txt":{"sha256":"exact"}}}
+        admitted=fixture._admit_registry_serialization(self.value(),self.value(),before,after)
+        self.assertEqual(admitted["files"]["member.txt"],before["files"]["member.txt"])
+        self.assertEqual(before["files"][".aiverse/extensions/registry.json"]["sha256"],"compact")
+        self.assertEqual(admitted["files"][".aiverse/extensions/registry.json"]["sha256"],"pretty")
+
+    def test_dropped_custom_registration_field_is_refused(self):
+        after=self.value();del after["extensions"]["member"]["custom"]
+        with self.assertRaises(RuntimeError):fixture._admit_registry_serialization(self.value(),after,{}, {})
+
+    def test_disabled_extension_cannot_be_enabled(self):
+        after=self.value();after["extensions"]["member"]["enabled"]=True
+        with self.assertRaises(RuntimeError):fixture._admit_registry_serialization(self.value(),after,{}, {})
