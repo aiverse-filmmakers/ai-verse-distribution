@@ -280,6 +280,12 @@ def main() -> int:
         raise RuntimeError("Skills pin did not return an immutable generation id")
     _run_project(layout, "setup", "--workspace", "alpha")
 
+    optional_on_update = os.environ.get("AI_VERSE_ACCEPTANCE_OPTIONAL_ON_UPDATE") == "1"
+    if optional_on_update:
+        _run_project(layout, "upgrade", "--package", "ai-verse-codex-learning", "--apply")
+        (project / ".aiverse/extensions/ai-verse-codex-learning/member-preservation-marker.txt").write_text(
+            "member-owned optional package file\n", encoding="utf-8")
+
     brain_marker = "core-update-candidate-brain-preservation"
     brain_before = profile.brain_onboarding_payload(
         _run_project(layout, "onboard", "--practice", brain_marker)
@@ -450,6 +456,18 @@ def main() -> int:
         raise RuntimeError(f"unqualified reverse rollback did not fail closed for the expected reason: {blocked}")
     if _run_project(layout, "status").get("release_set_id") != CANDIDATE_ID:
         raise RuntimeError("blocked reverse rollback changed the installed release")
+
+    if optional_on_update:
+        # Optional code remains a separately admitted package operation. Converge
+        # the existing package through that public operation after Core update.
+        _run_project(layout, "upgrade", "--package", "ai-verse-codex-learning", "--apply")
+        configuration = json.loads((project / ".aiverse/capability-providers.json").read_text(encoding="utf-8"))
+        helper = project / ".aiverse/extensions/ai-verse-codex-learning"
+        settings = json.loads((helper / "config.json").read_text(encoding="utf-8"))
+        if Path(settings["skills_entrypoint"]).resolve() != Path(configuration["skills_entrypoint"]).resolve():
+            raise RuntimeError("existing optional package did not converge to the current installation Skills owner")
+        if (helper / "member-preservation-marker.txt").read_text(encoding="utf-8") != "member-owned optional package file\n":
+            raise RuntimeError("optional package upgrade altered an unknown member file")
 
     if os.environ.get("AI_VERSE_ACCEPTANCE_SHARED_SKILLS") == "1":
         from shared_skills_member_acceptance import verify_member_library
