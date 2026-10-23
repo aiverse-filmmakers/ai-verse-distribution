@@ -22,6 +22,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      # Only on this qualification PR: the committed release catalog and default
+      # Agent channel remain unmodified. The runner injects a disposable
+      # exact-Gateway candidate before packaging Distribution.
+      - name: Stage exact Gateway Windows candidate (PR-only)
+        if: github.event_name == 'pull_request' && github.head_ref == 'qualification/gateway-windows-2026-10-23'
+        shell: bash
+        run: python tests/acceptance/gateway_windows_candidate_fixture.py
       - name: Install Distribution
         run: python -m pip install .
       - name: Prove two isolated systems concurrently
