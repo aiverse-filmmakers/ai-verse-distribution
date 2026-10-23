@@ -1,7 +1,8 @@
 # Composed member Skills binding
 
-Step 4 local implementation; exact refs and cross-platform release admission are
-step 5. Do not update a member installation directly from these checkouts.
+Member library bindings are composed through the normal admitted Core lifecycle.
+Development source and passing local tests do not themselves admit a release;
+use the current Core channel through the project-bound updater.
 
 During matching Skills setup/reconcile, Distribution obtains the actual root from
 owner status, previews OS `capability-configuration-cli.mjs`, establishes the
@@ -22,5 +23,6 @@ failure. Optional adapter discovery obtains the current same root/entrypoint,
 while native trust and callback evidence remain separate qualification gates.
 
 Validation uses the OS `test-shared-skills-runtime.py` disposable owner-composition
-fixture plus existing adapter, preservation and recovery regressions. No actual
-Core install/update or release pin changes are part of step 4.
+fixture plus existing adapter, preservation and recovery regressions. Public clean-install and populated-update acceptance additionally exercise actual
+installed member import, cross-workspace selection, scoped settings, replay and
+source preservation when `AI_VERSE_ACCEPTANCE_SHARED_SKILLS=1`.
