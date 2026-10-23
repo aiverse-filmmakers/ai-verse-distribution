@@ -92,7 +92,7 @@ def handle(request: dict[str, Any], *, brain: str, root: str) -> dict[str, Any]:
         ])
     elif operation == "goal.evaluate":
         expected = payload.get("expected_version")
-        if not isinstance(expected, int):
+        if type(expected) is not int:  # bool is an int subclass but never a Goal revision
             raise RuntimeError("goal.evaluate requires expected_version")
         evidence = payload.get("evidence")
         if not isinstance(evidence, dict):
