@@ -39,7 +39,7 @@ class U36ReleaseTests(unittest.TestCase):
         self.assertIn(HISTORICAL, lineage_ids)
         self.assertIn(CURRENT, lineage_ids)
         expected_candidates = {
-            "core-shared-skills-candidate-2026-10-23": "88e283aaac40ec6152b07d1ce764fb769515852e",
+            "core-shared-skills-candidate-2026-10-23-v2": "5845fcfed123910e854ff764cb895c826a0b3291",
             "core-local-upgrades-candidate-2026-10-19": "d1fecc8026445f96212a4f65a9932f5e7a301bf8",
             "core-local-upgrades-candidate-2026-10-19-v2": "b6d8c7c7eea07ce5a28163f67d59b4d69c1fcc9f",
             "core-local-upgrades-candidate-2026-10-19-v3": "98eed935a933239021e8f5cce2e729afa5e0216b",

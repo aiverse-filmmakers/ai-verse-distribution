@@ -447,7 +447,7 @@
       }
     },
     {
-      "id": "core-shared-skills-candidate-2026-10-23",
+      "id": "core-shared-skills-candidate-2026-10-23-v2",
       "profile": "core",
       "status": "released",
       "created_at": "2026-10-23",
@@ -464,7 +464,7 @@
         {
           "id": "ai-verse-os",
           "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
-          "revision": "88e283aaac40ec6152b07d1ce764fb769515852e",
+          "revision": "5845fcfed123910e854ff764cb895c826a0b3291",
           "install_order": 10
         },
         {
@@ -501,7 +501,7 @@
         {
           "id": "ai-verse-codex-learning",
           "owner_component": "ai-verse-os",
-          "source_revision": "88e283aaac40ec6152b07d1ce764fb769515852e",
+          "source_revision": "5845fcfed123910e854ff764cb895c826a0b3291",
           "source_path": "system/extensions/packages/ai-verse-codex-learning",
           "version": "0.3.0-local",
           "manifest_sha256": "565dc812f1171d2590918511fd176010de5d2a325d1f2668220da6bb120c37d4",
@@ -636,7 +636,7 @@
         "core-first-run-rc1-2026-10-12"
       ]
     },
-    "core-shared-skills-candidate-2026-10-23": {
+    "core-shared-skills-candidate-2026-10-23-v2": {
       "profile": "core",
       "status": "released",
       "platforms": [
@@ -650,10 +650,10 @@
       "rollback_rule": "software-only-owner-state-preserved",
       "update_from": [
         "core-member-polish-candidate-2026-10-21",
-        "core-shared-skills-candidate-2026-10-23"
+        "core-shared-skills-candidate-2026-10-23-v2"
       ],
       "rollback_to": [
-        "core-shared-skills-candidate-2026-10-23"
+        "core-shared-skills-candidate-2026-10-23-v2"
       ]
     }
   },
@@ -677,10 +677,6 @@
     "core-local-upgrades-candidate-2026-10-19-v5": {
       "path": "qualification/core-local-upgrades-candidate-2026-10-19-v5/candidate-evidence.json",
       "sha256": "42d09ef0cfe8303f9b3708b35108f1b29f54496cfc90b05ffe7aedfc3ab32bcc"
-    },
-    "core-shared-skills-candidate-2026-10-23": {
-      "path": "qualification/core-shared-skills-candidate-2026-10-23/candidate-evidence.json",
-      "sha256": "efab23de8c6cd3e309abc6737c2fe1a5f88fe05d591f36e142f06dddf08f685f"
     }
   }
 }
