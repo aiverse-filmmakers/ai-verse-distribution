@@ -451,6 +451,10 @@ def main() -> int:
     if _run_project(layout, "status").get("release_set_id") != CANDIDATE_ID:
         raise RuntimeError("blocked reverse rollback changed the installed release")
 
+    if os.environ.get("AI_VERSE_ACCEPTANCE_SHARED_SKILLS") == "1":
+        from shared_skills_member_acceptance import verify_member_library
+        print(json.dumps({"shared_member_skills": verify_member_library(project, fresh=False)}))
+
     print(json.dumps({
         "result": "passed",
         "from": CURRENT_RELEASE,

@@ -332,6 +332,9 @@ def main() -> int:
 
     prove_memory(root)
     initial_skills_generation = prove_skills(install)
+    if os.environ.get("AI_VERSE_ACCEPTANCE_SHARED_SKILLS") == "1":
+        from shared_skills_member_acceptance import verify_member_library
+        print(json.dumps({"shared_member_skills": verify_member_library(root, fresh=True)}))
     prove_data(root)
 
     run_cli("component", "disable", "ai-verse-data")
