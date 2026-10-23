@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 import os
 import subprocess
 import sys
@@ -174,16 +175,61 @@ def _install_test_transition(layout: ProjectLayout) -> None:
     transitions_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _admit_registry_serialization(before_document, after_document, before_snapshot, after_snapshot):
+    if (not isinstance(before_document, dict) or before_document.get("schema_version") != "1.0"
+            or not isinstance(before_document.get("extensions"), dict) or before_document != after_document):
+        raise RuntimeError("Core update changed extension registration values or member metadata")
+    result = dict(before_snapshot)
+    result["files"] = dict(before_snapshot["files"])
+    name = ".aiverse/extensions/registry.json"
+    if name not in before_snapshot["files"] or name not in after_snapshot["files"]:
+        raise RuntimeError("extension registry missing before or after update")
+    result["files"][name] = after_snapshot["files"][name]
+    return result
+
+
+def _verified_skills_owner_metadata(before, after, prior_generation, active_generation):
+    """Admit timestamp refreshes, not changed policy or member content."""
+    for name, timestamp in (("integration.json", "updated_at"), ("setup.json", "setup_at")):
+        old, new = dict(before[name]), dict(after[name])
+        old_time = datetime.fromisoformat(old.pop(timestamp).replace("Z", "+00:00"))
+        new_time = datetime.fromisoformat(new.pop(timestamp).replace("Z", "+00:00"))
+        if old_time.tzinfo is None or new_time.tzinfo is None or new_time < old_time:
+            raise RuntimeError("Skills owner reconciliation timestamp is invalid")
+        if name == "setup.json":
+            if old.pop("verified_generation_id") != prior_generation or new.pop("verified_generation_id") != active_generation:
+                raise RuntimeError("Skills setup does not verify the exact retained/active generations")
+            if any(new.get(key) is not False for key in ("authority_transfer", "authorization_granted", "permissions_granted")):
+                raise RuntimeError("Skills setup expanded authority")
+        if old != new:
+            raise RuntimeError("Skills reconciliation changed policy, enablement or provider configuration")
+    return (".aiverse/integration.json", ".aiverse/setup.json")
+
+
 def _require_skills_generation_preserved(
     before: dict,
     after: dict,
     *,
     prior_generation_id: str,
     active_generation_id: str,
+    admitted_new_metadata: tuple[str, ...] = (),
+    admitted_reconciled_metadata: tuple[str, ...] = (),
 ) -> None:
     """Allow Core to activate a new immutable generation without losing the old one."""
     before_skills = before.get("local_skills") or {}
-    after_skills = after.get("local_skills") or {}
+    after_skills = dict(after.get("local_skills") or {})
+    allowed = {".aiverse/learning", ".aiverse/learning/member-library.json"}
+    if not set(admitted_new_metadata).issubset(allowed):
+        raise RuntimeError("unrecognized owner metadata preservation exception")
+    for name in admitted_new_metadata:
+        if name not in before_skills:
+            after_skills.pop(name, None)
+    if not set(admitted_reconciled_metadata).issubset({".aiverse/integration.json", ".aiverse/setup.json"}):
+        raise RuntimeError("unrecognized reconciled owner metadata exception")
+    for name in admitted_reconciled_metadata:
+        if name not in before_skills or name not in after_skills:
+            raise RuntimeError("reconciled owner metadata was not present before and after")
+        after_skills[name] = before_skills[name]
     active_pointer = ".aiverse/active.json"
     if not prior_generation_id or not active_generation_id:
         raise RuntimeError("Skills preservation check is missing a generation id")
@@ -280,6 +326,12 @@ def main() -> int:
         raise RuntimeError("Skills pin did not return an immutable generation id")
     _run_project(layout, "setup", "--workspace", "alpha")
 
+    optional_on_update = os.environ.get("AI_VERSE_ACCEPTANCE_OPTIONAL_ON_UPDATE") == "1"
+    if optional_on_update:
+        _run_project(layout, "upgrade", "--package", "ai-verse-codex-learning", "--apply")
+        (project / ".aiverse/extensions/ai-verse-codex-learning/member-preservation-marker.txt").write_text(
+            "member-owned optional package file\n", encoding="utf-8")
+
     brain_marker = "core-update-candidate-brain-preservation"
     brain_before = profile.brain_onboarding_payload(
         _run_project(layout, "onboard", "--practice", brain_marker)
@@ -291,6 +343,20 @@ def main() -> int:
     profile.prove_data(project)
     (project / "custom-notes.md").write_text("member-owned update preservation marker\n", encoding="utf-8")
 
+    legacy_skill = None
+    if os.environ.get("AI_VERSE_ACCEPTANCE_SHARED_SKILLS") == "1":
+        registry_path = project / ".aiverse/extensions/registry.json"
+        registered = json.loads(registry_path.read_text(encoding="utf-8"))
+        registered["extensions"]["ai-verse-brain"]["member_custom_note"] = {"preserve":"yes"}
+        registered["extensions"]["member-extension"] = {
+            "id":"member-extension", "supported":True, "installed":True, "enabled":False,
+            "custom":{"preserve":"yes"}}
+        registry_path.write_text(json.dumps(registered, sort_keys=True), encoding="utf-8")
+        legacy_skill = isolated_home / ".aiverse/local-skills/acceptance-legacy/SKILL.md"
+        legacy_skill.parent.mkdir(parents=True)
+        legacy_skill.write_text("---\nname: acceptance-portable-method\ndescription: Existing member procedure retained through update\n---\nUse explicit inputs and verify the result.\n", encoding="utf-8")
+        legacy_original = legacy_skill.read_bytes()
+
     source_fixture = _local_source_fixture(project) if os.environ.get("AI_VERSE_ACCEPTANCE_LOCAL_SOURCE") == "1" else None
     before_status = _run_project(layout, "status", expect=1 if source_fixture else 0)
     expected_states = {"unhealthy"} if source_fixture else {"ready", "setup-required"}
@@ -301,6 +367,10 @@ def main() -> int:
         local_skills_root=layout.stack / "skills",
         distribution_history_root=layout.distribution_home / "history",
     )
+
+    extension_registry_before = json.loads((project / ".aiverse/extensions/registry.json").read_text(encoding="utf-8"))
+    skills_metadata_before = {name: json.loads((layout.stack / "skills/.aiverse" / name).read_text(encoding="utf-8"))
+                              for name in ("integration.json", "setup.json")}
 
     # This evidence overlay exists only in this disposable member's private venv.
     # It exercises the real updater without creating a production promotion or receipt.
@@ -409,11 +479,28 @@ def main() -> int:
         local_skills_root=layout.stack / "skills",
         distribution_history_root=layout.distribution_home / "history",
     )
+    admitted_metadata = ()
+    if legacy_skill is not None:
+        if legacy_skill.read_bytes() != legacy_original:
+            raise RuntimeError("populated update altered the pre-existing personal skill")
+        configuration = json.loads((project / ".aiverse/capability-providers.json").read_text(encoding="utf-8"))
+        if Path(configuration["local_skills_root"]).resolve() != legacy_skill.parents[1].resolve():
+            raise RuntimeError("populated update relocated the prior canonical personal library")
+        route = json.loads((layout.stack / "skills/.aiverse/learning/member-library.json").read_text(encoding="utf-8"))
+        if route != {"contract":"aiverse-member-learning-route-v1", "library_root":configuration["local_skills_root"]}:
+            raise RuntimeError("new Skills owner metadata does not bind the preserved personal library")
+        admitted_metadata = (".aiverse/learning", ".aiverse/learning/member-library.json")
+    skills_metadata_after = {name: json.loads((layout.stack / "skills/.aiverse" / name).read_text(encoding="utf-8"))
+                             for name in ("integration.json", "setup.json")}
+    reconciled_metadata = _verified_skills_owner_metadata(
+        skills_metadata_before, skills_metadata_after, skills_generation, active_skills_generation)
     _require_skills_generation_preserved(
         before,
         after,
         prior_generation_id=skills_generation,
         active_generation_id=active_skills_generation,
+        admitted_new_metadata=admitted_metadata,
+        admitted_reconciled_metadata=reconciled_metadata,
     )
     # Skills owns immutable generations. Keep its verified historical generation
     # exact while allowing the new release generation and active pointer.
@@ -437,6 +524,9 @@ def main() -> int:
                 raise RuntimeError(f"privacy exclusion stopped applying: {name}")
         if update.get("local_source", {}).get("state") != "completed":
             raise RuntimeError("source preparation did not complete through the canonical updater")
+    extension_registry_after = json.loads((project / ".aiverse/extensions/registry.json").read_text(encoding="utf-8"))
+    other_state_before = _admit_registry_serialization(
+        extension_registry_before, extension_registry_after, other_state_before, after)
     require_member_state_preserved(other_state_before, after)
 
     blocked = _run_project(layout, "rollback", "--to", CURRENT_RELEASE, "--apply", expect=2)
@@ -450,6 +540,22 @@ def main() -> int:
         raise RuntimeError(f"unqualified reverse rollback did not fail closed for the expected reason: {blocked}")
     if _run_project(layout, "status").get("release_set_id") != CANDIDATE_ID:
         raise RuntimeError("blocked reverse rollback changed the installed release")
+
+    if optional_on_update:
+        # Optional code remains a separately admitted package operation. Converge
+        # the existing package through that public operation after Core update.
+        _run_project(layout, "upgrade", "--package", "ai-verse-codex-learning", "--apply")
+        configuration = json.loads((project / ".aiverse/capability-providers.json").read_text(encoding="utf-8"))
+        helper = project / ".aiverse/extensions/ai-verse-codex-learning"
+        settings = json.loads((helper / "config.json").read_text(encoding="utf-8"))
+        if Path(settings["skills_entrypoint"]).resolve() != Path(configuration["skills_entrypoint"]).resolve():
+            raise RuntimeError("existing optional package did not converge to the current installation Skills owner")
+        if (helper / "member-preservation-marker.txt").read_text(encoding="utf-8") != "member-owned optional package file\n":
+            raise RuntimeError("optional package upgrade altered an unknown member file")
+
+    if os.environ.get("AI_VERSE_ACCEPTANCE_SHARED_SKILLS") == "1":
+        from shared_skills_member_acceptance import verify_member_library
+        print(json.dumps({"shared_member_skills": verify_member_library(project, fresh=False)}))
 
     print(json.dumps({
         "result": "passed",

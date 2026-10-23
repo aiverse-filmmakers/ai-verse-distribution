@@ -27,7 +27,10 @@ LOCAL_UPGRADES_OS_PREVIOUS = "b6d8c7c7eea07ce5a28163f67d59b4d69c1fcc9f"
 LOCAL_UPGRADES_OS = "98eed935a933239021e8f5cce2e729afa5e0216b"
 LOCAL_UPGRADES_OS_V4 = "558f4ecb2f6810b10a0e152bfcf610e725fc7032"
 MEMBER_POLISH_OS = "36a85bdb6233622b90812a2bb6ea32a99d517c97"
+SHARED_MEMBER_OS = "4a134190355e590f4f52e0607ca13bbddd1ac36e"
 PUBLIC_BETA_OS_REVISIONS = frozenset({
+    SHARED_MEMBER_OS,
+    "5845fcfed123910e854ff764cb895c826a0b3291",
     MEMBER_POLISH_OS,
     PUBLIC_BETA_OS,
     PUBLIC_BETA_AGENT_OS,
@@ -48,7 +51,9 @@ INVISIBLE_INTELLIGENCE_BRAIN = "16c0b7ea32fcb4759cfb8368876b6985016eab68"
 CONTEXT_LADDER_BRAIN = "6f986e8d06c7f9c069fbf05aa92ae7b7a1af9bf4"
 REPAIRED_CORE_BRAIN = "7c77b053df627e61b3d7f11d029500ab61095c9c"
 PURPOSE_CONTEXT_BRAIN = "69f7912eeb35f0178f6952ff0554aec8d7f2c496"
+SHARED_MEMBER_BRAIN = "7e6f7a7e8a3d541815bc7f65c11dca7824c35d8f"
 PUBLIC_BETA_BRAIN_REVISIONS = frozenset({
+    SHARED_MEMBER_BRAIN,
     PUBLIC_BETA_BRAIN,
     PUBLIC_BETA_AGENT_BRAIN,
     INVISIBLE_INTELLIGENCE_BRAIN,
@@ -71,7 +76,10 @@ SUPPORTED_MEMORY_REVISIONS = frozenset({
 PUBLIC_BETA_SKILLS = "042fda1ea2ddd8b79b74f1db9d3f65212953b64a"
 INVISIBLE_INTELLIGENCE_SKILLS = "71264af6b2b9a575812fe18858d75a54ea2ff545"
 VIDEO_EDITOR_SKILLS = "afde5c06307fba7d074de2929c2eb6c3dc6bdab8"
+SHARED_MEMBER_SKILLS = "390c6e1633afc809040bd1159840045f4f9ff27e"
 SUPPORTED_SKILLS_REVISIONS = frozenset({
+    SHARED_MEMBER_SKILLS,
+    "424e2a7b130011b715ff6c3fc3a5218c627765a1",
     PUBLIC_BETA_SKILLS,
     INVISIBLE_INTELLIGENCE_SKILLS,
     VIDEO_EDITOR_SKILLS,
@@ -272,8 +280,10 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
         return results
 
     if component_id == "ai-verse-skills":
-        if revision in SUPPORTED_SKILLS_REVISIONS:
+        if revision in SUPPORTED_SKILLS_REVISIONS or (source / "installer/member_library.py").is_file():
             results.append(run(_skills(source, "setup", "--json"), cwd=source))
+            from .member_skills import configure_member_skills
+            results.extend(configure_member_skills(root, source, _skills(source), _skills(source, "status", "--json")))
             return results
         # The frozen Core Skills generation predates the later explicit setup verb.
         # Read-only owner doctor/readiness is the safe setup verification for this exact artifact.

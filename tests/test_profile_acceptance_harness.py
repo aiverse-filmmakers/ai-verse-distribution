@@ -13,10 +13,10 @@ spec.loader.exec_module(profile)
 
 class ProfileAcceptanceModeTests(unittest.TestCase):
     def test_current_release_uses_noop_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-member-polish-candidate-2026-10-21"), "current")
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-shared-skills-candidate-2026-10-23-v4"), "current")
 
     def test_accepted_parent_uses_forward_plan_and_self_update_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-local-upgrades-candidate-2026-10-19-v6"), "admitted-forward")
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-member-polish-candidate-2026-10-21"), "admitted-forward")
 
     def test_explicit_only_candidate_keeps_blocked_update_check(self):
         self.assertEqual(profile.default_update_mode(Catalog(), "core-local-upgrades-candidate-2026-10-19-v5"), "unadmitted")
@@ -28,3 +28,11 @@ class ProfileAcceptanceModeTests(unittest.TestCase):
             self.assertEqual(root, base / "AI-Verse-core")
             self.assertEqual(Path(os.environ["AI_VERSE_SKILLS_ROOT"]), base / "home-core/.aiverse/skills")
             self.assertEqual(Path(os.environ["AIVERSE_DISTRIBUTION_HOME"]), base / "distribution-core")
+
+
+class PublicationDefaultExpectationTests(unittest.TestCase):
+    def test_premerge_checks_keep_live_default_and_main_verifies_promoted_default(self):
+        from pathlib import Path
+        workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/clean-machine-core.yml").read_text()
+        expectation = "AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE: ${{ github.ref == 'refs/heads/main' && 'core-shared-skills-candidate-2026-10-23-v4' || 'core-member-polish-candidate-2026-10-21' }}"
+        self.assertEqual(workflow.count(expectation), 3)

@@ -57,6 +57,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
     @patch("aiverse_distribution.adapters.run", side_effect=fake_run)
     def test_brain_setup_and_enable_are_explicit_apply_commands(self, mocked):
         for revision in (
+            adapters.SHARED_MEMBER_BRAIN,
             adapters.PUBLIC_BETA_BRAIN,
             adapters.PUBLIC_BETA_AGENT_BRAIN,
             adapters.INVISIBLE_INTELLIGENCE_BRAIN,
@@ -91,6 +92,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
     @patch("aiverse_distribution.adapters.run", side_effect=fake_run)
     def test_skills_setup_status_and_doctor_use_public_beta_surface(self, mocked):
         for revision in (
+            adapters.SHARED_MEMBER_SKILLS,
             adapters.PUBLIC_BETA_SKILLS,
             adapters.INVISIBLE_INTELLIGENCE_SKILLS,
         ):
@@ -192,6 +194,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
     @patch("aiverse_distribution.adapters.run", side_effect=fake_run)
     def test_os_setup_status_and_doctor_use_json_lifecycle(self, mocked):
         for revision in (
+            adapters.SHARED_MEMBER_OS,
             adapters.PUBLIC_BETA_OS,
             adapters.PUBLIC_BETA_AGENT_OS,
             adapters.INVISIBLE_INTELLIGENCE_OS,
@@ -237,3 +240,17 @@ class PublicBetaAdapterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CandidateLifecycleMappingTests(unittest.TestCase):
+    def test_all_core_candidates_use_current_owner_lifecycle(self):
+        import json
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1]
+        candidates = json.loads((root / "src/aiverse_distribution/catalog/core_candidates.json").read_text())["release_sets"]
+        for candidate in candidates:
+            for component in candidate["components"]:
+                if component["id"] == "ai-verse-os":
+                    self.assertTrue(adapters._is_public_beta_os(component["revision"]), candidate["id"])
+                if component["id"] == "ai-verse-skills":
+                    self.assertIn(component["revision"], adapters.SUPPORTED_SKILLS_REVISIONS, candidate["id"])
