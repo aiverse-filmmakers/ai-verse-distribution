@@ -349,7 +349,7 @@ def main() -> int:
         registered = json.loads(registry_path.read_text(encoding="utf-8"))
         registered["extensions"]["ai-verse-brain"]["member_custom_note"] = {"preserve":"yes"}
         registered["extensions"]["member-extension"] = {
-            "id":"member-extension", "supported":False, "installed":False, "enabled":False,
+            "id":"member-extension", "supported":True, "installed":True, "enabled":False,
             "custom":{"preserve":"yes"}}
         registry_path.write_text(json.dumps(registered, sort_keys=True), encoding="utf-8")
         legacy_skill = isolated_home / ".aiverse/local-skills/acceptance-legacy/SKILL.md"
