@@ -345,6 +345,13 @@ def main() -> int:
 
     legacy_skill = None
     if os.environ.get("AI_VERSE_ACCEPTANCE_SHARED_SKILLS") == "1":
+        registry_path = project / ".aiverse/extensions/registry.json"
+        registered = json.loads(registry_path.read_text(encoding="utf-8"))
+        registered["extensions"]["ai-verse-brain"]["member_custom_note"] = {"preserve":"yes"}
+        registered["extensions"]["member-extension"] = {
+            "id":"member-extension", "supported":False, "installed":False, "enabled":False,
+            "custom":{"preserve":"yes"}}
+        registry_path.write_text(json.dumps(registered, sort_keys=True), encoding="utf-8")
         legacy_skill = isolated_home / ".aiverse/local-skills/acceptance-legacy/SKILL.md"
         legacy_skill.parent.mkdir(parents=True)
         legacy_skill.write_text("---\nname: acceptance-portable-method\ndescription: Existing member procedure retained through update\n---\nUse explicit inputs and verify the result.\n", encoding="utf-8")
