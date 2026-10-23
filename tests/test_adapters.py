@@ -57,6 +57,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
     @patch("aiverse_distribution.adapters.run", side_effect=fake_run)
     def test_brain_setup_and_enable_are_explicit_apply_commands(self, mocked):
         for revision in (
+            adapters.SHARED_MEMBER_BRAIN,
             adapters.PUBLIC_BETA_BRAIN,
             adapters.PUBLIC_BETA_AGENT_BRAIN,
             adapters.INVISIBLE_INTELLIGENCE_BRAIN,
@@ -91,6 +92,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
     @patch("aiverse_distribution.adapters.run", side_effect=fake_run)
     def test_skills_setup_status_and_doctor_use_public_beta_surface(self, mocked):
         for revision in (
+            adapters.SHARED_MEMBER_SKILLS,
             adapters.PUBLIC_BETA_SKILLS,
             adapters.INVISIBLE_INTELLIGENCE_SKILLS,
         ):
@@ -192,6 +194,7 @@ class PublicBetaAdapterTests(unittest.TestCase):
     @patch("aiverse_distribution.adapters.run", side_effect=fake_run)
     def test_os_setup_status_and_doctor_use_json_lifecycle(self, mocked):
         for revision in (
+            adapters.SHARED_MEMBER_OS,
             adapters.PUBLIC_BETA_OS,
             adapters.PUBLIC_BETA_AGENT_OS,
             adapters.INVISIBLE_INTELLIGENCE_OS,
