@@ -240,3 +240,17 @@ class PublicBetaAdapterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CandidateLifecycleMappingTests(unittest.TestCase):
+    def test_all_core_candidates_use_current_owner_lifecycle(self):
+        import json
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1]
+        candidates = json.loads((root / "src/aiverse_distribution/catalog/core_candidates.json").read_text())["release_sets"]
+        for candidate in candidates:
+            for component in candidate["components"]:
+                if component["id"] == "ai-verse-os":
+                    self.assertTrue(adapters._is_public_beta_os(component["revision"]), candidate["id"])
+                if component["id"] == "ai-verse-skills":
+                    self.assertIn(component["revision"], adapters.SUPPORTED_SKILLS_REVISIONS, candidate["id"])
