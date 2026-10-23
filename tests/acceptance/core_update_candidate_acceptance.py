@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 import os
 import subprocess
 import sys
@@ -174,6 +175,24 @@ def _install_test_transition(layout: ProjectLayout) -> None:
     transitions_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _verified_skills_owner_metadata(before, after, prior_generation, active_generation):
+    """Admit timestamp refreshes, not changed policy or member content."""
+    for name, timestamp in (("integration.json", "updated_at"), ("setup.json", "setup_at")):
+        old, new = dict(before[name]), dict(after[name])
+        old_time = datetime.fromisoformat(old.pop(timestamp).replace("Z", "+00:00"))
+        new_time = datetime.fromisoformat(new.pop(timestamp).replace("Z", "+00:00"))
+        if old_time.tzinfo is None or new_time.tzinfo is None or new_time < old_time:
+            raise RuntimeError("Skills owner reconciliation timestamp is invalid")
+        if name == "setup.json":
+            if old.pop("verified_generation_id") != prior_generation or new.pop("verified_generation_id") != active_generation:
+                raise RuntimeError("Skills setup does not verify the exact retained/active generations")
+            if any(new.get(key) is not False for key in ("authority_transfer", "authorization_granted", "permissions_granted")):
+                raise RuntimeError("Skills setup expanded authority")
+        if old != new:
+            raise RuntimeError("Skills reconciliation changed policy, enablement or provider configuration")
+    return (".aiverse/integration.json", ".aiverse/setup.json")
+
+
 def _require_skills_generation_preserved(
     before: dict,
     after: dict,
@@ -181,6 +200,7 @@ def _require_skills_generation_preserved(
     prior_generation_id: str,
     active_generation_id: str,
     admitted_new_metadata: tuple[str, ...] = (),
+    admitted_reconciled_metadata: tuple[str, ...] = (),
 ) -> None:
     """Allow Core to activate a new immutable generation without losing the old one."""
     before_skills = before.get("local_skills") or {}
@@ -191,6 +211,12 @@ def _require_skills_generation_preserved(
     for name in admitted_new_metadata:
         if name not in before_skills:
             after_skills.pop(name, None)
+    if not set(admitted_reconciled_metadata).issubset({".aiverse/integration.json", ".aiverse/setup.json"}):
+        raise RuntimeError("unrecognized reconciled owner metadata exception")
+    for name in admitted_reconciled_metadata:
+        if name not in before_skills or name not in after_skills:
+            raise RuntimeError("reconciled owner metadata was not present before and after")
+        after_skills[name] = before_skills[name]
     active_pointer = ".aiverse/active.json"
     if not prior_generation_id or not active_generation_id:
         raise RuntimeError("Skills preservation check is missing a generation id")
@@ -322,6 +348,9 @@ def main() -> int:
         distribution_history_root=layout.distribution_home / "history",
     )
 
+    skills_metadata_before = {name: json.loads((layout.stack / "skills/.aiverse" / name).read_text(encoding="utf-8"))
+                              for name in ("integration.json", "setup.json")}
+
     # This evidence overlay exists only in this disposable member's private venv.
     # It exercises the real updater without creating a production promotion or receipt.
     promotion_present_on_source = source_promotion_present(Catalog(), CANDIDATE_ID)
@@ -440,12 +469,17 @@ def main() -> int:
         if route != {"contract":"aiverse-member-learning-route-v1", "library_root":configuration["local_skills_root"]}:
             raise RuntimeError("new Skills owner metadata does not bind the preserved personal library")
         admitted_metadata = (".aiverse/learning", ".aiverse/learning/member-library.json")
+    skills_metadata_after = {name: json.loads((layout.stack / "skills/.aiverse" / name).read_text(encoding="utf-8"))
+                             for name in ("integration.json", "setup.json")}
+    reconciled_metadata = _verified_skills_owner_metadata(
+        skills_metadata_before, skills_metadata_after, skills_generation, active_skills_generation)
     _require_skills_generation_preserved(
         before,
         after,
         prior_generation_id=skills_generation,
         active_generation_id=active_skills_generation,
         admitted_new_metadata=admitted_metadata,
+        admitted_reconciled_metadata=reconciled_metadata,
     )
     # Skills owns immutable generations. Keep its verified historical generation
     # exact while allowing the new release generation and active pointer.

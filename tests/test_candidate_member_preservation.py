@@ -37,3 +37,25 @@ class MemberPreservationAcceptanceTests(unittest.TestCase):
 
     def test_arbitrary_metadata_exception_is_refused(self):
         with self.assertRaises(RuntimeError): self.check(self.before(),self.before(),("unknown.json",))
+
+class OwnerMetadataReconciliationTests(unittest.TestCase):
+    def metadata(self):
+        return {"integration.json":{"action":"enabled","schema_version":1,"updated_at":"2026-10-22T00:00:00Z"},
+                "setup.json":{"verified_generation_id":"prior","authority_transfer":False,"authorization_granted":False,"permissions_granted":False,"learning_mode":"propose","setup_at":"2026-10-22T00:00:00Z"}}
+
+    def test_timestamp_and_exact_generation_refresh_are_admitted(self):
+        old=self.metadata();new=self.metadata();new["setup.json"]["verified_generation_id"]="active"
+        new["setup.json"]["setup_at"]="2026-10-23T00:00:00Z"
+        self.assertEqual(len(fixture._verified_skills_owner_metadata(old,new,"prior","active")),2)
+
+    def test_learning_policy_change_is_refused(self):
+        old=self.metadata();new=self.metadata();new["setup.json"]["learning_mode"]="auto"
+        with self.assertRaises(RuntimeError):fixture._verified_skills_owner_metadata(old,new,"prior","prior")
+
+    def test_enablement_change_is_refused(self):
+        old=self.metadata();new=self.metadata();new["integration.json"]["action"]="disabled"
+        with self.assertRaises(RuntimeError):fixture._verified_skills_owner_metadata(old,new,"prior","prior")
+
+    def test_permission_expansion_is_refused(self):
+        old=self.metadata();new=self.metadata();new["setup.json"]["permissions_granted"]=True
+        with self.assertRaises(RuntimeError):fixture._verified_skills_owner_metadata(old,new,"prior","prior")
