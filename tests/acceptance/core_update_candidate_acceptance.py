@@ -24,6 +24,15 @@ CANDIDATE_ID = os.environ.get("AI_VERSE_ACCEPTANCE_RELEASE_SET", "core-local-upg
 TEST_EVIDENCE_REF = "temporary-clean-machine-update-fixture"
 
 
+def existing_personal_skill_path(project: Path, isolated_home: Path) -> Path:
+    """Seed an existing method in the prior installation's actual bound library."""
+    config = project / ".aiverse/capability-providers.json"
+    if config.is_file():
+        configuration = json.loads(config.read_text(encoding="utf-8"))
+        return Path(configuration["local_skills_root"]) / "acceptance-legacy/SKILL.md"
+    return isolated_home / ".aiverse/local-skills/acceptance-legacy/SKILL.md"
+
+
 def _local_source_fixture(project: Path) -> dict:
     """Synthetic equivalent of the pioneering member's fourteen tracked edits."""
     target = json.loads(os.environ["AI_VERSE_ACCEPTANCE_EXPECTED_REFS"])["ai-verse-os"]
@@ -352,7 +361,7 @@ def main() -> int:
             "id":"member-extension", "supported":True, "installed":True, "enabled":False,
             "custom":{"preserve":"yes"}}
         registry_path.write_text(json.dumps(registered, sort_keys=True), encoding="utf-8")
-        legacy_skill = isolated_home / ".aiverse/local-skills/acceptance-legacy/SKILL.md"
+        legacy_skill = existing_personal_skill_path(project, isolated_home)
         legacy_skill.parent.mkdir(parents=True)
         legacy_skill.write_text("---\nname: acceptance-portable-method\ndescription: Existing member procedure retained through update\n---\nUse explicit inputs and verify the result.\n", encoding="utf-8")
         legacy_original = legacy_skill.read_bytes()
