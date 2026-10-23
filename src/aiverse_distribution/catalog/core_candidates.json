@@ -447,7 +447,7 @@
       }
     },
     {
-      "id": "core-shared-skills-candidate-2026-10-23-v2",
+      "id": "core-shared-skills-candidate-2026-10-23-v3",
       "profile": "core",
       "status": "released",
       "created_at": "2026-10-23",
@@ -464,7 +464,7 @@
         {
           "id": "ai-verse-os",
           "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
-          "revision": "5845fcfed123910e854ff764cb895c826a0b3291",
+          "revision": "4a134190355e590f4f52e0607ca13bbddd1ac36e",
           "install_order": 10
         },
         {
@@ -482,7 +482,7 @@
         {
           "id": "ai-verse-skills",
           "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
-          "revision": "424e2a7b130011b715ff6c3fc3a5218c627765a1",
+          "revision": "390c6e1633afc809040bd1159840045f4f9ff27e",
           "install_order": 40
         },
         {
@@ -501,7 +501,7 @@
         {
           "id": "ai-verse-codex-learning",
           "owner_component": "ai-verse-os",
-          "source_revision": "5845fcfed123910e854ff764cb895c826a0b3291",
+          "source_revision": "4a134190355e590f4f52e0607ca13bbddd1ac36e",
           "source_path": "system/extensions/packages/ai-verse-codex-learning",
           "version": "0.3.0-local",
           "manifest_sha256": "565dc812f1171d2590918511fd176010de5d2a325d1f2668220da6bb120c37d4",
@@ -636,7 +636,7 @@
         "core-first-run-rc1-2026-10-12"
       ]
     },
-    "core-shared-skills-candidate-2026-10-23-v2": {
+    "core-shared-skills-candidate-2026-10-23-v3": {
       "profile": "core",
       "status": "released",
       "platforms": [
@@ -650,10 +650,10 @@
       "rollback_rule": "software-only-owner-state-preserved",
       "update_from": [
         "core-member-polish-candidate-2026-10-21",
-        "core-shared-skills-candidate-2026-10-23-v2"
+        "core-shared-skills-candidate-2026-10-23-v3"
       ],
       "rollback_to": [
-        "core-shared-skills-candidate-2026-10-23-v2"
+        "core-shared-skills-candidate-2026-10-23-v3"
       ]
     }
   },
@@ -677,10 +677,6 @@
     "core-local-upgrades-candidate-2026-10-19-v5": {
       "path": "qualification/core-local-upgrades-candidate-2026-10-19-v5/candidate-evidence.json",
       "sha256": "42d09ef0cfe8303f9b3708b35108f1b29f54496cfc90b05ffe7aedfc3ab32bcc"
-    },
-    "core-shared-skills-candidate-2026-10-23-v2": {
-      "path": "qualification/core-shared-skills-candidate-2026-10-23-v2/candidate-evidence.json",
-      "sha256": "4ef2b2ed3c0a939519ac301cb153c3c5a2bcb327b203a9d142728db302bfa2c3"
     }
   }
 }
