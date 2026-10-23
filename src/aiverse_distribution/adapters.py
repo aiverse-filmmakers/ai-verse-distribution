@@ -93,6 +93,12 @@ SUPPORTED_GATEWAY_REVISIONS = frozenset({
     PUBLIC_BETA_GATEWAY,
     INVISIBLE_INTELLIGENCE_GATEWAY,
     CONTEXT_LADDER_GATEWAY,
+    # Exact Gateway owner-native green revision under composed acceptance, not a floating ref.
+    "5b459a89455fdf2d73f212b5a0486927891416cc",
+    # G2.2 exact merged Gateway revision: two-system scoped replay + cold restart.
+    "fb26891e8d8c23ca0ac3f40a7bb4c85df74ebd59",
+    # Exact Gateway SSE/recovery source for G3.1 composed acceptance.
+    "003e0781de189969d5b79904256cda9761a882fe",
 })
 PUBLIC_BETA_AUTOMATIONS = "494469a496d479cfec618bcd9511033c0cd3e815"
 INVISIBLE_INTELLIGENCE_AUTOMATIONS = "caaed83b98026dd955640fc015d181529b91a1c6"
