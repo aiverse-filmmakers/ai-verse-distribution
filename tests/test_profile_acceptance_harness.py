@@ -34,5 +34,5 @@ class PublicationDefaultExpectationTests(unittest.TestCase):
     def test_premerge_checks_keep_live_default_and_main_verifies_promoted_default(self):
         from pathlib import Path
         workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/clean-machine-core.yml").read_text()
-        expectation = "AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE: ${{ github.ref == 'refs/heads/main' && 'core-shared-skills-candidate-2026-10-23-v4' || 'core-member-polish-candidate-2026-10-21' }}"
-        self.assertEqual(workflow.count(expectation), 3)
+        expectation = "AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE: ${{ github.ref == 'refs/heads/main' && 'core-tool-placement-candidate-2026-10-23' || 'core-shared-skills-candidate-2026-10-23-v4' }}"
+        self.assertEqual(workflow.count(expectation), 4)

@@ -501,7 +501,7 @@
         {
           "id": "ai-verse-codex-learning",
           "owner_component": "ai-verse-os",
-          "source_revision": "4a134190355e590f4f52e0607ca13bbddd1ac36e",
+          "source_revision": "7bb6226783396ef7a00b325306da26b0f4b17474",
           "source_path": "system/extensions/packages/ai-verse-codex-learning",
           "version": "0.3.0-local",
           "manifest_sha256": "565dc812f1171d2590918511fd176010de5d2a325d1f2668220da6bb120c37d4",
@@ -680,7 +680,7 @@
     },
     "core-tool-placement-candidate-2026-10-23": {
       "path": "qualification/core-tool-placement-candidate-2026-10-23/candidate-evidence.json",
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "sha256": "5d1eff76265b16eea7a5970fdb5fcebc6f27a280d19e9870328d8a4bcbec4cce"
     }
   }
 }
