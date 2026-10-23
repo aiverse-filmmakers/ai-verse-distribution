@@ -447,7 +447,7 @@
       }
     },
     {
-      "id": "core-shared-skills-candidate-2026-10-23-v3",
+      "id": "core-shared-skills-candidate-2026-10-23-v4",
       "profile": "core",
       "status": "released",
       "created_at": "2026-10-23",
@@ -636,7 +636,7 @@
         "core-first-run-rc1-2026-10-12"
       ]
     },
-    "core-shared-skills-candidate-2026-10-23-v3": {
+    "core-shared-skills-candidate-2026-10-23-v4": {
       "profile": "core",
       "status": "released",
       "platforms": [
@@ -650,10 +650,10 @@
       "rollback_rule": "software-only-owner-state-preserved",
       "update_from": [
         "core-member-polish-candidate-2026-10-21",
-        "core-shared-skills-candidate-2026-10-23-v3"
+        "core-shared-skills-candidate-2026-10-23-v4"
       ],
       "rollback_to": [
-        "core-shared-skills-candidate-2026-10-23-v3"
+        "core-shared-skills-candidate-2026-10-23-v4"
       ]
     }
   },
@@ -677,10 +677,6 @@
     "core-local-upgrades-candidate-2026-10-19-v5": {
       "path": "qualification/core-local-upgrades-candidate-2026-10-19-v5/candidate-evidence.json",
       "sha256": "42d09ef0cfe8303f9b3708b35108f1b29f54496cfc90b05ffe7aedfc3ab32bcc"
-    },
-    "core-shared-skills-candidate-2026-10-23-v3": {
-      "path": "qualification/core-shared-skills-candidate-2026-10-23-v3/candidate-evidence.json",
-      "sha256": "9c77ca6265ab4307ca3e8ccdf374ade62391134704d35e1bb3d94c13fff37589"
     }
   }
 }
