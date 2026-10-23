@@ -1,0 +1,31 @@
+{
+  "schema_version": "aiverse.distribution-core-promotion/v1",
+  "release_id": "core-shared-skills-candidate-2026-10-23-v4",
+  "previous_release_id": "core-member-polish-candidate-2026-10-21",
+  "status": "applied",
+  "mode": "normal",
+  "qualification": {
+    "schema_version": "aiverse.distribution-whole-product-qualification/v1",
+    "ref": "qualification/core-shared-skills-candidate-2026-10-23-v4/whole-product-qualification.json",
+    "sha256": "07da8f82a3314cbba45f4049d0199929d00d833596a6b9e3d87a36a7b2dfebe0"
+  },
+  "system_sync": {
+    "status": "synchronized",
+    "repository_state_sha256": "30a612f1a91278bed853dee5ac4eefae4e9850a7f3acb54a909dbfb8b850733b",
+    "debt_ids": []
+  },
+  "writes": [
+    "src/aiverse_distribution/catalog/core_promotions.json",
+    "src/aiverse_distribution/catalog/core_candidates.json",
+    "release-sets/core-shared-skills-candidate-2026-10-23-v4.json",
+    "qualification/core-shared-skills-candidate-2026-10-23-v4/release-receipt.json",
+    "qualification/core-shared-skills-candidate-2026-10-23-v4/promotion.json"
+  ],
+  "authority": {
+    "promotion_decision": true,
+    "registry_authority": false,
+    "repository_state_authority": false,
+    "owner_acceptance_authority": false,
+    "member_state_authority": false
+  }
+}

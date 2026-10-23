@@ -13,10 +13,10 @@ spec.loader.exec_module(profile)
 
 class ProfileAcceptanceModeTests(unittest.TestCase):
     def test_current_release_uses_noop_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-member-polish-candidate-2026-10-21"), "current")
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-shared-skills-candidate-2026-10-23-v4"), "current")
 
     def test_accepted_parent_uses_forward_plan_and_self_update_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-local-upgrades-candidate-2026-10-19-v6"), "admitted-forward")
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-member-polish-candidate-2026-10-21"), "admitted-forward")
 
     def test_explicit_only_candidate_keeps_blocked_update_check(self):
         self.assertEqual(profile.default_update_mode(Catalog(), "core-local-upgrades-candidate-2026-10-19-v5"), "unadmitted")

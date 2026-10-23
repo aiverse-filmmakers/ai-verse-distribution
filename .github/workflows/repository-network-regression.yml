@@ -114,15 +114,15 @@ jobs:
           assert set(candidates.get('compatibility', {})) == expected_ids, candidates
           assert set(candidates.get('candidate_evidence', {})) == expected_ids, candidates
           assert 'core-local-upgrades-candidate-2026-10-19-v6' not in {item.get('id') for item in release_sets}, candidates
-          promoted_id = 'core-member-polish-candidate-2026-10-21'
+          promoted_id = 'core-shared-skills-candidate-2026-10-23-v4'
           promoted = next(item for item in promotions.get('release_sets', []) if item.get('id') == promoted_id)
           assert promotions.get('current_release') == promoted_id, promotions
           assert 'core-first-run-rc1-2026-10-12' in {item['id'] for item in promotions['release_sets']}, promotions
-          assert promoted.get('lineage', {}).get('parent') == 'core-local-upgrades-candidate-2026-10-19-v6', promoted
+          assert promoted.get('lineage', {}).get('parent') == 'core-member-polish-candidate-2026-10-21', promoted
           assert promoted.get('evidence', {}).get('whole_product_qualification', {}).get('status') == 'accepted', promoted
           assert promoted.get('evidence', {}).get('transition_policy', {}).get('cross_release_update_admitted') is True, promoted
           os_component = next(item for item in promoted['components'] if item['id'] == 'ai-verse-os')
-          assert os_component['revision'] == '36a85bdb6233622b90812a2bb6ea32a99d517c97', promoted
+          assert os_component['revision'] == '4a134190355e590f4f52e0607ca13bbddd1ac36e', promoted
           assert promotions.get('system_sync_debts') == [], promotions
           PY
 
