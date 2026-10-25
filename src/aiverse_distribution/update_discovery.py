@@ -78,8 +78,12 @@ def _binding() -> tuple[Path, dict] | None:
         raise DiscoveryError('Project tooling receipt is invalid')
     layout = ProjectLayout.resolve(Path(marker['project']), home.parent)
     layout.inspect()
-    if layout.distribution_home != home or marker.get('phase') != 'installed':
-        raise DiscoveryError('Project tooling is incomplete or bound to another installation')
+    if layout.distribution_home != home:
+        raise DiscoveryError('Project tooling is bound to another installation')
+    if marker.get('phase') != 'installed':
+        # Fresh bootstrap calls owner setup before its final receipt commit.
+        # That established install/resume path must finish before discovery applies.
+        return None
     lock = json.loads(_contained(home, home / 'locks/current.json').read_text(encoding='utf-8'))
     if lock.get('root') != str(layout.project) or lock.get('profile') != 'core':
         raise DiscoveryError('Updater does not match this installed Core project')

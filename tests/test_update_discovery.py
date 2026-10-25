@@ -246,3 +246,11 @@ class BoundDiscoveryTests(unittest.TestCase):
         self.assertFalse(worker.is_alive())
         self.assertEqual(errors, [])
         self.assertEqual(self.selected(), self.revision)
+
+    def test_fresh_bootstrap_setup_keeps_its_existing_unfinished_install_path(self):
+        marker = json.loads(self.layout.receipt.read_text())
+        marker['phase'] = 'installing'
+        self.layout.receipt.write_text(json.dumps(marker))
+        with patch.object(discovery, 'acquire_snapshot') as acquire:
+            self.assertIsNone(discovery.route(['setup', '--json']))
+        acquire.assert_not_called()
