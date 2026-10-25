@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "src" / "aiverse_distribution" / "catalog"
 RELEASE_ID = "agent-gateway-windows-qualification-2026-10-23"
 BASE_ID = "agent-public-beta-2026-09-14"
-GATEWAY_SHA = "003e0781de189969d5b79904256cda9761a882fe"
+GATEWAY_SHA = "08d3a36728158a6c0589ecf710264e9e4058d925"
 
 
 def main() -> None:
