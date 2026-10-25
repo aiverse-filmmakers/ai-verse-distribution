@@ -20,6 +20,8 @@ aiverse update
 
 That is enough. Members do not need release IDs, component SHAs, branches, prerequisite versions, installer folders, migration commands, setup commands, or doctor commands.
 
+Project-bound updates check the official Distribution source, verify one immutable updater/catalog snapshot, and run the existing preservation-safe Core lifecycle. Offline checks report that latest-release status is unknown; local doctor and recovery remain available. Installations predating this discovery transport need one canonical bootstrap refresh from a current installer checkout. See [update discovery](docs/UPDATE-DISCOVERY.md).
+
 Current Core is selected by the [release catalog](src/aiverse_distribution/catalog/core_promotions.json) (`current_release`). The installer resolves that selection automatically; dated release notes describe historical changes, not the current channel.
 
 ## Install vs update

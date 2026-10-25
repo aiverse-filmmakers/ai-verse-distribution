@@ -2,7 +2,7 @@
 
 Method: System's Adaptive Implementation Planning Skill (current main a6ea488b42bb19f106ddcccbe03594c7dd1fe7c7, including proportional engineering section 12). Extended depth: installer lifecycle, executable-source trust, concurrency and recovery. Owner: Distribution. Baseline: ace4be259d7fd0b53ed69f8d2fc3d47b08de5eb0. Authorization: implement future update discovery for members, with Plan Maker first.
 
-State: planning/contract slice in progress. Accepted: 0/3 slices. No new Core component release is required: this changes Distribution tooling while preserving the current Core composition. Existing installations need the documented one-time canonical bootstrap refresh to acquire the new transport.
+State: implementation locally validated; cross-platform qualification pending. Accepted: 2/3 slices (67%). No new Core component release is required: this changes Distribution tooling while preserving the current Core composition. Existing installations need the documented one-time canonical bootstrap refresh to acquire the new transport.
 
 ## Product brief and requirements
 
@@ -50,6 +50,17 @@ Requirements R2-R7. Disposable new/older member fixtures only. Derive exact comm
 
 A product/architecture: self-review complete at plan creation. Requirements have success/failure/preservation coverage. Metadata-only refresh was considered; it cannot support future updater code/schema changes and would leave independent packaged lock/transition readers inconsistent. Immutable whole-source handoff is simpler than migrating each resource reader or installing over a running environment. Deletion test: removing selection breaks offline doctor after a new Core receipt; removing immutable staging endangers running tooling. No third-party dependencies or plugin framework.
 
-B code/adversarial: pending. C behavior/delivery: pending. Independent review only through available authorized repository review tooling; author review must be labelled self-review. Planned checks do not override session permissions. Scope changes need an explicit amendment; adaptive tasks cannot weaken acceptance. On repeated repair failure, diagnose/replan instead of churning.
+B code/adversarial: self-review complete on the implementation diff: source bytes checked independently of Git index flags; no executable source override exposed; no active selection on preview/preparation failure; lifecycle lock rechecks installed full component identity; selector advances before Core effects; delegated function avoids recursive discovery; no dependency or in-place live package replacement. New module is 243 lines, standard-library only; private selection is the one necessary new local metadata file. C behavior/delivery: local path passed; hosted exact-head matrix pending. Independent review only through available authorized repository review tooling; author review must be labelled self-review. Planned checks do not override session permissions. Scope changes need an explicit amendment; adaptive tasks cannot weaken acceptance. On repeated repair failure, diagnose/replan instead of churning.
 
 Administrative closeout is separate from the 3-slice denominator: update this plan, member documentation and private navigation with exact source/PR/check evidence. Keep merged, qualified and member-available distinct.
+
+
+## Execution evidence — 25 October 2026
+
+Slice 1 COMPLETE: plan/source contract merged in Distribution PR80, merge 30b7728eb0810dc2c25ea652f39a477e6e656e4e. No runtime behavior changed in that contract commit. Hosted validation is distinct from adoption.
+
+Slice 2 COMPLETE locally: installed public entrypoint regression first failed with `0 != 17`, then passed after routing integration. Added verified official snapshot transport and local handoff; kept existing lifecycle implementation. Twenty focused tests cover preview, no network fallback, exact identity, tampering despite assume-unchanged, unknown modules, symlinks, protocol, timeout, full-component mismatch, failure propagation, interruption and existing kernel-lock serialization. Full local suite: 580 tests, 11 existing skips, exit 0 (14.507s). Source baseline remains this branch; any later executable change requires affected checks again. No independent reviewer is claimed.
+
+Slice 3 IN PROGRESS: local disposable stale-catalog acceptance passed using real old Core core-shared-skills-candidate-2026-10-23-v4 and new Core core-tool-placement-candidate-2026-10-23. Historical updater 37bdf4d9526abf59e5ce5b0cf783ee349428f3d7 correctly demonstrated its old no-op. New transport fixture with the same old packaged catalog discovered official snapshot 30b7728eb0810dc2c25ea652f39a477e6e656e4e, applied the admitted transition, preserved four synthetic member files, passed all five status/doctor checks, repeated as a no-op and allowed cached health while refusing an offline latest-release claim. This is an explicit stale-catalog fixture, not a claim that historical code can self-acquire an unknown transport. One-time refresh remains necessary.
+
+New Installed update discovery workflow adds only the missing three-platform stale-catalog scenario; existing full unit/Core preservation and release workflows remain unchanged. Next: hosted exact-head checks; diagnose any failures; merge only after required implementation evidence succeeds; verify new official source handoff and close out. Personal OS untouched.

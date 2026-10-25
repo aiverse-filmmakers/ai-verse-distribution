@@ -26,4 +26,4 @@ aiverse_distribution = ["catalog/*.json", "dependency_locks/*/*/*.json"]
 # before this handoff interface is used. This is not a second Core channel.
 [tool.aiverse.distribution-update]
 protocol = 1
-entrypoint = "main"
+entrypoint = "_local_main"
