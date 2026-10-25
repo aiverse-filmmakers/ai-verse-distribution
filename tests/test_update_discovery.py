@@ -254,3 +254,15 @@ class BoundDiscoveryTests(unittest.TestCase):
         with patch.object(discovery, 'acquire_snapshot') as acquire:
             self.assertIsNone(discovery.route(['setup', '--json']))
         acquire.assert_not_called()
+
+    def test_git_replace_cannot_substitute_another_tree_for_official_commit(self):
+        file = self.snapshot / 'src/aiverse_distribution/entrypoint.py'
+        file.write_text(file.read_text() + '\n# replacement tree\n')
+        git(self.snapshot, 'add', '.')
+        git(self.snapshot, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+            'commit', '-m', 'replacement')
+        replacement = git(self.snapshot, 'rev-parse', 'HEAD')
+        git(self.snapshot, 'replace', self.revision, replacement)
+        git(self.snapshot, 'update-ref', 'HEAD', self.revision)
+        with self.assertRaisesRegex(discovery.DiscoveryError, 'modified'):
+            discovery.verify_snapshot(self.snapshot, self.revision)

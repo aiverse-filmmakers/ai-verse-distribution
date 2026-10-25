@@ -32,6 +32,11 @@ def run(*argv, cwd=None, capture=False):
 def main():
     source = Path(__file__).resolve().parents[2]
     base = Path(tempfile.mkdtemp(prefix='av-discovery-'))
+    # Reuse the acceptance harness's existing isolated host roots so personal
+    # skill discovery and Git configuration never reach a developer's home.
+    sys.path.insert(0, str(source / 'src'))
+    from profile_acceptance import configure_profile_environment
+    configure_profile_environment(base, 'core')
     old = base / 'old'
     old.mkdir()
     run('git', 'init', cwd=old)

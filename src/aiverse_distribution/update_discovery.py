@@ -33,7 +33,8 @@ class DiscoveryError(DistributionError):
 def _git(*arguments: str, cwd: Path | None = None, timeout: int = 45) -> str:
     argv = ['git', '-c', 'core.autocrlf=false', '-c', f'core.hooksPath={os.devnull}',
             '-c', 'protocol.file.allow=never', *arguments]
-    environment = {**os.environ, 'GIT_TERMINAL_PROMPT': '0', 'GIT_LFS_SKIP_SMUDGE': '1'}
+    environment = {**os.environ, 'GIT_TERMINAL_PROMPT': '0', 'GIT_LFS_SKIP_SMUDGE': '1',
+                   'GIT_NO_REPLACE_OBJECTS': '1'}
     try:
         result = subprocess.run(argv, cwd=cwd, env=environment, capture_output=True,
                                 text=True, timeout=timeout, check=False)
@@ -99,6 +100,7 @@ def verify_snapshot(snapshot: Path, revision: str) -> str:
     if (_git('remote', 'get-url', 'origin', cwd=snapshot) != OFFICIAL_REPOSITORY
             or _git('rev-parse', 'HEAD', cwd=snapshot) != revision):
         raise DiscoveryError('Updater source identity does not match its receipt')
+    _git('fsck', '--strict', '--no-dangling', cwd=snapshot)
     if snapshot.joinpath('.git').is_symlink():
         raise DiscoveryError('Updater Git metadata is redirected')
     expected = set()
