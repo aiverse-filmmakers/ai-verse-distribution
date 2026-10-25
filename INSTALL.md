@@ -58,6 +58,12 @@ aiverse update
 
 This applies only an explicitly admitted software transition. It preserves user-owned/ambiguous local state, creates the required recovery protection before mutation, executes owner-controlled migration/reconcile where admitted, and finishes with health verification.
 
+Project-bound default updates first check and verify the official Distribution updater/catalog snapshot. They never install over the running updater. A successful tooling preparation does not imply a successful Core update: owner conflicts still stop the lifecycle, and the verified tooling remains available for diagnosis/recovery.
+
+If this installation predates automatic discovery, obtain a current official Distribution checkout outside the member project and run the normal bootstrap against the existing verified project once. It refreshes private tooling and routes to the canonical updater; it must not reinstall or reset the member project. After that refresh, ordinary `aiverse update` discovers future releases automatically. The coding agent handles this preparation; the member does not need to select a release or locate private tools.
+
+If the network check fails, report that the latest release could not be checked. Do not call a cached catalog globally up to date. An explicit advanced `--to` request continues to use the selected local catalog and exact admitted transition.
+
 For a non-mutating preview:
 
 ```text

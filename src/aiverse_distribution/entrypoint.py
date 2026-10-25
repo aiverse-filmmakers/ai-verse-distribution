@@ -120,9 +120,24 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     """Installed `aiverse` entrypoint with preservation-safe lifecycle UX."""
 
     from . import cli
-    from .recovery_orchestrator import RecoveryOrchestrator
 
     values = list(argv) if argv is not None else list(sys.argv[1:])
+    from .update_discovery import route
+    try:
+        routed = route(values)
+    except (OSError, ValueError, RuntimeError) as exc:
+        cli._emit({"error": getattr(exc, "code", "UPDATE_DISCOVERY_FAILED"), "message": str(exc)}, "--json" in values)
+        return 2
+    if routed is not None:
+        return routed
+    return _local_main(values)
+
+
+def _local_main(values: list[str]) -> int:
+    """Protocol-1 snapshot handoff; discovery is owned by the installed transport."""
+    from . import cli
+    from .recovery_orchestrator import RecoveryOrchestrator
+
     if values and values[0] == "restore":
         return _restore_main(values[1:])
     if values and values[0] == "upgrade":
