@@ -97,6 +97,8 @@ SUPPORTED_GATEWAY_REVISIONS = frozenset({
     "fb26891e8d8c23ca0ac3f40a7bb4c85df74ebd59",
     # Exact Gateway SSE/recovery source for G3.1 composed acceptance.
     "003e0781de189969d5b79904256cda9761a882fe",
+    # Exact bounded-memory SSE Gateway revision: CI-only composed qualification.
+    "08d3a36728158a6c0589ecf710264e9e4058d925",
 })
 PUBLIC_BETA_AUTOMATIONS = "494469a496d479cfec618bcd9511033c0cd3e815"
 INVISIBLE_INTELLIGENCE_AUTOMATIONS = "caaed83b98026dd955640fc015d181529b91a1c6"
