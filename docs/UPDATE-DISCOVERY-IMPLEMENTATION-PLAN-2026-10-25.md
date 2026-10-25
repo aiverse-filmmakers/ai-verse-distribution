@@ -2,7 +2,7 @@
 
 Method: System's Adaptive Implementation Planning Skill (current main a6ea488b42bb19f106ddcccbe03594c7dd1fe7c7, including proportional engineering section 12). Extended depth: installer lifecycle, executable-source trust, concurrency and recovery. Owner: Distribution. Baseline: ace4be259d7fd0b53ed69f8d2fc3d47b08de5eb0. Authorization: implement future update discovery for members, with Plan Maker first.
 
-State: implementation locally validated; cross-platform qualification pending. Accepted: 2/3 slices (67%). No new Core component release is required: this changes Distribution tooling while preserving the current Core composition. Existing installations need the documented one-time canonical bootstrap refresh to acquire the new transport.
+State: published and verified. Accepted: 3/3 implementation slices (100%). No new Core component release is required: this changes Distribution tooling while preserving the current Core composition. Existing installations need the documented one-time canonical bootstrap refresh to acquire the new transport.
 
 ## Product brief and requirements
 
@@ -50,7 +50,7 @@ Requirements R2-R7. Disposable new/older member fixtures only. Derive exact comm
 
 A product/architecture: self-review complete at plan creation. Requirements have success/failure/preservation coverage. Metadata-only refresh was considered; it cannot support future updater code/schema changes and would leave independent packaged lock/transition readers inconsistent. Immutable whole-source handoff is simpler than migrating each resource reader or installing over a running environment. Deletion test: removing selection breaks offline doctor after a new Core receipt; removing immutable staging endangers running tooling. No third-party dependencies or plugin framework.
 
-B code/adversarial: self-review complete on the implementation diff: source bytes checked independently of Git index flags; no executable source override exposed; no active selection on preview/preparation failure; lifecycle lock rechecks installed full component identity; selector advances before Core effects; delegated function avoids recursive discovery; no dependency or in-place live package replacement. New module is approximately 250 lines, standard-library only; private selection is the one necessary new local metadata file. C behavior/delivery: local path passed; hosted exact-head matrix pending. Independent review only through available authorized repository review tooling; author review must be labelled self-review. Planned checks do not override session permissions. Scope changes need an explicit amendment; adaptive tasks cannot weaken acceptance. On repeated repair failure, diagnose/replan instead of churning.
+B code/adversarial: self-review complete on the implementation diff: source bytes checked independently of Git index flags; no executable source override exposed; no active selection on preview/preparation failure; lifecycle lock rechecks installed full component identity; selector advances before Core effects; delegated function avoids recursive discovery; no dependency or in-place live package replacement. New module is approximately 250 lines, standard-library only; private selection is the one necessary new local metadata file. C behavior/delivery: self-review complete against final exact-head hosted qualification and the published one-time bootstrap smoke; see final acceptance below. Independent review only through available authorized repository review tooling; author review must be labelled self-review. Planned checks do not override session permissions. Scope changes need an explicit amendment; adaptive tasks cannot weaken acceptance. On repeated repair failure, diagnose/replan instead of churning.
 
 Administrative closeout is separate from the 3-slice denominator: update this plan, member documentation and private navigation with exact source/PR/check evidence. Keep merged, qualified and member-available distinct.
 
@@ -75,3 +75,25 @@ Follow-up on those repairs: the actual fresh bootstrap passed locally on repaire
 Final source-verification review found and reproduced a cached-Git substitution case: a local replace ref could substitute a different valid tree while rev-parse retained the advertised commit. Regression first failed because no refusal occurred. Disabled Git replacement objects for all transport Git commands and added strict object-integrity verification before checking source bytes. This is a real trust-binding repair, not a test relaxation. The final hosted head must requalify the source transport.
 
 The stale-catalog acceptance harness now reuses the established isolated-home helper as well as private stack roots, preventing local personal capability/Git configuration discovery. Its isolated-home old->new install/update/preview/repeat/offline run passed locally. Production code and hosted member-state fixtures remain separate.
+
+
+## Final acceptance and closeout — 25 October 2026
+
+All three implementation slices COMPLETE. No acceptance weakened and no new Core component release or channel move created. No personal OS update performed.
+
+- Implementation PR81: https://github.com/aiverse-filmmakers/ai-verse-distribution/pull/81
+- Exact final head: `9d7ee4495e8896023a5f07dd4c5d2c7b0ffca4fa`; all68 checks SUCCESS before merge.
+- Official merge: `3647116d30a9f8a4d5b635d0ce728f091cd62cca`. Runtime `src/`, bootstrap `scripts/` and pyproject bytes match the tested head.
+- Final local suite:582 tests,11 existing skips,exit0. Twenty-two focused discovery tests, including meaningful RED/GREEN for original public routing and the later Git-replacement substitution defect.
+- Three-platform Installed update discovery workflow: https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/40195236615 — SUCCESS on Linux/macOS/Windows.
+- Project bootstrap qualification: https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/40195236690 — SUCCESS on allthree platforms.
+- Clean Machine Core Acceptance: https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/40195236635 — all15 jobs SUCCESS, including historical populated/edit/optional-package preservation.
+- Distribution CI: https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/40195236608 — SUCCESS.
+- Local isolated-home stale-catalog qualification passed. Old admitted Core v4 -> current tool-placement Core via normal installed update, preview receipt unchanged, synthetic member files preserved, allfive ready, doctor passed, repeat no-op, explicit offline refusal with cached local health.
+- Published one-time bootstrap verified against a genuinely older installed Distribution tool environment in a separate temporary member project. Before: legacy entrypoint. After: new transport; selected official snapshot exactly `3647116d30a9f8a4d5b635d0ce728f091cd62cca`; Core remained the current tool-placement release, allfive ready, doctor passed, default preview no-op and a synthetic member note byte-preserved.
+
+Reviews A/B/C are author self-reviews plus hosted deterministic qualification; no independent source reviewer or new native Codex desktop acceptance is claimed. Superseded-head runs were cancelled where redundant; failed bootstrap, stale test expectation and cached Git replacement findings remain recorded above. They are not counted as final-head successes.
+
+Delivery: new installations receive discovery through current Distribution. Existing installations require one canonical bootstrap tooling refresh from a current official checkout, then normal updates check live official snapshots. Unsupported future transport/runtime/dependency contracts still require reviewed bootstrap guidance; this is not a promise of arbitrary process/filesystem isolation. The original preservation-safe Core lifecycle remains authoritative.
+
+Administrative closeout: reconcile this plan and docs through a documentation-only follow-up; no runtime, Core catalog, component pin, member data or authority change. Later documentation-only main heads are not represented as separately completed runtime qualification runs.
