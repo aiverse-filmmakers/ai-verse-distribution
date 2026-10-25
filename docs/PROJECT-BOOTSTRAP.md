@@ -1,7 +1,7 @@
 # Member project bootstrap
 
 **Status:** released member path  
-**Current Core:** `core-purpose-context-public-beta-2026-10-09`
+**Current Core:** selected automatically from the [release catalog](../src/aiverse_distribution/catalog/core_promotions.json) (`current_release`).
 
 The member-facing contract is intentionally simple: a coding agent clones AI-Verse Distribution and follows `INSTALL.md` to install AI-Verse into the member's intended project folder.
 
@@ -73,19 +73,11 @@ The target project is protected:
 - user/global Git configuration is not silently rewritten;
 - release installation grants no new permissions, transfers no Brain strategy authority, and initializes no arbitrary Data workspaces.
 
-## Current release qualification
+## Release selection and qualification
 
-`core-purpose-context-public-beta-2026-10-09` is released and carries:
+The release catalog's `current_release` is the default Core selected by a fresh install. Follow that release's entry for its exact component revisions, admission status and qualification references. The referenced records under [qualification/](../qualification/) bind the evidence to that release; workflow configuration alone is not evidence of a passed run.
 
-- accepted member-bootstrap evidence;
-- `audit_repairs_included = true`;
-- Linux, macOS, and Windows member-project bootstrap qualification;
-- clean-machine Core qualification;
-- Distribution CI and Core lineage acceptance;
-- Purpose Context owner/isolation/Data/Memory/runtime/restart/composed-system qualification;
-- 12/12 accepted independent review questions.
-
-Distribution's forward Core ledger resolves this release as the current Core. Older Core sets remain historical/explicit and are not substituted for the current member install path.
+Dated release notes and earlier qualification records remain historical evidence. They do not override the catalog's current selection. Members do not need to copy a release ID from this guide or choose one themselves.
 
 ## Agent-facing entrypoint
 

@@ -1,6 +1,8 @@
 # Distribution Acceptance
 
-**Updated:** 2026-09-14
+**Release-selection guidance reviewed:** 2026-10-25
+
+For the current default Core, use the [release catalog](../src/aiverse_distribution/catalog/core_promotions.json) (`current_release`) and that entry's release-bound qualification references. The original September acceptance sequence and exact revisions below are historical evidence; they are not the current installation target. Later releases add their own exact-revision acceptance and transition evidence.
 
 ## Core Distribution acceptance gate
 
@@ -63,7 +65,7 @@ Acceptance asserts:
 - deterministic `npm ci` produces an installed hidden npm lock whose canonical package-path/version digest exactly matches the admitted tree, with the same digest again after Data uninstall/reinstall;
 - the product can hand the user to the installed root.
 
-The historical first-member set and current public-beta set intentionally declare no cross-version transition between them. The first-member set remains frozen reproducibility evidence. Any future Core set that declares an update-from or rollback-to edge to another set must execute and pass that exact transition before the edge is admitted.
+The historical first-member set and September public-beta set intentionally declared no cross-version transition between them. The first-member set remains frozen reproducibility evidence. Any future Core set that declares an update-from or rollback-to edge to another set must execute and pass that exact transition before the edge is admitted.
 
 ## Agent release gate
 
@@ -129,9 +131,9 @@ Unit coverage includes:
 - Distribution lock behavior;
 - shell-free argv execution.
 
-## Current immutable Core set
+## Historical September immutable Core set
 
-The final Core release-set candidate tested by Distribution pins:
+The original Core release-set candidate tested by Distribution pinned:
 
 - OS: `9600929b946746c25c64e48471fcc83031fddda9`
 - Brain: `80019be5e6df29aee70371544bd96cedbf0329b9`

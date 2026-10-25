@@ -1,10 +1,10 @@
 # AI-Verse Core Update v1 Release
 
 Released: 2026-10-12
-Current Core: `core-first-run-rc1-2026-10-12`
+Core released on this date: `core-first-run-rc1-2026-10-12`
 Previous Core: `core-stable-2026-10-10`
 
-The first preservation-safe Core update path is released.
+The first preservation-safe Core update path was released on the date above. This page records that historical release and transition. For the current default Core, use the [release catalog](../src/aiverse_distribution/catalog/core_promotions.json) (`current_release`); the normal installer selects it automatically.
 
 ## Update AI-Verse
 
