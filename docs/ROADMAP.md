@@ -84,7 +84,7 @@ Remote workflow results are release evidence only after GitHub Actions completes
 
 ## Phase 4.1: Forward Core lineage
 
-The current repaired Core establishes the forward baseline for the five protected Core components.
+The 6 October repaired Core established the historical forward baseline for the five protected Core components. Later admitted releases advance that baseline; the [release catalog](../src/aiverse_distribution/catalog/core_promotions.json) (`current_release`) selects today's default.
 
 - [x] immutable Core lineage ledger;
 - [x] OS / Brain / Memory / Skills / Data protected-component set;
@@ -94,7 +94,7 @@ The current repaired Core establishes the forward baseline for the five protecte
 - [x] a new default Core must directly descend from the previous default Core;
 - [x] new components may be added without weakening the protected five;
 - [x] dedicated `Core Lineage Guard` workflow performs real repository ancestry checks;
-- [x] current repaired Core published as `release-sets/core-repaired-public-beta-2026-10-06.json`;
+- [x] 6 October repaired Core published as `release-sets/core-repaired-public-beta-2026-10-06.json`;
 - [x] cross-release update/rollback remains independently fail-closed.
 
 See `docs/CORE-LINEAGE.md`.

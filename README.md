@@ -20,7 +20,7 @@ aiverse update
 
 That is enough. Members do not need release IDs, component SHAs, branches, prerequisite versions, installer folders, migration commands, setup commands, or doctor commands.
 
-Current Core maintenance release: [21 October member fixes](docs/CORE-MEMBER-POLISH-2026-10-21.md).
+Current Core is selected by the [release catalog](src/aiverse_distribution/catalog/core_promotions.json) (`current_release`). The installer resolves that selection automatically; dated release notes describe historical changes, not the current channel.
 
 ## Install vs update
 
