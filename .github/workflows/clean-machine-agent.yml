@@ -34,6 +34,13 @@ jobs:
           python --version
           node --version
           npm --version
+      # Qualification-branch only: test the exact Gateway candidate through
+      # the existing full clean-machine Agent acceptance, not just two-system.
+      # No committed channel or catalog is changed on Distribution main.
+      - name: Stage G4.2 exact merged Gateway candidate (PR-only)
+        if: github.event_name == 'pull_request' && github.head_ref == 'qualification/gateway-windows-2026-10-23'
+        shell: bash
+        run: python tests/acceptance/gateway_windows_candidate_fixture.py
       - name: Install Distribution
         run: python -m pip install .
       - name: Prove Agent from a clean machine
