@@ -101,6 +101,8 @@ SUPPORTED_GATEWAY_REVISIONS = frozenset({
     "08d3a36728158a6c0589ecf710264e9e4058d925",
     # G3.2 T4 exact latest ingress/SSE admission qualification, CI-only.
     "fa131c146690f4c02893d2849b7f4a21489b30c7",
+    # Exact G3.2 T4 security-redaction merged source, disposable Agent test only.
+    "9c42bdc21073020c3d7194446b0f2ae929eb25a2",
 })
 PUBLIC_BETA_AUTOMATIONS = "494469a496d479cfec618bcd9511033c0cd3e815"
 INVISIBLE_INTELLIGENCE_AUTOMATIONS = "caaed83b98026dd955640fc015d181529b91a1c6"
