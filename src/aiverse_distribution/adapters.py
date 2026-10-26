@@ -103,6 +103,8 @@ SUPPORTED_GATEWAY_REVISIONS = frozenset({
     "fa131c146690f4c02893d2849b7f4a21489b30c7",
     # Exact G3.2 T4 security-redaction merged source, disposable Agent test only.
     "9c42bdc21073020c3d7194446b0f2ae929eb25a2",
+    # G4.1 accepted real local-model Gateway merge; G4.2 exact test only.
+    "386ff40135a841c27bfd106531b38a7f37c1c227",
 })
 PUBLIC_BETA_AUTOMATIONS = "494469a496d479cfec618bcd9511033c0cd3e815"
 INVISIBLE_INTELLIGENCE_AUTOMATIONS = "caaed83b98026dd955640fc015d181529b91a1c6"
