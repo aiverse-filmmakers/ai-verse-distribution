@@ -93,6 +93,20 @@ SUPPORTED_GATEWAY_REVISIONS = frozenset({
     PUBLIC_BETA_GATEWAY,
     INVISIBLE_INTELLIGENCE_GATEWAY,
     CONTEXT_LADDER_GATEWAY,
+    # Exact Gateway owner-native green revision under composed acceptance, not a floating ref.
+    "5b459a89455fdf2d73f212b5a0486927891416cc",
+    # G2.2 exact merged Gateway revision: two-system scoped replay + cold restart.
+    "fb26891e8d8c23ca0ac3f40a7bb4c85df74ebd59",
+    # Exact Gateway SSE/recovery source for G3.1 composed acceptance.
+    "003e0781de189969d5b79904256cda9761a882fe",
+    # Exact bounded-memory SSE Gateway revision: CI-only composed qualification.
+    "08d3a36728158a6c0589ecf710264e9e4058d925",
+    # G3.2 T4 exact latest ingress/SSE admission qualification, CI-only.
+    "fa131c146690f4c02893d2849b7f4a21489b30c7",
+    # Exact G3.2 T4 security-redaction merged source, disposable Agent test only.
+    "9c42bdc21073020c3d7194446b0f2ae929eb25a2",
+    # G4.1 accepted real local-model Gateway merge; G4.2 exact test only.
+    "386ff40135a841c27bfd106531b38a7f37c1c227",
 })
 PUBLIC_BETA_AUTOMATIONS = "494469a496d479cfec618bcd9511033c0cd3e815"
 INVISIBLE_INTELLIGENCE_AUTOMATIONS = "caaed83b98026dd955640fc015d181529b91a1c6"
