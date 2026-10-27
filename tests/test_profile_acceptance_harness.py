@@ -38,7 +38,7 @@ class PublicationDefaultExpectationTests(unittest.TestCase):
         # fallback makes every later maintenance PR assert a stale live channel.
         current = Catalog().resolve("core").id
         expectation = f"AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE: {current}"
-        self.assertEqual(workflow.count(expectation), 4)
+        self.assertEqual(workflow.count(expectation), 5)
 
 
 class PriorPersonalLibraryFixtureTests(unittest.TestCase):
