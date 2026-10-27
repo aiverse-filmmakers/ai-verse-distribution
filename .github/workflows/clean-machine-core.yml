@@ -179,7 +179,7 @@ jobs:
       AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE: core-tool-placement-candidate-2026-10-23
       AI_VERSE_ACCEPTANCE_PREVIOUS_RELEASE: core-shared-skills-candidate-2026-10-23-v4
       AI_VERSE_ACCEPTANCE_OS_REVISION: 7bb6226783396ef7a00b325306da26b0f4b17474
-      AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION: 0.3.9
+      # The owner descriptor now labels 0.3.10; this historical 0.3.9 revision is verified by exact SHA only.
       AI_VERSE_ACCEPTANCE_SHARED_SKILLS: '1'
       AI_VERSE_ACCEPTANCE_TOOL_PLACEMENT: '1'
       AI_VERSE_ACCEPTANCE_OPTIONAL_ON_UPDATE: '1'
