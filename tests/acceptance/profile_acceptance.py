@@ -6,11 +6,19 @@ import os
 import subprocess
 import sys
 import tempfile
+import urllib.request
 from pathlib import Path
 from typing import Optional
 
 from aiverse_distribution.release_catalog import Catalog
 from aiverse_distribution.transition_contract import CoreTransitionContract, UnsupportedCoreTransition
+
+
+def published_core_promotions():
+    """Read the published default independently of an unmerged release checkout."""
+    url = "https://raw.githubusercontent.com/aiverse-filmmakers/ai-verse-distribution/main/src/aiverse_distribution/catalog/core_promotions.json"
+    with urllib.request.urlopen(url, timeout=30) as response:
+        return json.load(response)
 
 
 def default_update_mode(catalog, installed_release):

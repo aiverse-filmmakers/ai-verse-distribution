@@ -13,9 +13,6 @@ import subprocess
 import sys
 import tempfile
 
-OLD_DISTRIBUTION = '37bdf4d9526abf59e5ce5b0cf783ee349428f3d7'
-OLD_CORE = 'core-shared-skills-candidate-2026-10-23-v4'
-NEW_CORE = 'core-tool-placement-candidate-2026-10-23'
 REPOSITORY = 'https://github.com/aiverse-filmmakers/ai-verse-distribution.git'
 
 
@@ -35,7 +32,12 @@ def main():
     # Reuse the acceptance harness's existing isolated host roots so personal
     # skill discovery and Git configuration never reach a developer's home.
     sys.path.insert(0, str(source / 'src'))
-    from profile_acceptance import configure_profile_environment
+    from profile_acceptance import configure_profile_environment, published_core_promotions
+    published = published_core_promotions()
+    NEW_CORE = published["current_release"]
+    release = next(item for item in published["release_sets"] if item["id"] == NEW_CORE)
+    OLD_CORE = release["lineage"]["parent"]
+    OLD_DISTRIBUTION = release["evidence"]["whole_product_qualification"]["distribution_revision"]
     configure_profile_environment(base, 'core')
     old = base / 'old'
     old.mkdir()

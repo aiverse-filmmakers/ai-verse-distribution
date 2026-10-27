@@ -9,8 +9,8 @@ from aiverse_distribution.release_catalog import DistributionError
 
 
 STABLE = "core-stable-2026-10-10"
-CURRENT = "core-tool-placement-candidate-2026-10-23"
-PREVIOUS = "core-shared-skills-candidate-2026-10-23-v4"
+CURRENT = "core-learn-candidate-2026-10-27"
+PREVIOUS = "core-tool-placement-candidate-2026-10-23"
 
 
 class CoreUpdateResolverTests(unittest.TestCase):

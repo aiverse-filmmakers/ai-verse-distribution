@@ -438,8 +438,8 @@ def main() -> int:
     installed_version = version.get("installed") or {}
     latest_version = version.get("latest") or {}
     expected_latest_release = os.environ.get(
-        "AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE", CURRENT_RELEASE
-    )
+        "AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE"
+    ) or profile.published_core_promotions()["current_release"]
     if (
         installed_version.get("releaseSet") != CANDIDATE_ID
         or installed_version.get("revision") != expected_refs["ai-verse-os"]
