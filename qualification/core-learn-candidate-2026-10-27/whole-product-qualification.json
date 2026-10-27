@@ -11,7 +11,7 @@
   "bindings": {
     "candidate_evidence": {
       "path": "qualification/core-learn-candidate-2026-10-27/candidate-evidence.json",
-      "sha256": "70e6b01b97b870db8b57a9ac9aeccb2daed217a8f86f2160029e2e5530b680ed"
+      "sha256": "f560f17b208de6dc925aa6fb648e4b2398e6468a4c0152591837c2841addb03c"
     },
     "compatibility_sha256": "8417215619fb4dfdc7676da0c778d42eef4c5d95f70c7935dce712d55c53c3c1",
     "composed_acceptance": {
@@ -82,17 +82,17 @@
         {
           "path": "docs/REPOSITORY-NETWORK-GOVERNANCE-CONTRACT.md",
           "repository": "aiverse-filmmakers/AI-Verse-System",
-          "revision": "383d7d6306424e608bd6d19a773d9b05c5228bd4",
+          "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
           "sha256": "176e31dcf30e68c3c5934667d23e02ddf40a1a2de11d12dcc49b80c7f8117235"
         },
         {
           "path": "docs/SAFE-UPDATE-AND-STATE-PRESERVATION-CONTRACT.md",
           "repository": "aiverse-filmmakers/AI-Verse-System",
-          "revision": "383d7d6306424e608bd6d19a773d9b05c5228bd4",
+          "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
           "sha256": "c026818b118cd07c9539f6bbbc1d97be42493bdc680e824d1f0183811f6ec793"
         }
       ],
-      "revision": "383d7d6306424e608bd6d19a773d9b05c5228bd4"
+      "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858"
     }
   },
   "candidate_id": "core-learn-candidate-2026-10-27",

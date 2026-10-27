@@ -7,7 +7,7 @@
   "qualification": {
     "schema_version": "aiverse.distribution-whole-product-qualification/v1",
     "ref": "qualification/core-learn-candidate-2026-10-27/whole-product-qualification.json",
-    "sha256": "9d18b7d5b1c57176dae0c0f49a1bb61a5ab442874aa8488a690d42de88aa9ada"
+    "sha256": "ff0bd5f6aa4a7205953930b524c02357953414af404da3b202da9d13fec23ceb"
   },
   "system_sync": {
     "status": "synchronized",

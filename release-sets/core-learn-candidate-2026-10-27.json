@@ -107,9 +107,9 @@
       "status": "accepted",
       "schema_version": "aiverse.distribution-whole-product-qualification/v1",
       "qualification_ref": "qualification/core-learn-candidate-2026-10-27/whole-product-qualification.json",
-      "sha256": "9d18b7d5b1c57176dae0c0f49a1bb61a5ab442874aa8488a690d42de88aa9ada",
+      "sha256": "ff0bd5f6aa4a7205953930b524c02357953414af404da3b202da9d13fec23ceb",
       "distribution_revision": "dcdbbc07e21c78cbc2fd7610c9a1357f25b95d09",
-      "system_revision": "383d7d6306424e608bd6d19a773d9b05c5228bd4",
+      "system_revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
       "repository_state_revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
       "repository_state_sha256": "89f297340eac561e913da3530a9c4ec9bc17ae46f113400f88cb2b708b6556c2"
     },

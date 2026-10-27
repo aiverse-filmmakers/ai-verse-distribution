@@ -192,18 +192,18 @@
   "schema": "aiverse.distribution-candidate-evidence/v1",
   "system": {
     "repository": "aiverse-filmmakers/AI-Verse-System",
-    "revision": "383d7d6306424e608bd6d19a773d9b05c5228bd4",
+    "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
     "governance_contracts": [
       {
         "path": "docs/REPOSITORY-NETWORK-GOVERNANCE-CONTRACT.md",
         "repository": "aiverse-filmmakers/AI-Verse-System",
-        "revision": "383d7d6306424e608bd6d19a773d9b05c5228bd4",
+        "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
         "sha256": "176e31dcf30e68c3c5934667d23e02ddf40a1a2de11d12dcc49b80c7f8117235"
       },
       {
         "path": "docs/SAFE-UPDATE-AND-STATE-PRESERVATION-CONTRACT.md",
         "repository": "aiverse-filmmakers/AI-Verse-System",
-        "revision": "383d7d6306424e608bd6d19a773d9b05c5228bd4",
+        "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
         "sha256": "c026818b118cd07c9539f6bbbc1d97be42493bdc680e824d1f0183811f6ec793"
       }
     ]

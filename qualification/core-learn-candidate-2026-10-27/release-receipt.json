@@ -6,7 +6,7 @@
   "distribution_revision": "dcdbbc07e21c78cbc2fd7610c9a1357f25b95d09",
   "release_set": {
     "path": "release-sets/core-learn-candidate-2026-10-27.json",
-    "sha256": "c2ba306b34402983df30e93420c8187d41ce0572ec5e489fdb6ceb5785b35c89"
+    "sha256": "9de08cb7e4e7ffcb80cec3e361df20edd0d3cdcd56895955e25eca069f65f96e"
   },
   "components": [
     {
@@ -107,24 +107,24 @@
   ],
   "candidate_evidence": {
     "path": "qualification/core-learn-candidate-2026-10-27/candidate-evidence.json",
-    "sha256": "70e6b01b97b870db8b57a9ac9aeccb2daed217a8f86f2160029e2e5530b680ed"
+    "sha256": "f560f17b208de6dc925aa6fb648e4b2398e6468a4c0152591837c2841addb03c"
   },
   "system": {
     "governance_contracts": [
       {
         "path": "docs/REPOSITORY-NETWORK-GOVERNANCE-CONTRACT.md",
         "repository": "aiverse-filmmakers/AI-Verse-System",
-        "revision": "383d7d6306424e608bd6d19a773d9b05c5228bd4",
+        "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
         "sha256": "176e31dcf30e68c3c5934667d23e02ddf40a1a2de11d12dcc49b80c7f8117235"
       },
       {
         "path": "docs/SAFE-UPDATE-AND-STATE-PRESERVATION-CONTRACT.md",
         "repository": "aiverse-filmmakers/AI-Verse-System",
-        "revision": "383d7d6306424e608bd6d19a773d9b05c5228bd4",
+        "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
         "sha256": "c026818b118cd07c9539f6bbbc1d97be42493bdc680e824d1f0183811f6ec793"
       }
     ],
-    "revision": "383d7d6306424e608bd6d19a773d9b05c5228bd4"
+    "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858"
   },
   "registry": {
     "path": "governance/repository-registry.json",
@@ -281,7 +281,7 @@
   },
   "qualification": {
     "path": "qualification/core-learn-candidate-2026-10-27/whole-product-qualification.json",
-    "sha256": "9d18b7d5b1c57176dae0c0f49a1bb61a5ab442874aa8488a690d42de88aa9ada",
+    "sha256": "ff0bd5f6aa4a7205953930b524c02357953414af404da3b202da9d13fec23ceb",
     "schema_version": "aiverse.distribution-whole-product-qualification/v1",
     "status": "passed"
   },
@@ -295,7 +295,7 @@
   },
   "promotion": {
     "path": "qualification/core-learn-candidate-2026-10-27/promotion.json",
-    "sha256": "f1771fe3d3315e7dd929009d6b4c081aedf5fb571c956ce1c3abda304d5a9404",
+    "sha256": "ef30d25d0876f8c7b8978732d6a969d191aa125900a96fe4ba4b30910c3457a0",
     "schema_version": "aiverse.distribution-core-promotion/v1",
     "mode": "normal",
     "status": "applied",
