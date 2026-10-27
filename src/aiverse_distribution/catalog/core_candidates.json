@@ -677,6 +677,10 @@
     "core-local-upgrades-candidate-2026-10-19-v5": {
       "path": "qualification/core-local-upgrades-candidate-2026-10-19-v5/candidate-evidence.json",
       "sha256": "42d09ef0cfe8303f9b3708b35108f1b29f54496cfc90b05ffe7aedfc3ab32bcc"
+    },
+    "core-learn-candidate-2026-10-27": {
+      "path": "qualification/core-learn-candidate-2026-10-27/candidate-evidence.json",
+      "sha256": "a73852ade5ea044dd888a81ece359bfab22ca94b746ee61af084fb61013aa7d4"
     }
   }
 }
