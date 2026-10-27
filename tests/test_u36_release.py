@@ -9,8 +9,8 @@ from aiverse_distribution.transition_contract import CoreTransitionContract, Uns
 ROOT = Path(__file__).resolve().parents[1]
 STABLE = "core-stable-2026-10-10"
 HISTORICAL = "core-first-run-rc1-2026-10-12"
-PREVIOUS = "core-shared-skills-candidate-2026-10-23-v4"
-CURRENT = "core-tool-placement-candidate-2026-10-23"
+PREVIOUS = "core-tool-placement-candidate-2026-10-23"
+CURRENT = "core-learn-candidate-2026-10-27"
 
 
 class U36ReleaseTests(unittest.TestCase):
@@ -44,7 +44,6 @@ class U36ReleaseTests(unittest.TestCase):
             "core-local-upgrades-candidate-2026-10-19-v3": "98eed935a933239021e8f5cce2e729afa5e0216b",
             "core-local-upgrades-candidate-2026-10-19-v4": "558f4ecb2f6810b10a0e152bfcf610e725fc7032",
             "core-local-upgrades-candidate-2026-10-19-v5": "558f4ecb2f6810b10a0e152bfcf610e725fc7032",
-            "core-learn-candidate-2026-10-27": "00805bc7d866703d3ef5ca1359faa769d88ecdae",
         }
         candidates = {
             item["id"]: item for item in self.catalog.core_candidates["release_sets"]

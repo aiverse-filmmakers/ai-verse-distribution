@@ -163,54 +163,47 @@
     }
   },
   "drift": {
-    "state_sha256": "6a9d207ed26e80fb19624a403a45336fb26c4dc786ec3fd77d083934cbc4dc75",
+    "state_sha256": "89f297340eac561e913da3530a9c4ec9bc17ae46f113400f88cb2b708b6556c2",
     "records": []
   },
   "profile": "core",
   "registry": {
     "repository": "aiverse-filmmakers/AI-Verse-System",
-    "revision": "172f095afac0c6a2be770ab314c8251e1d5f25da",
+    "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
     "path": "governance/repository-registry.json",
     "sha256": "d0cd07396aaf849cf5baae155f1389cf93f0b0f881ffb96d0595de2b229050ab"
   },
   "repository_state": {
     "repository": "aiverse-filmmakers/AI-Verse-System",
-    "revision": "172f095afac0c6a2be770ab314c8251e1d5f25da",
+    "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
     "path": "governance/repository-state.json",
-    "sha256": "6a9d207ed26e80fb19624a403a45336fb26c4dc786ec3fd77d083934cbc4dc75",
-    "scope": "global",
+    "sha256": "89f297340eac561e913da3530a9c4ec9bc17ae46f113400f88cb2b708b6556c2",
+    "scope": "core",
     "repositories": [
-      "aiverse-filmmakers/AI-Verse-System",
-      "aiverse-filmmakers/ai-verse-distribution",
-      "aiverse-filmmakers/AI-Verse-OS",
       "aiverse-filmmakers/AI-Verse-Brain",
-      "aiverse-filmmakers/AI-Verse-Memory",
-      "aiverse-filmmakers/AI-Verse-Skills",
       "aiverse-filmmakers/AI-Verse-Data",
-      "aiverse-filmmakers/AI-Verse-Gateway",
-      "aiverse-filmmakers/AI-Verse-Automations",
-      "aiverse-filmmakers/AI-Verse-Multiple-Bots",
-      "aiverse-filmmakers/ai-verse-token",
-      "aiverse-filmmakers/AI-Verse-Connections",
-      "aiverse-filmmakers/AI-Verse-Dashboard",
-      "aiverse-filmmakers/AI-Verse-Apps"
+      "aiverse-filmmakers/AI-Verse-Memory",
+      "aiverse-filmmakers/AI-Verse-OS",
+      "aiverse-filmmakers/AI-Verse-Skills",
+      "aiverse-filmmakers/AI-Verse-System",
+      "aiverse-filmmakers/ai-verse-distribution"
     ]
   },
   "schema": "aiverse.distribution-candidate-evidence/v1",
   "system": {
     "repository": "aiverse-filmmakers/AI-Verse-System",
-    "revision": "172f095afac0c6a2be770ab314c8251e1d5f25da",
+    "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
     "governance_contracts": [
       {
         "path": "docs/REPOSITORY-NETWORK-GOVERNANCE-CONTRACT.md",
         "repository": "aiverse-filmmakers/AI-Verse-System",
-        "revision": "172f095afac0c6a2be770ab314c8251e1d5f25da",
+        "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
         "sha256": "176e31dcf30e68c3c5934667d23e02ddf40a1a2de11d12dcc49b80c7f8117235"
       },
       {
         "path": "docs/SAFE-UPDATE-AND-STATE-PRESERVATION-CONTRACT.md",
         "repository": "aiverse-filmmakers/AI-Verse-System",
-        "revision": "172f095afac0c6a2be770ab314c8251e1d5f25da",
+        "revision": "b0c7a0c664e3735cfc05d9af36495ed85fd28858",
         "sha256": "c026818b118cd07c9539f6bbbc1d97be42493bdc680e824d1f0183811f6ec793"
       }
     ]

@@ -13,10 +13,10 @@ spec.loader.exec_module(profile)
 
 class ProfileAcceptanceModeTests(unittest.TestCase):
     def test_current_release_uses_noop_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-tool-placement-candidate-2026-10-23"), "current")
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-learn-candidate-2026-10-27"), "current")
 
     def test_accepted_parent_uses_forward_plan_and_self_update_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-shared-skills-candidate-2026-10-23-v4"), "admitted-forward")
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-tool-placement-candidate-2026-10-23"), "admitted-forward")
 
     def test_explicit_only_candidate_keeps_blocked_update_check(self):
         self.assertEqual(profile.default_update_mode(Catalog(), "core-local-upgrades-candidate-2026-10-19-v5"), "unadmitted")
@@ -31,14 +31,12 @@ class ProfileAcceptanceModeTests(unittest.TestCase):
 
 
 class PublicationDefaultExpectationTests(unittest.TestCase):
-    def test_maintenance_checks_expect_the_already_published_default(self):
-        from pathlib import Path
+    def test_acceptance_resolves_published_default_without_stale_workflow_override(self):
+        import io
         workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/clean-machine-core.yml").read_text()
-        # The promotion is already public. Retaining its pre-promotion PR
-        # fallback makes every later maintenance PR assert a stale live channel.
-        current = Catalog().resolve("core").id
-        expectation = f"AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE: {current}"
-        self.assertEqual(workflow.count(expectation), 5)
+        self.assertNotIn("AI_VERSE_ACCEPTANCE_EXPECT_LATEST_CORE_RELEASE:", workflow)
+        with patch.object(profile.urllib.request, "urlopen", return_value=io.BytesIO(b'{"current_release":"published-core"}')):
+            self.assertEqual(profile.published_core_promotions()["current_release"], "published-core")
 
 
 class PriorPersonalLibraryFixtureTests(unittest.TestCase):

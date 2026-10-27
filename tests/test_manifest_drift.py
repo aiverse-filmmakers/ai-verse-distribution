@@ -6,7 +6,7 @@ from aiverse_distribution.release_catalog import Catalog
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_CORE = "core-tool-placement-candidate-2026-10-23"
+CURRENT_CORE = "core-learn-candidate-2026-10-27"
 
 
 class ManifestDriftTests(unittest.TestCase):

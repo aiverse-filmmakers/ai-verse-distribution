@@ -28,21 +28,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-System
-          ref: 343a13b1d8fade4553878a4deefb7c9da6f44cfe
+          ref: b0c7a0c664e3735cfc05d9af36495ed85fd28858
           path: .qualification/System
 
       - name: Checkout exact State-observed OS owner head
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-OS
-          ref: d490db4c02e7b72c5cc8eae07080eccfa4dc3989
+          ref: 0dc744057199970a34a60c11dff192e407ad64ed
           path: .qualification/OS
 
       - name: Checkout exact State-observed Brain owner head
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-Brain
-          ref: 6ad408e38b6b876cc8049f207fcba1e86ffd6554
+          ref: 32cae304861bb0c897a64dd0931bead516d22833
           path: .qualification/Brain
 
       - name: Checkout exact State-observed Memory owner head
@@ -102,7 +102,7 @@ jobs:
           candidates = json.loads((root / 'src/aiverse_distribution/catalog/core_candidates.json').read_text(encoding='utf-8'))
           promotions = json.loads((root / 'src/aiverse_distribution/catalog/core_promotions.json').read_text(encoding='utf-8'))
           release_sets = candidates.get('release_sets', [])
-          expected_ids = {'core-local-upgrades-candidate-2026-10-19', 'core-local-upgrades-candidate-2026-10-19-v2', 'core-local-upgrades-candidate-2026-10-19-v3', 'core-local-upgrades-candidate-2026-10-19-v4', 'core-local-upgrades-candidate-2026-10-19-v5', 'core-learn-candidate-2026-10-27'}
+          expected_ids = {'core-local-upgrades-candidate-2026-10-19', 'core-local-upgrades-candidate-2026-10-19-v2', 'core-local-upgrades-candidate-2026-10-19-v3', 'core-local-upgrades-candidate-2026-10-19-v4', 'core-local-upgrades-candidate-2026-10-19-v5'}
           assert {item.get('id') for item in release_sets} == expected_ids, candidates
           for candidate in release_sets:
               assert candidate.get('classification') == 'explicit-install-qualification-candidate', candidate
@@ -114,15 +114,15 @@ jobs:
           assert set(candidates.get('compatibility', {})) == expected_ids, candidates
           assert set(candidates.get('candidate_evidence', {})) == expected_ids, candidates
           assert 'core-local-upgrades-candidate-2026-10-19-v6' not in {item.get('id') for item in release_sets}, candidates
-          promoted_id = 'core-tool-placement-candidate-2026-10-23'
+          promoted_id = 'core-learn-candidate-2026-10-27'
           promoted = next(item for item in promotions.get('release_sets', []) if item.get('id') == promoted_id)
           assert promotions.get('current_release') == promoted_id, promotions
           assert 'core-first-run-rc1-2026-10-12' in {item['id'] for item in promotions['release_sets']}, promotions
-          assert promoted.get('lineage', {}).get('parent') == 'core-shared-skills-candidate-2026-10-23-v4', promoted
+          assert promoted.get('lineage', {}).get('parent') == 'core-tool-placement-candidate-2026-10-23', promoted
           assert promoted.get('evidence', {}).get('whole_product_qualification', {}).get('status') == 'accepted', promoted
           assert promoted.get('evidence', {}).get('transition_policy', {}).get('cross_release_update_admitted') is True, promoted
           os_component = next(item for item in promoted['components'] if item['id'] == 'ai-verse-os')
-          assert os_component['revision'] == '7bb6226783396ef7a00b325306da26b0f4b17474', promoted
+          assert os_component['revision'] == '00805bc7d866703d3ef5ca1359faa769d88ecdae', promoted
           assert promotions.get('system_sync_debts') == [], promotions
           PY
 
