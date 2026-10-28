@@ -11,7 +11,7 @@ Follow `INSTALL.md`.
 1. Infer the user's intended project folder from the current/opened project context whenever it is unambiguous.
 2. If AI-Verse is not installed there, use the repository's canonical one-action install procedure rather than manually cloning AI-Verse components.
 3. If a completed AI-Verse Core installation already exists, use the installed lifecycle. Do not delete, reset, reclone, or reinstall the project as a normal lifecycle strategy.
-4. For a normal software update, invoke `aiverse update`. Use `aiverse update --plan` only when a read-only update preview is requested. Do not ask for a release ID unless the user explicitly requests an advanced exact target.
+4. For a normal software update, invoke `aiverse update`. A bare command need not be on PATH: first read the installed registry's enabled `ai-verse-project-bootstrap` instructions and use its recorded Python/launcher pair. Do not declare the updater unavailable from PATH or project-bin checks alone. Use `aiverse update --plan` only when a read-only update preview is requested. Do not ask for a release ID unless the user explicitly requests an advanced exact target.
 5. For whole-install health, invoke `aiverse doctor`. Distribution aggregates owner health; do not reimplement a parallel doctor in the agent.
 6. For structural convergence, invoke `aiverse upgrade` first. This is read-only. Invoke `aiverse upgrade --apply` only after explicit mutation intent. Do not invent owner migration recipes or relocate unsupported Workspace structures.
 7. For whole-install recovery, invoke `aiverse restore` first. This is read-only. Invoke `aiverse restore --apply` only after explicit restore intent. Do not manually copy recovery state or alter the retained recovery pointer.
