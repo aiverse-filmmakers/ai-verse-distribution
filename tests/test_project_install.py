@@ -62,6 +62,7 @@ class ProjectInstallTests(unittest.TestCase):
             self.assertEqual(argv, [str(python), str(launcher), "update"])
             self.assertIn("missing bare `aiverse` command in PATH", original)
             self.assertIn("append `--plan`", original)
+            self.assertIn("predates automatic release discovery", original)
             instructions.write_text(original + "# member customization\n")
             with self.assertRaisesRegex(DistributionError, "locally edited"):
                 project_install.refresh_project_launcher(layout)
