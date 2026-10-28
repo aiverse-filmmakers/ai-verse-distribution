@@ -13,6 +13,8 @@ import subprocess
 import sys
 import tempfile
 
+OLD_DISTRIBUTION = '25b425ca7b10f384a453b7723df8a87f2449afa6'
+OLD_CORE = 'core-tool-placement-candidate-2026-10-23'
 REPOSITORY = 'https://github.com/aiverse-filmmakers/ai-verse-distribution.git'
 
 
@@ -35,9 +37,6 @@ def main():
     from profile_acceptance import configure_profile_environment, published_core_promotions
     published = published_core_promotions()
     NEW_CORE = published["current_release"]
-    release = next(item for item in published["release_sets"] if item["id"] == NEW_CORE)
-    OLD_CORE = release["lineage"]["parent"]
-    OLD_DISTRIBUTION = release["evidence"]["whole_product_qualification"]["distribution_revision"]
     configure_profile_environment(base, 'core')
     old = base / 'old'
     old.mkdir()
