@@ -57,7 +57,8 @@ def main():
     before = command('status')
     assert before['release_set_id'] == OLD_CORE and before['state'] == 'ready'
     original_plan = command('update', '--plan')
-    assert original_plan['to'] == OLD_CORE and original_plan['noop'] is True
+    assert original_plan['from'] == OLD_CORE and original_plan['to'] == NEW_CORE
+    assert original_plan['noop'] is False
     payload = {
         'operator/profile/member-note.md': b'Private member preference fixture.\n',
         'workspaces/member-work/WORKSPACE.yaml': b'schema_version: "2.0"\nid: member-work\nname: Member work\ntype: test\nstatus: active\npurpose: Preservation fixture\n',
