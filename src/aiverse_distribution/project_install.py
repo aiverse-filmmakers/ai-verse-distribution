@@ -296,6 +296,29 @@ def _render_project_launcher(project: Path, overrides: dict, prefix: str, *, req
     )
 
 
+def _render_project_instructions(python: Path, launcher: Path) -> str:
+    update_argv = json.dumps([str(python), str(launcher), "update"], ensure_ascii=False)
+    return (
+        "# Project tool environment\n\n"
+        "Use the OS runtime contract in AGENTS.md. Keep owner state and permissions authoritative.\n"
+        "Distribution is installed in this project's private tool stack, outside the OS folder. "
+        "A missing bare `aiverse` command in PATH does not mean the updater is unavailable.\n\n"
+        f"Python executable: `{python}`\nLauncher: `{launcher}`\n\n"
+        "When the member says **Update AI-Verse**, execute this argument vector:\n\n"
+        f"```json\n{update_argv}\n```\n\n"
+        "This is the canonical `aiverse update` through the recorded project environment. "
+        "For a requested read-only preview, append `--plan`; do not apply an update when only a preview was requested.\n"
+        "Before reporting that Distribution is missing, read the enabled `ai-verse-project-bootstrap` "
+        "instructions and its matching project tool-stack receipt; verify the recorded Python and launcher exist. "
+        "If they are missing or ownership cannot be verified, report the specific failure and preserve the installation.\n"
+        "Pass `status`, `doctor`, or other authorized Distribution arguments to the same Python/launcher pair. "
+        "Do not substitute the component-level `ai-verse-os update`.\n"
+        "For OS/Memory/Data commands, pass `--exec` followed by the supported owner's argv. "
+        "The launcher sets the project tool environment and working directory. "
+        "Installing this helper grants no extra authority.\n"
+    )
+
+
 def refresh_project_launcher(layout: ProjectLayout) -> dict:
     """Refresh only an unchanged receipt-owned launcher after tooling upgrade.
 
@@ -329,9 +352,21 @@ def refresh_project_launcher(layout: ProjectLayout) -> dict:
                 prefix = max(literals, key=len) if literals else None
         if not isinstance(overrides, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in overrides.items()) or not isinstance(prefix, str) or not isinstance(require_lfs, bool):
             raise DistributionError("The project launcher environment could not be verified")
+        from .project_routing import _recorded_path_inside_stack
+
+        python = _recorded_path_inside_stack(
+            layout, receipt.get("python"), "Python executable", allow_external_symlink_target=True,
+        )
         text = _render_project_launcher(layout.project, overrides, prefix, require_lfs=require_lfs)
+        instructions = layout.project / ".aiverse/extensions/project-bootstrap/INSTRUCTIONS.md"
+        if instructions.is_symlink():
+            raise DistributionError(f"Bootstrap file must not be a symlink: {instructions}")
+        instruction_text = _render_project_instructions(python, launcher)
+        instructions_changed = not instructions.is_file() or instructions.read_text() != instruction_text
         _write_owned(layout, launcher, text, receipt, lifecycle=LifecycleVerb.UPDATE)
-        return {"kind": "project-tooling-refresh", "launcher": str(launcher), "changed": text != old}
+        _write_owned(layout, instructions, instruction_text, receipt, lifecycle=LifecycleVerb.UPDATE)
+        _register_bootstrap_extension(layout, layout.project / ".aiverse/extensions/registry.json", instructions, receipt)
+        return {"kind": "project-tooling-refresh", "launcher": str(launcher), "changed": text != old or instructions_changed}
 
 
 def install_project(layout: ProjectLayout, source: Path, *, release_set: str | None = None,
@@ -411,16 +446,7 @@ def install_project(layout: ProjectLayout, source: Path, *, release_set: str | N
         )
         _write_owned(layout, launcher, launcher_text, receipt)
         instructions = layout.project / ".aiverse/extensions/project-bootstrap/INSTRUCTIONS.md"
-        instruction_text = (
-            "# Project tool environment\n\n"
-            "Use the OS runtime contract in AGENTS.md. Keep owner state and permissions authoritative.\n"
-            "This project uses private prerequisite paths. For Distribution lifecycle commands, invoke:\n\n"
-            f"Python executable: `{python}`\nLauncher: `{launcher}`\n\n"
-            "Pass status, doctor, or other authorized Distribution arguments to the launcher.\n"
-            "For OS/Memory/Data commands, pass --exec followed by the supported owner's argv. "
-            "The launcher sets the project tool environment and working directory. "
-            "Installing this helper grants no extra authority.\n"
-        )
+        instruction_text = _render_project_instructions(python, launcher)
         _write_owned(layout, instructions, instruction_text, receipt)
         registry_path = layout.project / ".aiverse/extensions/registry.json"
         _register_bootstrap_extension(layout, registry_path, instructions, receipt)

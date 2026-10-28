@@ -32,22 +32,41 @@ class ProjectInstallTests(unittest.TestCase):
                 receipt = json.loads(layout.receipt.read_text())
                 layout.project.mkdir()
                 (layout.project / "personal.txt").write_text("keep me")
+                registry = layout.project / ".aiverse/extensions/registry.json"
+                registry.parent.mkdir(parents=True)
+                registry.write_text(json.dumps({"schema_version": "1.0", "extensions": {}}))
                 locks = layout.distribution_home / "locks"
                 locks.mkdir(parents=True)
                 (locks / "current.json").write_text(json.dumps({"root": str(layout.project), "profile": "core"}))
                 launcher = layout.stack / "run.py"
+                python = layout.stack / "private tools" / "python"
+                python.parent.mkdir()
+                python.write_text("private interpreter")
                 text = project_install._render_project_launcher(layout.project, {"PYTHONPATH": ""}, "private tools", require_lfs=True)
                 legacy = text.replace("from aiverse_distribution.entrypoint import main", "from aiverse_distribution.cli import main")
                 legacy = legacy.replace("os.path.dirname(sys.executable) + os.pathsep + ", "")
                 _write_owned(layout, launcher, legacy, receipt)
-                receipt.update(phase="installed", launcher=str(launcher))
+                receipt.update(phase="installed", launcher=str(launcher), python=str(python))
                 layout.receipt.write_text(json.dumps(receipt))
-            result = project_install.refresh_project_launcher(layout)
+            with patch("aiverse_distribution.process.which", return_value=None) as global_discovery:
+                result = project_install.refresh_project_launcher(layout)
+            global_discovery.assert_not_called()
             self.assertTrue(result["changed"])
             self.assertIn("from aiverse_distribution.entrypoint import main", launcher.read_text())
             self.assertIn("os.path.dirname(sys.executable)", launcher.read_text())
             self.assertEqual((layout.project / "personal.txt").read_text(), "keep me")
             self.assertFalse(project_install.refresh_project_launcher(layout)["changed"])
+            instructions = layout.project / ".aiverse/extensions/project-bootstrap/INSTRUCTIONS.md"
+            original = instructions.read_text()
+            argv = json.loads(original.split("```json\n", 1)[1].split("\n```", 1)[0])
+            self.assertEqual(argv, [str(python), str(launcher), "update"])
+            self.assertIn("missing bare `aiverse` command in PATH", original)
+            self.assertIn("append `--plan`", original)
+            instructions.write_text(original + "# member customization\n")
+            with self.assertRaisesRegex(DistributionError, "locally edited"):
+                project_install.refresh_project_launcher(layout)
+            self.assertTrue(instructions.read_text().endswith("# member customization\n"))
+            instructions.write_text(original)
             launcher.write_text(launcher.read_text() + "# member customization\n")
             with self.assertRaisesRegex(DistributionError, "locally edited"):
                 project_install.refresh_project_launcher(layout)
