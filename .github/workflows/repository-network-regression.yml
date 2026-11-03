@@ -28,14 +28,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-System
-          ref: 4875d43c5a589480460190a9925a3f2f356a7415
+          ref: b0c7a0c664e3735cfc05d9af36495ed85fd28858
           path: .qualification/System
 
       - name: Checkout exact State-observed OS owner head
         uses: actions/checkout@v4
         with:
           repository: aiverse-filmmakers/AI-Verse-OS
-          ref: 0ffe8cc6d7ff15b2879770103fbccba1f2322974
+          ref: 0dc744057199970a34a60c11dff192e407ad64ed
           path: .qualification/OS
 
       - name: Checkout exact State-observed Brain owner head
