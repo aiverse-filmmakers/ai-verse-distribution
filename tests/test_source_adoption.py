@@ -361,3 +361,94 @@ class SourceAdoptionPlanTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ProjectClaudeSettingsOwnershipTests(unittest.TestCase):
+    """The OS ships a tracked .claude/settings.json; members may have their own."""
+
+    SHIPPED = '{"autoMemoryEnabled": false, "hooks": {"Stop": []}}\n'
+    SHIPPED_V2 = '{"autoMemoryEnabled": false, "hooks": {"Stop": [], "SessionEnd": []}}\n'
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name).resolve()
+        self.git("init")
+        self.git("config", "user.email", "fixture@example.invalid")
+        self.git("config", "user.name", "Fixture")
+        self.git("config", "core.autocrlf", "false")
+        self.write("scripts/feature.mjs", "old code\n")
+        self.git("add", ".")
+        self.git("commit", "-m", "installed-without-settings")
+        self.before_settings = self.git("rev-parse", "HEAD")
+        self.write(".claude/settings.json", self.SHIPPED)
+        self.git("add", ".")
+        self.git("commit", "-m", "settings-v1")
+        self.with_settings = self.git("rev-parse", "HEAD")
+        self.write(".claude/settings.json", self.SHIPPED_V2)
+        self.git("add", ".")
+        self.git("commit", "-m", "settings-v2")
+        self.settings_v2 = self.git("rev-parse", "HEAD")
+        self.git("checkout", self.before_settings)
+
+    def git(self, *args):
+        return subprocess.check_output(["git", "-C", str(self.root), *args], stderr=subprocess.DEVNULL).decode().strip()
+
+    def write(self, name, text):
+        p = self.root / name
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text)
+
+    def read(self, name):
+        return (self.root / name).read_text()
+
+    def plan(self, installed, target, **kwargs):
+        return plan_source_adoption(self.root, installed, target, **kwargs)
+
+    def test_fresh_update_that_introduces_settings_needs_no_preparation(self):
+        p = self.plan(self.before_settings, self.with_settings)
+        self.assertTrue(p["ready"])
+        self.assertEqual((p["actions"], p["target_collisions"]), ([], []))
+        self.assertFalse((self.root / ".aiverse/learn/config.json").exists())
+
+    def test_clean_populated_update_replaces_settings_without_preparation(self):
+        self.git("checkout", self.with_settings)
+        p = self.plan(self.with_settings, self.settings_v2)
+        self.assertTrue(p["ready"])
+        self.assertEqual(p["actions"], [])
+
+    def test_member_edited_tracked_settings_fail_closed_and_stay_untouched(self):
+        self.git("checkout", self.with_settings)
+        mine = '{"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "my-own-hook"}]}]}}\n'
+        self.write(".claude/settings.json", mine)
+        for policy in ("preserve", "official"):
+            p = self.plan(self.with_settings, self.settings_v2, policy=policy)
+            self.assertFalse(p["ready"], policy)
+            conflict = p["conflicts"][0]
+            self.assertEqual(conflict["path"], ".claude/settings.json")
+            self.assertIn("settings.local.json", conflict["reason"])
+            self.assertNotIn("my-own-hook", json.dumps(p))
+        self.assertEqual(self.read(".claude/settings.json"), mine)
+
+    def test_existing_member_settings_collide_with_new_release_file_and_are_preserved(self):
+        mine = '{"hooks": {"PreToolUse": [{"command": "member-hook"}]}}\n'
+        self.write(".claude/settings.json", mine)
+        p = self.plan(self.before_settings, self.with_settings)
+        self.assertFalse(p["ready"])
+        self.assertIn("settings.local.json", p["conflicts"][0]["reason"])
+        self.assertEqual(self.read(".claude/settings.json"), mine)
+
+    def test_member_settings_identical_to_release_are_captured_not_conflicted(self):
+        self.write(".claude/settings.json", self.SHIPPED)
+        p = self.plan(self.before_settings, self.with_settings)
+        self.assertTrue(p["ready"])
+        self.assertEqual([c["path"] for c in p["target_collisions"]], [".claude/settings.json"])
+
+    def test_learning_config_queue_and_local_settings_are_never_update_actions(self):
+        self.write(".aiverse/learn/config.json", '{"mode":"auto"}\n')
+        self.write("runtime/learn/queue/job.json", "{}\n")
+        self.write(".claude/settings.local.json", '{"permissions":{}}\n')
+        self.write(".codex/hooks.json", "{}\n")
+        p = self.plan(self.before_settings, self.with_settings)
+        self.assertTrue(p["ready"])
+        self.assertEqual((p["actions"], p["target_collisions"]), ([], []))

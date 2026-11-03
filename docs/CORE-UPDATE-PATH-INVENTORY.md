@@ -181,6 +181,12 @@ Preservation-sensitive Core state includes:
 
 A Core update may update tracked templates or software definitions only when they are proven unmodified release-owned files. It may not reset live connection or automation state to template defaults.
 
+## 10a. Automatic learning and harness settings
+
+- `.claude/settings.json` is a tracked file in the OS checkout (auto memory off plus learning hooks). A clean copy is replaced by the OS checkout like any release software. If a member has edited it, or already has their own untracked file at that path when a release first ships one, the update stops before changing anything and tells the member to move their settings to `.claude/settings.local.json`. Distribution does not merge hook lists, so a member's own hooks are never dropped or silently rewritten.
+- `.claude/settings.local.json`, `.aiverse/learn/**` (config and receipts) and `runtime/learn/**` (queued jobs) are member or runtime state. Updates never create, reset or delete them. Learning stays off until the config file says otherwise.
+- `.codex/**` and `.aiverse/extensions/ai-verse-codex-learning/**` (Codex hooks and the Codex learning package) are separate from the Claude files above and are not touched by a Core update.
+
 ## 11. External Distribution tool stack
 
 For a project resolved by `ProjectLayout`, the default sibling tool stack is:

@@ -130,6 +130,11 @@ This includes:
 | `.aiverse/extensions/registry.json` | `owner-migratable-state` as a structured shared registry | Exact extension lifecycle may mutate only its own entry/fields |
 | `.aiverse/extensions/<extension-id>/**` with verified owner receipt/digest | `generated-system-owned-replaceable-with-receipt` for proven generated material only | Extension owner |
 | `.aiverse/extensions/<extension-id>/**` custom config/user content | `user-owned-immutable-to-updater` | Member/extension owner |
+| `.claude/settings.json` (tracked OS file: automatic learning hooks, auto memory off) | `system-owned-replaceable` when clean and receipt-bound; edited, or an untracked member file at that path, is `ambiguous-conflict` | Distribution only for a clean admitted transition; never merged, never overwritten |
+| `.claude/settings.local.json` | `user-owned-immutable-to-updater` | Member |
+| `.aiverse/learn/**` (learning config, receipts) | `user-owned-immutable-to-updater` | Member and the learning engine; absent config means learning is off |
+| `runtime/learn/**` (queued jobs, spool) | `user-owned-immutable-to-updater` (runtime state, never reset by update) | Learning worker |
+| `.codex/**` and `.aiverse/extensions/ai-verse-codex-learning/**` | `user-owned-immutable-to-updater` (Codex package lifecycle) | Optional Codex package only |
 | unknown `.aiverse/**` | `ambiguous-conflict` | None until proven |
 | `runtime/**` with exact owner receipt/digest | `generated-system-owned-replaceable-with-receipt` | Named runtime generator |
 | `runtime/**` without qualifying provenance | `ambiguous-conflict` or narrower owner state if explicitly known | Fail closed / owner only |

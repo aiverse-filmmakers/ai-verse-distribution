@@ -276,6 +276,14 @@ class PopulatedCoreFixture:
             {"member_setting": "keep", "nested": {"value": 42}},
         )
         _write(project / ".aiverse" / "extensions" / "ai-verse-data" / "owner-state.json", '{"attached":true}\n')
+        _write(project / ".aiverse" / "learn" / "config.json", '{"mode":"auto"}\n')
+        _write(project / "runtime" / "learn" / "queue" / "job-0001.json", '{"state":"pending"}\n')
+        _write(project / ".claude" / "settings.local.json", '{"permissions":{"allow":["Bash(ls)"]}}\n')
+        _write(project / ".codex" / "hooks.json", '{"hooks":{"Stop":[{"member":"six-trusted-hooks"}]}}\n')
+        _write(
+            project / ".aiverse" / "extensions" / "ai-verse-codex-learning" / "state.json",
+            '{"version":"0.3.0-local"}\n',
+        )
         _write(project / "runtime" / "ai-verse-brain" / "locks" / "state.lock", "derived-lock\n")
         _write(project / "runtime" / "indexes" / "ai-verse-memory" / "derived.txt", "derived recall index v1\n")
 
@@ -333,4 +341,9 @@ class PopulatedCoreFixture:
             "agents/member-agent",
             ".aiverse/extensions/registry.json",
             ".aiverse/extensions/member-extension",
+            ".aiverse/learn",
+            "runtime/learn",
+            ".claude/settings.local.json",
+            ".codex",
+            ".aiverse/extensions/ai-verse-codex-learning",
         ]

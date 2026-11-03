@@ -48,6 +48,22 @@ def _contract() -> dict:
     return value
 
 
+# Plain-language reasons for member-editable settings that ship inside the OS
+# checkout. They only change the message: the update still fails closed and the
+# member's file is never overwritten, merged or dropped.
+MEMBER_SETTINGS_NOTES = {
+    ".claude/settings.json": (
+        "Your own Claude Code project settings or hooks are in this file, so it was left "
+        "untouched. Move your own settings into .claude/settings.local.json, which AI-Verse "
+        "never replaces, then restore this file to the release version and update again."
+    ),
+}
+
+
+def _settings_note(name: str, fallback: str) -> str:
+    return MEMBER_SETTINGS_NOTES.get(name, fallback)
+
+
 def safe_path(root: Path, name: str) -> Path:
     parts = PurePosixPath(name).parts
     if not parts or name != PurePosixPath(name).as_posix() or name.startswith("/") or "\\" in name or any(p in {".", ".."} for p in parts):
@@ -247,7 +263,8 @@ def plan_source_adoption(root: Path, installed: str, target: str, *, target_sour
             elif software and (target_equal or policy == "official"):
                 action.update(kind="already-in-target" if target_equal else "retire-source-edit")
             else:
-                raise SourceAdoptionConflict("Keep this customization or explicitly choose eligible official Core code")
+                raise SourceAdoptionConflict(_settings_note(
+                    name, "Keep this customization or explicitly choose eligible official Core code"))
             actions.append(action)
         except (SourceAdoptionConflict, UnicodeError) as exc:
             conflicts.append({"path": name, "reason": str(exc)})
@@ -262,7 +279,8 @@ def plan_source_adoption(root: Path, installed: str, target: str, *, target_sour
             state = file_state(path)
             expected = blob(target_source, incoming[name])
             if state["sha256"] != digest(expected) or (os.name != "nt" and bool(state["mode"] & stat.S_IXUSR) != (incoming[name]["mode"] == "100755")):
-                raise SourceAdoptionConflict("A new release path collides with different local content or mode")
+                raise SourceAdoptionConflict(_settings_note(
+                    name, "A new release path collides with different local content or mode"))
             collisions.append({"path": name, "before": state, "target_oid": incoming[name]["oid"]})
         except SourceAdoptionConflict as exc:
             conflicts.append({"path": name, "reason": str(exc)})

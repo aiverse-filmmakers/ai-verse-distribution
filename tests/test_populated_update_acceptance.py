@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 from aiverse_distribution.core_update_guard import CoreUpdateConflictError
 from aiverse_distribution.preservation import (
     PreservationMismatch,
+    require_preserved,
     require_member_state_preserved,
     snapshot_member_state,
 )
@@ -129,6 +130,11 @@ class PopulatedCoreUpdateAcceptanceTests(unittest.TestCase):
             "custom-notes.md",
             ".aiverse/extensions/member-extension/config.json",
             "archives/2026-09.md",
+            ".aiverse/learn/config.json",
+            "runtime/learn/queue/job-0001.json",
+            ".claude/settings.local.json",
+            ".codex/hooks.json",
+            ".aiverse/extensions/ai-verse-codex-learning/state.json",
         ]
         for relative in required:
             self.assertTrue((fixture.project / relative).is_file(), relative)
@@ -210,6 +216,21 @@ class PopulatedCoreUpdateAcceptanceTests(unittest.TestCase):
             "generated instructions v2\n",
         )
         self.assertEqual((fixture.base / "run.py").read_text(encoding="utf-8"), "# generated launcher v2\n")
+
+    def test_learning_state_and_codex_package_survive_populated_update_unchanged(self):
+        fixture = PopulatedCoreFixture.create({"ai-verse-os"})
+        self.addCleanup(fixture.cleanup)
+        paths = [
+            ".aiverse/learn/config.json",
+            "runtime/learn/queue/job-0001.json",
+            ".claude/settings.local.json",
+            ".codex/hooks.json",
+            ".aiverse/extensions/ai-verse-codex-learning/state.json",
+        ]
+        before = fixture.tree_snapshot(paths)
+        self.assertTrue(all(item["type"] == "file" for item in before.values()))
+        self._apply_success(fixture)
+        require_preserved(before, fixture.tree_snapshot(paths), label="learning state")
 
     def test_u26_dirty_source_fails_before_mutation_and_preserves_fixture(self):
         fixture = PopulatedCoreFixture.create({"ai-verse-brain"})

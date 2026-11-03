@@ -188,6 +188,13 @@ def canonical_preserved_paths(project_root: Path) -> list[str]:
         ".aiverse/extensions/registry.json",
         ".aiverse/capability-sources.json",
         ".aiverse/extensions/member-extension",
+        # Automatic learning: member config, queued jobs and receipts, the member's
+        # own Claude settings, and the separate Codex hooks and learning package.
+        ".aiverse/learn",
+        "runtime/learn",
+        ".claude/settings.local.json",
+        ".codex",
+        ".aiverse/extensions/ai-verse-codex-learning",
     ]
     for workspace in _workspace_ids(project_root):
         prefix = f"workspaces/{workspace}"
