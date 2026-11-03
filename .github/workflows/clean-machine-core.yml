@@ -245,7 +245,6 @@ jobs:
       - name: Prove optional package lifecycle and state preservation
         run: python tests/acceptance/optional_package_candidate_acceptance.py
 
-        run: python tests/acceptance/optional_package_candidate_acceptance.py
   os-0311-release:
     strategy:
       fail-fast: false
