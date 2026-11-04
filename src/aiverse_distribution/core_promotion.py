@@ -8,7 +8,8 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping
 
-from .update_graph import promoted_transition_releases, reachability_problems
+from .release_catalog import CATALOG_DOCUMENTS, Catalog, DistributionError
+from .transition_contract import CoreTransitionContract
 from .whole_product_qualification import SCHEMA_ID as WHOLE_PRODUCT_QUALIFICATION_SCHEMA
 
 
@@ -359,52 +360,32 @@ def _require_every_core_reaches_candidate(
     next_promotions: Mapping[str, Any],
     next_candidates: Mapping[str, Any],
 ) -> None:
-    """Refuse a promotion that would leave any released Core without a qualified update path.
+    """Refuse a promotion that would ship a broken updater or strand a released Core.
 
-    Members may skip releases. The installed updater walks chains of separately
-    qualified hops, so the new default must be reachable from every released Core
-    (except the pinned legacy set) through hops that each carry accepted
-    preservation evidence. This is judged on the post-promotion ledgers, the same
-    data members will receive.
+    Members run the post-promotion catalog through the runtime `Catalog` and
+    `CoreTransitionContract`. Both are built here from the exact post-promotion
+    documents, so anything the installed updater would refuse to load (a
+    compatibility or transition mismatch, malformed evidence) refuses the
+    promotion. Then every released Core, except the pinned legacy betas, must
+    still reach the candidate through separately qualified hops.
     """
     catalog_dir = root / "src/aiverse_distribution/catalog"
+    documents: dict[str, Any] = {}
+    for name in CATALOG_DOCUMENTS:
+        documents[name], _ = _load_json(catalog_dir / name, f"catalog document {name}")
     transitions, _ = _load_json(catalog_dir / "core_update_transitions.json", "Core transition metadata")
-    lineage, _ = _load_json(catalog_dir / "core_lineage.json", "Core lineage")
-    legacy, _ = _load_json(catalog_dir / "release_sets.json", "release sets")
-
-    releases = copy.deepcopy(transitions.get("releases") or {})
+    documents["core_promotions.json"] = copy.deepcopy(next_promotions)
+    documents["core_candidates.json"] = copy.deepcopy(next_candidates)
     try:
-        promoted = promoted_transition_releases(next_promotions.get("release_sets", []))
-    except ValueError as exc:
-        raise CorePromotionError(str(exc)) from exc
-    duplicated = sorted(set(releases) & set(promoted))
-    if duplicated:
+        catalog = Catalog(documents)
+        contract = CoreTransitionContract(catalog, payload=copy.deepcopy(transitions))
+        if catalog.resolve("core").id != candidate_id:
+            raise CorePromotionError(f"{candidate_id}: post-promotion default Core channel is not the candidate")
+        problems = contract.reachability_problems(candidate_id)
+    except DistributionError as exc:
         raise CorePromotionError(
-            "transition metadata is duplicated between historical and promoted ledgers: "
-            + ", ".join(duplicated)
-        )
-    releases.update(promoted)
-
-    raws: dict[str, Any] = {}
-    for group in (
-        legacy.get("release_sets", []),
-        lineage.get("release_sets", []),
-        next_promotions.get("release_sets", []),
-    ):
-        for raw in group:
-            if isinstance(raw, dict) and isinstance(raw.get("id"), str):
-                raws[raw["id"]] = raw
-    pending = {
-        raw.get("id") for raw in next_candidates.get("release_sets", []) if isinstance(raw, dict)
-    }
-    sources = [
-        release_id
-        for release_id, raw in raws.items()
-        if raw.get("profile") == "core" and raw.get("status") == "released" and release_id not in pending
-    ]
-    problems = reachability_problems(
-        releases=releases, raw_releases=raws, sources=sources, target=candidate_id
-    )
+            f"{candidate_id}: the post-promotion catalog would not load for members: {exc}"
+        ) from exc
     if problems:
         raise CorePromotionError(
             f"{candidate_id}: promotion would leave released Core versions without a qualified update path: "

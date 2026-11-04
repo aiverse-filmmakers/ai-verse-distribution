@@ -62,7 +62,8 @@ class CorePromotionTests(unittest.TestCase):
         _write(catalog_dir / "core_promotions.json", promotions)
         # The promotion gate also reads the historical transition, lineage and
         # release-set catalogs to prove no released Core is left stranded.
-        for name in ("core_update_transitions.json", "core_lineage.json", "release_sets.json"):
+        for name in ("core_update_transitions.json", "core_lineage.json", "release_sets.json",
+                     "profiles.json", "compatibility.json"):
             shutil.copyfile(ROOT / "src/aiverse_distribution/catalog" / name, catalog_dir / name)
 
         current = next(item for item in promotions["release_sets"] if item["id"] == CURRENT)
@@ -423,6 +424,32 @@ class CorePromotionTests(unittest.TestCase):
                 attempt(root, candidate_id, qualification_ref, registry, state)
         self.assertEqual(promotions_path.read_bytes(), before)
         self.assertFalse((root / f"release-sets/{candidate_id}.json").exists())
+
+    def test_promotion_is_refused_when_the_post_promotion_catalog_would_not_load(self):
+        # Reachability alone is not enough: the updater members run must be able
+        # to load the catalog. A compatibility record that disagrees with the
+        # transition evidence makes CoreTransitionContract refuse to start.
+        root, candidate_id, qualification_ref, registry, state, _ = self.fixture()
+        promotions_path = root / "src/aiverse_distribution/catalog/core_promotions.json"
+        promotions = json.loads(promotions_path.read_text(encoding="utf-8"))
+        learn = "core-learn-candidate-2026-10-27"
+        promotions["compatibility"][learn]["update_from"] = [learn]
+        _write(promotions_path, promotions)
+        before = promotions_path.read_bytes()
+        for attempt in (plan_core_promotion, apply_core_promotion):
+            with self.assertRaisesRegex(CorePromotionError, "would not load for members"):
+                attempt(root, candidate_id, qualification_ref, registry, state)
+        self.assertEqual(promotions_path.read_bytes(), before)
+
+    def test_promotion_is_refused_when_transition_evidence_disagrees_with_compatibility(self):
+        root, candidate_id, qualification_ref, registry, state, _ = self.fixture()
+        promotions_path = root / "src/aiverse_distribution/catalog/core_promotions.json"
+        promotions = json.loads(promotions_path.read_text(encoding="utf-8"))
+        learn = next(r for r in promotions["release_sets"] if r["id"] == "core-learn-candidate-2026-10-27")
+        learn["evidence"]["transition_policy"]["update_from"] = ["core-learn-candidate-2026-10-27"]
+        _write(promotions_path, promotions)
+        with self.assertRaises(CorePromotionError):
+            plan_core_promotion(root, candidate_id, qualification_ref, registry, state)
 
     def test_promotion_that_does_not_admit_the_current_default_is_refused(self):
         root, candidate_id, qualification_ref, registry, state, _ = self.fixture()

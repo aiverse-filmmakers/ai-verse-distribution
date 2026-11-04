@@ -240,17 +240,44 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                     )
                 expected = release_id
         except Exception as exc:
+            # Report what is really on disk, never what the walk expected: a hop
+            # can commit its receipt and then fail health and recovery too.
+            try:
+                actual = (self.state.load() or {}).get("release_set_id")
+            except Exception:
+                actual = None
+            try:
+                recovery_pending = self.update_journal.load() is not None
+            except Exception:
+                recovery_pending = True
+            unresolved = recovery_pending or actual != expected
             exc.update_progress = {  # type: ignore[attr-defined]
                 "completed": [item["to"] for item in results],
-                "installed": expected,
+                "installed": actual,
+                "expected_installed": expected,
                 "target": chain[-1],
-                "next": "Run aiverse update again to continue from the installed release.",
+                "recovery_unresolved": unresolved,
+                "next": (
+                    "The installation did not return to a verified release. Run aiverse update to retry "
+                    "recovery first, then aiverse doctor; do not edit the install by hand."
+                    if unresolved
+                    else "Run aiverse update again to continue from the installed release."
+                ),
             }
             raise
         final = dict(results[-1])
         final_lock = self.state.load() or {}
         final_revisions = self._component_revisions_from_lock(final_lock)
         union = sorted({name for item in results for name in item.get("changed_components", [])})
+
+        def merged(key: str) -> list:
+            ordered: list = []
+            for item in results:
+                for value in item.get(key, []) or []:
+                    if value not in ordered:
+                        ordered.append(value)
+            return ordered
+
         final.update(
             {
                 "from": source_id,
@@ -266,6 +293,29 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                 "changed": True,
                 "transition_path": plan["transition_path"],
                 "hop_count": len(chain),
+                # Work done by every hop, not only the last one.
+                "staged_components": sorted(merged("staged_components")),
+                "owner_updated_components": merged("owner_updated_components"),
+                "owner_migrated_components": merged("owner_migrated_components"),
+                "reconciled_components": merged("reconciled_components"),
+                "generated_refreshed": merged("generated_refreshed"),
+                "hop_results": [
+                    {
+                        "to": item.get("to"),
+                        "changed_components": item.get("changed_components", []),
+                        "record_only": bool(item.get("record_only")),
+                        "owner_migrated_components": item.get("owner_migrated_components", []),
+                        "reconciled_components": item.get("reconciled_components", []),
+                        "generated_refreshed": item.get("generated_refreshed", []),
+                        "health": item.get("health"),
+                    }
+                    for item in results
+                ],
+                "message": (
+                    f"Updated through {len(chain)} releases in order."
+                    if union
+                    else "No software changes; the installed release record advanced."
+                ),
             }
         )
         return final

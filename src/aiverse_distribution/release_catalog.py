@@ -57,14 +57,34 @@ def _load(name: str) -> Dict[str, Any]:
     return json.loads(data)
 
 
+CATALOG_DOCUMENTS = (
+    "profiles.json",
+    "compatibility.json",
+    "release_sets.json",
+    "core_lineage.json",
+    "core_promotions.json",
+    "core_candidates.json",
+)
+
+
 class Catalog:
-    def __init__(self) -> None:
-        self.profiles = _load("profiles.json")
-        self.compatibility = _load("compatibility.json")
-        self.release_data = _load("release_sets.json")
-        self.core_lineage = _load("core_lineage.json")
-        self.core_promotions = _load("core_promotions.json")
-        self.core_candidates = _load("core_candidates.json")
+    def __init__(self, documents: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
+        """Load the packaged catalog, or validate explicit documents.
+
+        `documents` lets promotion tooling run the exact runtime catalog
+        validation on a catalog that exists only in memory (the post-promotion
+        one) before anything is written.
+        """
+
+        def load(name: str) -> Dict[str, Any]:
+            return json.loads(json.dumps(documents[name])) if documents is not None else _load(name)
+
+        self.profiles = load("profiles.json")
+        self.compatibility = load("compatibility.json")
+        self.release_data = load("release_sets.json")
+        self.core_lineage = load("core_lineage.json")
+        self.core_promotions = load("core_promotions.json")
+        self.core_candidates = load("core_candidates.json")
         self._apply_core_promotions()
         self._apply_core_lineage()
         self._apply_core_candidates()

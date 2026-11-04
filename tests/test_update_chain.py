@@ -324,6 +324,8 @@ class _ChainHarness:
         self.order = [self.stable.id, self.hop1.id, self.hop2.id, self.hop3.id]
         self.owner_calls: list[str] = []
         self.fail_owner_for: str | None = None
+        self.fail_health_for: str | None = None
+        self.break_recovery = False
 
     @staticmethod
     def _release(release_id, base, overrides):
@@ -376,12 +378,18 @@ class _ChainHarness:
         if self.fail_owner_for == component_id:
             raise RuntimeError(f"synthetic owner failure in {component_id}")
 
+    def _recover(self):
+        if self.break_recovery and self.app.update_journal.load() is not None:
+            raise RuntimeError("synthetic recovery failure")
+        return self._real_recover()
+
     def _get_release(self, release_id, require_released=True):
         return self.releases.get(release_id) or self._original_get_release(release_id, require_released)
 
     def run(self, target_id):
         app = self.app
         self._original_get_release = Catalog().get_release
+        self._real_recover = type(app)._recover_interrupted_update.__get__(app)
         with patch.object(app, "resolve_core_update_target", side_effect=self._resolve), \
              patch.object(app.transition_contract, "update_path", side_effect=self._update_path), \
              patch.object(app.transition_contract, "require_update",
@@ -394,7 +402,9 @@ class _ChainHarness:
              patch("aiverse_distribution.core_update.owner_update", side_effect=self._owner_update), \
              patch("aiverse_distribution.core_update.owner_setup", return_value=[]), \
              patch.object(app, "status", side_effect=lambda: {"state": "ready", "release_set_id": self.installed()}), \
-             patch.object(app, "doctor", side_effect=lambda: {"ok": True, "release_set_id": self.installed()}):
+             patch.object(app, "doctor", side_effect=lambda: {
+                 "ok": self.installed() != self.fail_health_for, "release_set_id": self.installed()}), \
+             patch.object(app, "_recover_interrupted_update", side_effect=self._recover):
             return app.apply_update(target_id)
 
     def plan(self, target_id):
@@ -454,6 +464,45 @@ class UpdaterChainTests(unittest.TestCase):
         again = h.run(h.hop3.id)
         self.assertTrue(again["noop"])
         self.assertEqual(h.installed(), h.hop3.id)
+
+    def test_successful_walk_reports_the_work_of_every_hop_not_only_the_last(self):
+        h = _ChainHarness(self)
+        result = h.run(h.hop3.id)  # brain, then memory, then a record-only hop
+        self.assertEqual(result["owner_migrated_components"], ["ai-verse-brain", "ai-verse-memory"])
+        self.assertEqual(result["owner_updated_components"], ["ai-verse-brain", "ai-verse-memory"])
+        self.assertEqual(result["staged_components"], ["ai-verse-brain", "ai-verse-memory"])
+        self.assertEqual(result["changed_components"], ["ai-verse-brain", "ai-verse-memory"])
+        self.assertFalse(result["record_only"])
+        self.assertEqual(result["message"], "Updated through 3 releases in order.")
+        self.assertEqual([r["to"] for r in result["hop_results"]], [h.hop1.id, h.hop2.id, h.hop3.id])
+        self.assertEqual(result["hop_results"][0]["owner_migrated_components"], ["ai-verse-brain"])
+        self.assertEqual(result["hop_results"][1]["owner_migrated_components"], ["ai-verse-memory"])
+        self.assertTrue(result["hop_results"][2]["record_only"])
+        self.assertTrue(all(r["health"]["ok"] for r in result["hop_results"]))
+
+    def test_failed_recovery_reports_the_real_receipt_and_unresolved_state(self):
+        h = _ChainHarness(self)
+        h.fail_health_for = h.hop2.id  # hop 2 commits its receipt, then fails final health
+        h.break_recovery = True        # ... and automatic recovery cannot repair it
+        with self.assertRaises(DistributionError) as caught:
+            h.run(h.hop3.id)
+        progress = caught.exception.update_progress
+        self.assertEqual(h.installed(), h.hop2.id)  # the receipt really is hop 2
+        self.assertEqual(progress["installed"], h.hop2.id)
+        self.assertEqual(progress["expected_installed"], h.hop1.id)
+        self.assertEqual(progress["completed"], [h.hop1.id])
+        self.assertTrue(progress["recovery_unresolved"])
+        self.assertIn("retry recovery", progress["next"])
+        self.assertIsNotNone(h.app.update_journal.load())
+
+    def test_a_clean_failure_is_not_reported_as_unresolved(self):
+        h = _ChainHarness(self)
+        h.fail_owner_for = "ai-verse-memory"
+        with self.assertRaises(RuntimeError) as caught:
+            h.run(h.hop3.id)
+        progress = caught.exception.update_progress
+        self.assertFalse(progress["recovery_unresolved"])
+        self.assertEqual(progress["installed"], progress["expected_installed"])
 
     def test_record_only_hop_advances_the_installation_record(self):
         h = _ChainHarness(self)
