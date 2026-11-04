@@ -12,6 +12,9 @@ profile = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(profile)
 
 class ProfileAcceptanceModeTests(unittest.TestCase):
+    def test_os_0311_candidate_does_not_claim_admitted_update_before_promotion(self):
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-os-0.3.11-candidate-2026-11-04"), "unadmitted")
+
     def test_current_release_uses_noop_check(self):
         self.assertEqual(profile.default_update_mode(Catalog(), "core-learn-candidate-2026-10-27"), "current")
 
@@ -58,3 +61,14 @@ class PriorPersonalLibraryFixtureTests(unittest.TestCase):
             self.assertEqual(update.existing_personal_skill_path(project, home), canonical / "acceptance-legacy/SKILL.md")
             config.unlink()
             self.assertEqual(update.existing_personal_skill_path(project, home), home / ".aiverse/local-skills/acceptance-legacy/SKILL.md")
+
+
+class HistoricalLabelExpectationTests(unittest.TestCase):
+    def test_historical_label_is_not_required_from_newer_live_descriptor(self):
+        workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/clean-machine-core.yml").read_text()
+        historical = workflow.split("  learn-release:", 1)[1].split("  os-0311-release:", 1)[0]
+        self.assertIn("AI_VERSE_ACCEPTANCE_OS_REVISION: 00805bc7d866703d3ef5ca1359faa769d88ecdae", historical)
+        self.assertNotIn("AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION:", historical)
+        current = workflow.split("  os-0311-release:", 1)[1]
+        self.assertIn("AI_VERSE_ACCEPTANCE_OS_REVISION: bcf83a2f14fbeb9c18505edee0764c512d6b696f", current)
+        self.assertIn("AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION: 0.3.11", current)
