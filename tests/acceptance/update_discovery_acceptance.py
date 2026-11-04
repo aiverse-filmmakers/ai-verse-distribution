@@ -155,8 +155,12 @@ def main(argv=None):
     for name in ('pyproject.toml', 'README.md'):
         shutil.copyfile(source / name, fixture / name)
     package = fixture / 'src/aiverse_distribution'
-    shutil.rmtree(package / 'catalog')
-    shutil.copytree(old / 'src/aiverse_distribution/catalog', package / 'catalog')
+    if options.old_has_discovery == 'yes':
+        shutil.rmtree(package / 'catalog')
+        shutil.copytree(old / 'src/aiverse_distribution/catalog', package / 'catalog')
+    # Otherwise the old Distribution predates the packaged promotion ledger, so
+    # the current code cannot load its catalog; the refreshed transport keeps the
+    # current one and this leg qualifies the hop walk itself.
     # This is the initial one-time tooling refresh in a disposable qualification
     # fixture. It intentionally ships the older real catalog to simulate time
     # passing after the transport was installed, before the next Core release.
