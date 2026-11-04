@@ -75,3 +75,38 @@ class HistoricalLabelExpectationTests(unittest.TestCase):
         current = workflow.split("  os-0312-release:", 1)[1]
         self.assertIn("AI_VERSE_ACCEPTANCE_OS_REVISION: ff29d65b56511c8d936fd16a6e7941719c75af0c", current)
         self.assertIn("AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION: 0.3.12", current)
+
+
+class CandidateTransitionFixtureTests(unittest.TestCase):
+    def test_disposable_admission_uses_strict_transition_shapes_without_shipping_fixture(self):
+        import json
+        from types import SimpleNamespace
+        from aiverse_distribution.project_layout import ProjectLayout
+        spec = importlib.util.spec_from_file_location("update_transition_fixture", Path(__file__).parent / "acceptance/core_update_candidate_acceptance.py")
+        update = importlib.util.module_from_spec(spec)
+        with patch.dict("sys.modules", {"profile_acceptance": profile}):
+            spec.loader.exec_module(update)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            layout = ProjectLayout.resolve(root / "member")
+            package = layout.stack / "synthetic-package"
+            catalog = package / "catalog"
+            catalog.mkdir(parents=True)
+            transitions = catalog / "core_update_transitions.json"
+            transitions.write_text(json.dumps({"releases": {}}))
+            (catalog / "core_promotions.json").write_text(json.dumps({"release_sets": []}))
+            probe = SimpleNamespace(returncode=0, stdout=str(package), stderr="")
+            with patch.object(update.subprocess, "run", return_value=probe):
+                update._install_test_transition(layout)
+            record = json.loads(transitions.read_text())["releases"][update.CANDIDATE_ID]
+            updates = record["preservation_evidence"]["updates"]
+            forward = updates[update.CURRENT_RELEASE]
+            self.assertEqual(forward["kind"], "whole-product-update-preservation")
+            self.assertEqual(forward["qualification_ref"], update.TEST_EVIDENCE_REF)
+            self.assertEqual((forward["from"], forward["to"]), (update.CURRENT_RELEASE, update.CANDIDATE_ID))
+            self.assertEqual(updates[update.CANDIDATE_ID]["kind"], "self-transition-noop")
+            self.assertEqual(record["preservation_evidence"]["rollbacks"][update.CANDIDATE_ID]["kind"], "self-transition-noop")
+            self.assertEqual(record["rollback_to"], [update.CANDIDATE_ID])
+        production = Path(__file__).resolve().parents[1] / "src/aiverse_distribution/catalog"
+        for path in production.glob("*.json"):
+            self.assertNotIn(update.TEST_EVIDENCE_REF, path.read_text())
