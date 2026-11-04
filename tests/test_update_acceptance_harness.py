@@ -52,7 +52,8 @@ class UpdateAcceptanceContainmentTests(unittest.TestCase):
             with patch.object(module.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, str(package), "")):
                 module._install_test_transition(layout)
             record = json.loads(target.read_text())["releases"][module.CANDIDATE_ID]
-            self.assertEqual(record["preservation_evidence"]["updates"][module.CURRENT_RELEASE]["kind"], "temporary-test-fixture-only")
+            self.assertEqual(record["preservation_evidence"]["updates"][module.CURRENT_RELEASE]["kind"], "whole-product-update-preservation")
+            self.assertEqual(record["preservation_evidence"]["updates"][module.CURRENT_RELEASE]["qualification_ref"], module.TEST_EVIDENCE_REF)
 
     def test_historical_promoted_release_uses_real_transition(self):
         self.assertTrue(harness().source_promotion_present(Catalog(), "core-local-upgrades-candidate-2026-10-19-v6"))

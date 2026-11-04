@@ -146,17 +146,20 @@ def _install_test_transition(layout: ProjectLayout) -> None:
             raise RuntimeError("temporary test admission must not shadow a current or historical promoted release")
     transitions_path = package / "catalog" / "core_update_transitions.json"
     payload = json.loads(transitions_path.read_text(encoding="utf-8"))
+    # Synthetic admission exists only inside the disposable tool stack. Use the
+    # production schema so the ordinary strict updater is exercised unchanged.
+    # TEST_EVIDENCE_REF remains explicitly temporary and is never release evidence.
     updates = {
         CURRENT_RELEASE: {
             "status": "accepted",
-            "kind": "temporary-test-fixture-only",
+            "kind": "whole-product-update-preservation",
             "qualification_ref": TEST_EVIDENCE_REF,
             "from": CURRENT_RELEASE,
             "to": CANDIDATE_ID,
         },
         CANDIDATE_ID: {
             "status": "accepted",
-            "kind": "temporary-test-fixture-only",
+            "kind": "self-transition-noop",
             "qualification_ref": TEST_EVIDENCE_REF,
             "from": CANDIDATE_ID,
             "to": CANDIDATE_ID,
@@ -173,7 +176,7 @@ def _install_test_transition(layout: ProjectLayout) -> None:
             "rollbacks": {
                 CANDIDATE_ID: {
                     "status": "accepted",
-                    "kind": "temporary-test-fixture-only",
+                    "kind": "self-transition-noop",
                     "qualification_ref": TEST_EVIDENCE_REF,
                     "from": CANDIDATE_ID,
                     "to": CANDIDATE_ID,
