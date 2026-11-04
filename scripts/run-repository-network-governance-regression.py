@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Callable
 
 
-EXPECTED_SYSTEM_REVISION = "ac95f826554672ce30a06bbd35c7ca0531963547"
+EXPECTED_SYSTEM_REVISION = "e2e2462ce218ecc9716a5127f400b22bab9cc4e1"
 CORE_PROFILE = "core"
 CORE_OWNER_KEYS = {
     "ai-verse-os": "os",

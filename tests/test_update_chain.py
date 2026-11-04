@@ -93,7 +93,7 @@ class PackagedCatalogReachabilityTests(unittest.TestCase):
 
     def test_oldest_supported_release_walks_every_hop_to_the_default(self):
         path = self.contract.update_path(STABLE, self.default)
-        self.assertGreaterEqual(len(path), 8)
+        self.assertGreaterEqual(len(path), 9)
         self.assertEqual(path[0].source_release, STABLE)
         self.assertEqual(path[-1].target_release, self.default)
         for earlier, later in zip(path, path[1:]):
@@ -106,19 +106,20 @@ class PackagedCatalogReachabilityTests(unittest.TestCase):
             self.assertEqual(hop.state_rule, "owner-preserved")
             self.assertEqual(hop.rollback_rule, "software-only-owner-state-preserved")
 
-    def test_a_member_three_releases_behind_walks_three_hops(self):
+    def test_a_member_four_releases_behind_walks_four_hops(self):
         path = self.contract.update_path(TOOL_PLACEMENT, self.default)
         self.assertEqual(
             [(h.source_release, h.target_release) for h in path],
             [
                 (TOOL_PLACEMENT, "core-learn-candidate-2026-10-27"),
                 ("core-learn-candidate-2026-10-27", "core-os-0.3.11-candidate-2026-11-04"),
-                ("core-os-0.3.11-candidate-2026-11-04", self.default),
+                ("core-os-0.3.11-candidate-2026-11-04", "core-os-0.3.12-candidate-2026-11-04"),
+                ("core-os-0.3.12-candidate-2026-11-04", self.default),
             ],
         )
 
     def test_direct_admission_stays_a_single_hop_and_current_is_a_noop(self):
-        previous = "core-os-0.3.11-candidate-2026-11-04"
+        previous = "core-os-0.3.12-candidate-2026-11-04"
         self.assertEqual(len(self.contract.update_path(previous, self.default)), 1)
         only = self.contract.update_path(self.default, self.default)
         self.assertEqual(len(only), 1)
@@ -164,7 +165,7 @@ class DirectAdmissionPolicyTests(unittest.TestCase):
         catalog = Catalog()
         payload = copy.deepcopy(CoreTransitionContract(catalog).payload)
         default = catalog.resolve("core").id
-        previous = "core-os-0.3.11-candidate-2026-11-04"
+        previous = "core-os-0.3.12-candidate-2026-11-04"
         payload["releases"][default]["preservation_evidence"]["updates"][previous]["kind"] = "self-transition-noop"
         contract = CoreTransitionContract.__new__(CoreTransitionContract)
         contract.catalog, contract.payload, contract._edges = catalog, payload, None
@@ -434,7 +435,7 @@ class UpdaterChainTests(unittest.TestCase):
         self.assertEqual(plan["from"], h.stable.id)
         self.assertEqual(plan["to"], h.hop3.id)
         self.assertFalse(plan["noop"])
-        self.assertEqual(plan["hop_count"], 3)
+        self.assertEqual(plan["hop_count"], 4)
         self.assertEqual([hop["to"] for hop in plan["transition_path"]], [h.hop1.id, h.hop2.id, h.hop3.id])
         self.assertEqual(
             [hop["changed_components"] for hop in plan["transition_path"]],
@@ -589,14 +590,14 @@ class RealCatalogUpdaterTests(unittest.TestCase):
         }
         return app
 
-    def test_default_update_from_three_releases_back_plans_three_hops(self):
+    def test_default_update_from_four_releases_back_plans_four_hops(self):
         app = self._app(TOOL_PLACEMENT)
         chain = app._update_chain(None)
-        self.assertEqual(len(chain), 3)
+        self.assertEqual(len(chain), 4)
         plan = app.update_plan()
         self.assertEqual(plan["from"], TOOL_PLACEMENT)
         self.assertEqual(plan["to"], app.catalog.resolve("core").id)
-        self.assertEqual(plan["hop_count"], 3)
+        self.assertEqual(plan["hop_count"], 4)
         self.assertTrue(all(h["qualification_ref"] for h in plan["transition_path"]))
 
     def test_default_update_from_oldest_supported_plans_every_hop(self):
@@ -604,11 +605,11 @@ class RealCatalogUpdaterTests(unittest.TestCase):
         plan = app.update_plan()
         self.assertEqual(plan["transition_path"][0]["from"], STABLE)
         self.assertEqual(plan["transition_path"][-1]["to"], app.catalog.resolve("core").id)
-        self.assertGreaterEqual(plan["hop_count"], 8)
+        self.assertGreaterEqual(plan["hop_count"], 9)
         self.assertFalse(plan["noop"])
 
     def test_direct_and_current_installs_do_not_chain(self):
-        direct = self._app("core-os-0.3.11-candidate-2026-11-04")
+        direct = self._app("core-os-0.3.12-candidate-2026-11-04")
         self.assertEqual(direct._update_chain(None), [])
         current = self._app(direct.catalog.resolve("core").id)
         self.assertEqual(current._update_chain(None), [])
