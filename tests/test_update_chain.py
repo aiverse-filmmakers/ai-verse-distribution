@@ -435,7 +435,7 @@ class UpdaterChainTests(unittest.TestCase):
         self.assertEqual(plan["from"], h.stable.id)
         self.assertEqual(plan["to"], h.hop3.id)
         self.assertFalse(plan["noop"])
-        self.assertEqual(plan["hop_count"], 4)
+        self.assertEqual(plan["hop_count"], 3)
         self.assertEqual([hop["to"] for hop in plan["transition_path"]], [h.hop1.id, h.hop2.id, h.hop3.id])
         self.assertEqual(
             [hop["changed_components"] for hop in plan["transition_path"]],
