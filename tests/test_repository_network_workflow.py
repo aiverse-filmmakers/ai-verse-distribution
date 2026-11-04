@@ -10,8 +10,8 @@ class RepositoryNetworkWorkflowTests(unittest.TestCase):
     def test_workflow_pins_exact_network_and_runs_read_only_harness(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         for revision in (
-            "4875d43c5a589480460190a9925a3f2f356a7415",
-            "0ffe8cc6d7ff15b2879770103fbccba1f2322974",
+            "ac95f826554672ce30a06bbd35c7ca0531963547",
+            "073c353ec738670b9f82d09fd3981e8424cfeae3",
             "32cae304861bb0c897a64dd0931bead516d22833",
             "09911eae0b4b0cbf7e7e7969230fe5b86647b841",
             "28f7e84054b55a74060ea1a1570d3736e556acdb",

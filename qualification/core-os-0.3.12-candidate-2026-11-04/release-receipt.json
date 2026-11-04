@@ -1,0 +1,324 @@
+{
+  "schema_version": "aiverse.distribution-release-receipt/v1",
+  "release_id": "core-os-0.3.12-candidate-2026-11-04",
+  "profile": "core",
+  "status": "bound",
+  "distribution_revision": "c63a2dbfae1c8b1c0f3b966cf101f0b8e2762e20",
+  "release_set": {
+    "path": "release-sets/core-os-0.3.12-candidate-2026-11-04.json",
+    "sha256": "93a7517a276f6aa480746a4706ecbe40f6aad8eab4396ec99f806d71d3f34896"
+  },
+  "components": [
+    {
+      "component_id": "ai-verse-os",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+      "revision": "ff29d65b56511c8d936fd16a6e7941719c75af0c",
+      "install_order": 10,
+      "descriptor": {
+        "path": "release/component-release.json",
+        "source_revision": "073c353ec738670b9f82d09fd3981e8424cfeae3",
+        "sha256": "7cb7b93d316ea5878664db34dafa42f3a1597254b8bdacc4d6e2720941071add"
+      },
+      "owner_acceptance": {
+        "kind": "component-release-descriptor-native-ci",
+        "evidence_revision": "073c353ec738670b9f82d09fd3981e8424cfeae3",
+        "workflow": "Repository QC",
+        "run_id": 41820402249,
+        "result": "success"
+      }
+    },
+    {
+      "component_id": "ai-verse-brain",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+      "revision": "14ded0120c11362024864d50d47f1996e66530e8",
+      "install_order": 20,
+      "descriptor": {
+        "path": "release/component-release.json",
+        "source_revision": "32cae304861bb0c897a64dd0931bead516d22833",
+        "sha256": "5779516a60af39b303cad77e4ed2624dc57fc4dd4255d7babc3f477cb6018da8"
+      },
+      "owner_acceptance": {
+        "kind": "component-release-descriptor-native-ci",
+        "evidence_revision": "32cae304861bb0c897a64dd0931bead516d22833",
+        "workflow": "CI",
+        "run_id": 40477747599,
+        "result": "success"
+      }
+    },
+    {
+      "component_id": "ai-verse-memory",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+      "revision": "f1327be48ba2ee0043959021365e6dbb9dcb1d3a",
+      "install_order": 30,
+      "descriptor": {
+        "path": "release/component-release.json",
+        "source_revision": "09911eae0b4b0cbf7e7e7969230fe5b86647b841",
+        "sha256": "9d8e636691742c7be62b123a944bb16b1e274ae937fc8fabc9c7795539ff1efb"
+      },
+      "owner_acceptance": {
+        "kind": "component-release-descriptor-native-ci",
+        "evidence_revision": "09911eae0b4b0cbf7e7e7969230fe5b86647b841",
+        "workflow": "Test",
+        "run_id": 37686666851,
+        "result": "success"
+      }
+    },
+    {
+      "component_id": "ai-verse-skills",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+      "revision": "390c6e1633afc809040bd1159840045f4f9ff27e",
+      "install_order": 40,
+      "descriptor": {
+        "path": "release/component-release.json",
+        "source_revision": "28f7e84054b55a74060ea1a1570d3736e556acdb",
+        "sha256": "94baa36b0cd1a0c5469438447b9293b6b1567f58eb951c802ddcd40509960d38"
+      },
+      "owner_acceptance": {
+        "kind": "component-release-descriptor-native-ci",
+        "evidence_revision": "28f7e84054b55a74060ea1a1570d3736e556acdb",
+        "workflow": "Runtime Readiness",
+        "run_id": 39927631275,
+        "result": "success"
+      }
+    },
+    {
+      "component_id": "ai-verse-data",
+      "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+      "revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
+      "install_order": 50,
+      "descriptor": {
+        "path": "release/component-release.json",
+        "source_revision": "67b8b061429153b991b61d4099aad101d10c3d90",
+        "sha256": "ac7f7231b63c234429c85281bfd36bd6371f739f394c37fcbaa682fe620a777d"
+      },
+      "owner_acceptance": {
+        "kind": "component-release-descriptor-native-ci",
+        "evidence_revision": "67b8b061429153b991b61d4099aad101d10c3d90",
+        "workflow": "CI",
+        "run_id": 37645269881,
+        "result": "success"
+      },
+      "dependency_lock": {
+        "scheme": "distribution-companion-npm-lock-v1",
+        "manifest": "ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/lock.json",
+        "manifest_sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
+      }
+    }
+  ],
+  "candidate_evidence": {
+    "path": "qualification/core-os-0.3.12-candidate-2026-11-04/candidate-evidence.json",
+    "sha256": "19aab3a210ce95d277fa539c4f19dfb396f970f6400f158a135d63c7e02b4395"
+  },
+  "system": {
+    "governance_contracts": [
+      {
+        "path": "docs/REPOSITORY-NETWORK-GOVERNANCE-CONTRACT.md",
+        "repository": "aiverse-filmmakers/AI-Verse-System",
+        "revision": "ac95f826554672ce30a06bbd35c7ca0531963547",
+        "sha256": "176e31dcf30e68c3c5934667d23e02ddf40a1a2de11d12dcc49b80c7f8117235"
+      },
+      {
+        "path": "docs/SAFE-UPDATE-AND-STATE-PRESERVATION-CONTRACT.md",
+        "repository": "aiverse-filmmakers/AI-Verse-System",
+        "revision": "ac95f826554672ce30a06bbd35c7ca0531963547",
+        "sha256": "c026818b118cd07c9539f6bbbc1d97be42493bdc680e824d1f0183811f6ec793"
+      }
+    ],
+    "revision": "ac95f826554672ce30a06bbd35c7ca0531963547"
+  },
+  "registry": {
+    "path": "governance/repository-registry.json",
+    "revision": "ac95f826554672ce30a06bbd35c7ca0531963547",
+    "sha256": "d0cd07396aaf849cf5baae155f1389cf93f0b0f881ffb96d0595de2b229050ab"
+  },
+  "repository_state": {
+    "path": "governance/repository-state.json",
+    "revision": "ac95f826554672ce30a06bbd35c7ca0531963547",
+    "scope": "core",
+    "sha256": "11dbf8652be346ac35b51241b310593fd9bd822142fc80deb3bfd80e57d171a0"
+  },
+  "toolchain": {
+    "runtime_requirements": {
+      "git_lfs": true,
+      "node_min": "22.23.3",
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "python_min": "3.11"
+    },
+    "dependency_locks": [
+      {
+        "repository": "aiverse-filmmakers/ai-verse-distribution",
+        "revision": "c63a2dbfae1c8b1c0f3b966cf101f0b8e2762e20",
+        "path": "src/aiverse_distribution/dependency_locks/ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/lock.json",
+        "sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
+      },
+      {
+        "repository": "aiverse-filmmakers/ai-verse-distribution",
+        "revision": "c63a2dbfae1c8b1c0f3b966cf101f0b8e2762e20",
+        "path": "src/aiverse_distribution/dependency_locks/ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/package-lock.json",
+        "sha256": "fa5c3e0f8df2c98fa48c4f7f163caff31a1ef16dc3e27223c217c38c6ff9ade3"
+      }
+    ]
+  },
+  "compatibility_migration": {
+    "compatibility_sha256": "e1cc32e03e08497918749972104643a3f6ffb8581676d758b79d8162b05aeecd",
+    "compatibility_inputs": [
+      {
+        "repository": "aiverse-filmmakers/AI-Verse-OS",
+        "revision": "073c353ec738670b9f82d09fd3981e8424cfeae3",
+        "path": "release/component-release.json",
+        "sha256": "7cb7b93d316ea5878664db34dafa42f3a1597254b8bdacc4d6e2720941071add"
+      },
+      {
+        "repository": "aiverse-filmmakers/AI-Verse-Brain",
+        "revision": "32cae304861bb0c897a64dd0931bead516d22833",
+        "path": "release/component-release.json",
+        "sha256": "5779516a60af39b303cad77e4ed2624dc57fc4dd4255d7babc3f477cb6018da8"
+      },
+      {
+        "repository": "aiverse-filmmakers/AI-Verse-Memory",
+        "revision": "09911eae0b4b0cbf7e7e7969230fe5b86647b841",
+        "path": "release/component-release.json",
+        "sha256": "9d8e636691742c7be62b123a944bb16b1e274ae937fc8fabc9c7795539ff1efb"
+      },
+      {
+        "repository": "aiverse-filmmakers/AI-Verse-Skills",
+        "revision": "28f7e84054b55a74060ea1a1570d3736e556acdb",
+        "path": "release/component-release.json",
+        "sha256": "94baa36b0cd1a0c5469438447b9293b6b1567f58eb951c802ddcd40509960d38"
+      },
+      {
+        "repository": "aiverse-filmmakers/AI-Verse-Data",
+        "revision": "67b8b061429153b991b61d4099aad101d10c3d90",
+        "path": "release/component-release.json",
+        "sha256": "ac7f7231b63c234429c85281bfd36bd6371f739f394c37fcbaa682fe620a777d"
+      },
+      {
+        "repository": "aiverse-filmmakers/ai-verse-distribution",
+        "revision": "c63a2dbfae1c8b1c0f3b966cf101f0b8e2762e20",
+        "path": "compatibility/matrix.json",
+        "sha256": "b889a6a96785338c046e0edd07996ce08b02de6366e32eb30b2e90cd6ed4e008"
+      }
+    ],
+    "transition_policy": {
+      "status": "accepted",
+      "qualification_ref": "qualification/core-os-0.3.12-candidate-2026-11-04/whole-product-qualification.json",
+      "cross_release_update_admitted": true,
+      "cross_release_rollback_admitted": false,
+      "admission_ref": "qualification/core-os-0.3.12-candidate-2026-11-04/whole-product-qualification.json",
+      "update_from": [
+        "core-os-0.3.11-candidate-2026-11-04",
+        "core-os-0.3.12-candidate-2026-11-04"
+      ],
+      "rollback_to": [
+        "core-os-0.3.12-candidate-2026-11-04"
+      ],
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "preservation_evidence": {
+        "updates": {
+          "core-os-0.3.11-candidate-2026-11-04": {
+            "status": "accepted",
+            "kind": "whole-product-update-preservation",
+            "from": "core-os-0.3.11-candidate-2026-11-04",
+            "to": "core-os-0.3.12-candidate-2026-11-04",
+            "qualification_ref": "qualification/core-os-0.3.12-candidate-2026-11-04/whole-product-qualification.json"
+          },
+          "core-os-0.3.12-candidate-2026-11-04": {
+            "status": "accepted",
+            "kind": "self-transition-noop",
+            "from": "core-os-0.3.12-candidate-2026-11-04",
+            "to": "core-os-0.3.12-candidate-2026-11-04",
+            "qualification_ref": "qualification/core-os-0.3.12-candidate-2026-11-04/whole-product-qualification.json"
+          }
+        },
+        "rollbacks": {
+          "core-os-0.3.12-candidate-2026-11-04": {
+            "status": "accepted",
+            "kind": "self-transition-noop",
+            "from": "core-os-0.3.12-candidate-2026-11-04",
+            "to": "core-os-0.3.12-candidate-2026-11-04",
+            "qualification_ref": "qualification/core-os-0.3.12-candidate-2026-11-04/whole-product-qualification.json"
+          }
+        }
+      }
+    },
+    "owner_descriptor_bindings": [
+      {
+        "component_id": "ai-verse-os",
+        "path": "release/component-release.json",
+        "source_revision": "073c353ec738670b9f82d09fd3981e8424cfeae3",
+        "sha256": "7cb7b93d316ea5878664db34dafa42f3a1597254b8bdacc4d6e2720941071add"
+      },
+      {
+        "component_id": "ai-verse-brain",
+        "path": "release/component-release.json",
+        "source_revision": "32cae304861bb0c897a64dd0931bead516d22833",
+        "sha256": "5779516a60af39b303cad77e4ed2624dc57fc4dd4255d7babc3f477cb6018da8"
+      },
+      {
+        "component_id": "ai-verse-memory",
+        "path": "release/component-release.json",
+        "source_revision": "09911eae0b4b0cbf7e7e7969230fe5b86647b841",
+        "sha256": "9d8e636691742c7be62b123a944bb16b1e274ae937fc8fabc9c7795539ff1efb"
+      },
+      {
+        "component_id": "ai-verse-skills",
+        "path": "release/component-release.json",
+        "source_revision": "28f7e84054b55a74060ea1a1570d3736e556acdb",
+        "sha256": "94baa36b0cd1a0c5469438447b9293b6b1567f58eb951c802ddcd40509960d38"
+      },
+      {
+        "component_id": "ai-verse-data",
+        "path": "release/component-release.json",
+        "source_revision": "67b8b061429153b991b61d4099aad101d10c3d90",
+        "sha256": "ac7f7231b63c234429c85281bfd36bd6371f739f394c37fcbaa682fe620a777d"
+      }
+    ]
+  },
+  "qualification": {
+    "path": "qualification/core-os-0.3.12-candidate-2026-11-04/whole-product-qualification.json",
+    "sha256": "8e90553eb7244ba14e84079841cc50fa2aebf20efdab4d1ee7c3af78b6949071",
+    "schema_version": "aiverse.distribution-whole-product-qualification/v1",
+    "status": "passed"
+  },
+  "preservation": {
+    "path": "qualification/core-os-0.3.12-candidate-2026-11-04/preservation-result.json",
+    "sha256": "63833325fc4694655129a929bc1ac60add890209bf12b9ac61f44797ca1a5628"
+  },
+  "composed_acceptance": {
+    "path": "qualification/core-os-0.3.12-candidate-2026-11-04/composed-acceptance.json",
+    "sha256": "909b135a633662252dd0799e530d73d6c42267a3ae1cbb7d9e2f2386378b69ab"
+  },
+  "promotion": {
+    "path": "qualification/core-os-0.3.12-candidate-2026-11-04/promotion.json",
+    "sha256": "41a6a5bd8d18a202c006509dd630dd3a5486c033b5615dbddb01d4b5b5893a0f",
+    "schema_version": "aiverse.distribution-core-promotion/v1",
+    "mode": "normal",
+    "status": "applied",
+    "default_channel": true,
+    "automatic_update": true,
+    "system_sync": {
+      "status": "synchronized",
+      "repository_state_sha256": "11dbf8652be346ac35b51241b310593fd9bd822142fc80deb3bfd80e57d171a0",
+      "debt_ids": [],
+      "debt_snapshot_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "debt_snapshot": []
+    }
+  },
+  "previous_known_good_release": "core-os-0.3.11-candidate-2026-11-04",
+  "authority": {
+    "reconstruction_evidence_only": true,
+    "release_composition_authority": false,
+    "promotion_authority": false,
+    "channel_authority": false,
+    "registry_authority": false,
+    "repository_state_authority": false,
+    "owner_acceptance_authority": false,
+    "member_state_authority": false,
+    "user_state_recovery_authority": false
+  }
+}
