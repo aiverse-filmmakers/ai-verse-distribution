@@ -14,8 +14,8 @@ class RepositoryNetworkWorkflowTests(unittest.TestCase):
             "0ffe8cc6d7ff15b2879770103fbccba1f2322974",
             "32cae304861bb0c897a64dd0931bead516d22833",
             "09911eae0b4b0cbf7e7e7969230fe5b86647b841",
-            "297c63a5be95f8319cc5755f287329c2e4387b02",
-            "7e9fadbd73752b24eb79e270aff6b311ad508109",
+            "28f7e84054b55a74060ea1a1570d3736e556acdb",
+            "67b8b061429153b991b61d4099aad101d10c3d90",
         ):
             self.assertIn(f"ref: {revision}", text)
 
