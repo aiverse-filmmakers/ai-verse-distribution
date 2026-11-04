@@ -9,8 +9,8 @@ from aiverse_distribution.transition_contract import CoreTransitionContract, Uns
 ROOT = Path(__file__).resolve().parents[1]
 STABLE = "core-stable-2026-10-10"
 HISTORICAL = "core-first-run-rc1-2026-10-12"
-PREVIOUS = "core-learn-candidate-2026-10-27"
-CURRENT = "core-os-0.3.11-candidate-2026-11-04"
+PREVIOUS = "core-os-0.3.11-candidate-2026-11-04"
+CURRENT = "core-os-0.3.12-candidate-2026-11-04"
 
 
 class U36ReleaseTests(unittest.TestCase):
@@ -39,7 +39,6 @@ class U36ReleaseTests(unittest.TestCase):
         self.assertIn(HISTORICAL, lineage_ids)
         self.assertIn(CURRENT, lineage_ids)
         expected_candidates = {
-            "core-os-0.3.12-candidate-2026-11-04": "ff29d65b56511c8d936fd16a6e7941719c75af0c",
             "core-local-upgrades-candidate-2026-10-19": "d1fecc8026445f96212a4f65a9932f5e7a301bf8",
             "core-local-upgrades-candidate-2026-10-19-v2": "b6d8c7c7eea07ce5a28163f67d59b4d69c1fcc9f",
             "core-local-upgrades-candidate-2026-10-19-v3": "98eed935a933239021e8f5cce2e729afa5e0216b",
