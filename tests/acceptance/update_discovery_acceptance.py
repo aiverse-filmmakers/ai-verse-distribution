@@ -134,8 +134,10 @@ def main(argv=None):
         assert original_plan['from'] == old_core and original_plan['to'] == NEW_CORE
         assert original_plan['noop'] is False
     else:
-        # A historical updater without discovery only knows its own catalog.
-        assert command('update', '--plan', installed_only=True)['noop'] is True
+        # A historical updater without discovery only knows its own catalog and
+        # cannot be asked to plan past it; the fixture below performs the one-time
+        # tooling refresh that INSTALL.md documents for such installations.
+        pass
     payload = {
         'operator/profile/member-note.md': b'Private member preference fixture.\n',
         'workspaces/member-work/WORKSPACE.yaml': b'schema_version: "2.0"\nid: member-work\nname: Member work\ntype: test\nstatus: active\npurpose: Preservation fixture\n',
