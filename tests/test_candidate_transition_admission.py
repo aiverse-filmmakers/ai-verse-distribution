@@ -123,7 +123,7 @@ class CandidateTransitionAdmissionTests(unittest.TestCase):
     def test_u36_promotion_does_not_change_u34_exact_component_evidence(self):
         catalog = Catalog()
         release = catalog.get_release(PROMOTED)
-        self.assertEqual(catalog.resolve("core").id, "core-os-0.3.12-candidate-2026-11-04")
+        self.assertEqual(catalog.resolve("core").id, "core-os-0.3.13-candidate-2026-11-04")
         self.assertTrue(release.raw["promotion"]["default_channel"])
         self.assertTrue(release.raw["promotion"]["automatic_update"])
         self.assertTrue(release.raw["promotion"]["cross_release_transition_admitted"])

@@ -1,0 +1,209 @@
+{
+  "schema_version": "ai-verse.release-preservation/v1",
+  "source_release_set": "core-os-0.3.12-candidate-2026-11-04",
+  "target_release_set": "core-os-0.3.13-candidate-2026-11-04",
+  "target_distribution_revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+  "supported_platforms": [
+    "linux",
+    "macos",
+    "windows"
+  ],
+  "safe_for_update": true,
+  "platform_acceptance": {
+    "linux": "pass",
+    "macos": "pass",
+    "windows": "pass"
+  },
+  "clean_install": "pass",
+  "upgrade": "pass",
+  "restart_recovery": "pass",
+  "state_preservation": {
+    "brain": "pass",
+    "memory": "pass",
+    "data": "pass",
+    "skills": "pass",
+    "bots": "not-applicable",
+    "token": "not-applicable",
+    "workspace": "pass",
+    "user_files": "pass"
+  },
+  "authority_preservation": "pass",
+  "migration": {
+    "status": "none",
+    "owner_evidence": []
+  },
+  "rollback": {
+    "software_rollback": "blocked"
+  },
+  "negative_tests": {
+    "unsupported_migration": "pass",
+    "user_file_collision": "pass",
+    "disabled_component": "pass",
+    "permission_floor": "pass",
+    "brain_ownership": "pass",
+    "partial_failure": "pass",
+    "wrong_release_sha": "pass"
+  },
+  "evidence": [
+    {
+      "kind": "clean-machine-os-0313-candidate-acceptance",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "fb7e7ed1fe27f9d085b66bd56833e644c821bf9b",
+      "run_id": 41910145790,
+      "job_id": 126855235009,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41910145790/job/126855235009",
+      "platform": "linux"
+    },
+    {
+      "kind": "clean-machine-os-0313-candidate-acceptance",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "fb7e7ed1fe27f9d085b66bd56833e644c821bf9b",
+      "run_id": 41910145790,
+      "job_id": 126855235149,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41910145790/job/126855235149",
+      "platform": "macos"
+    },
+    {
+      "kind": "clean-machine-os-0313-candidate-acceptance",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "fb7e7ed1fe27f9d085b66bd56833e644c821bf9b",
+      "run_id": 41910145790,
+      "job_id": 126855235156,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41910145790/job/126855235156",
+      "platform": "windows"
+    },
+    {
+      "kind": "distribution-unit-regression-and-fail-closed-suite",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "fb7e7ed1fe27f9d085b66bd56833e644c821bf9b",
+      "run_id": 41910145611,
+      "job_id": 126855233370,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41910145611/job/126855233370",
+      "platform": "macos"
+    },
+    {
+      "kind": "distribution-unit-regression-and-fail-closed-suite",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "fb7e7ed1fe27f9d085b66bd56833e644c821bf9b",
+      "run_id": 41910145611,
+      "job_id": 126855233720,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41910145611/job/126855233720",
+      "platform": "linux"
+    },
+    {
+      "kind": "distribution-unit-regression-and-fail-closed-suite",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "fb7e7ed1fe27f9d085b66bd56833e644c821bf9b",
+      "run_id": 41910145611,
+      "job_id": 126855233837,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41910145611/job/126855233837",
+      "platform": "linux"
+    },
+    {
+      "kind": "distribution-unit-regression-and-fail-closed-suite",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "fb7e7ed1fe27f9d085b66bd56833e644c821bf9b",
+      "run_id": 41910145611,
+      "job_id": 126855233846,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41910145611/job/126855233846",
+      "platform": "windows"
+    },
+    {
+      "kind": "distribution-unit-regression-and-fail-closed-suite",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "fb7e7ed1fe27f9d085b66bd56833e644c821bf9b",
+      "run_id": 41910145611,
+      "job_id": 126855234025,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41910145611/job/126855234025",
+      "platform": "windows"
+    },
+    {
+      "kind": "distribution-unit-regression-and-fail-closed-suite",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "fb7e7ed1fe27f9d085b66bd56833e644c821bf9b",
+      "run_id": 41910145611,
+      "job_id": 126855234050,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41910145611/job/126855234050",
+      "platform": "macos"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "d2a5edcfe9ab01e384a1bad447d8bac0d67fefc4",
+      "run_id": 41916181247,
+      "job_id": 126876345506,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41916181247/job/126876345506",
+      "platform": "linux"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "d2a5edcfe9ab01e384a1bad447d8bac0d67fefc4",
+      "run_id": 41916181247,
+      "job_id": 126876345843,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41916181247/job/126876345843",
+      "platform": "macos"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "d2a5edcfe9ab01e384a1bad447d8bac0d67fefc4",
+      "run_id": 41916181247,
+      "job_id": 126876345875,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41916181247/job/126876345875",
+      "platform": "macos"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "d2a5edcfe9ab01e384a1bad447d8bac0d67fefc4",
+      "run_id": 41916181247,
+      "job_id": 126876345891,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41916181247/job/126876345891",
+      "platform": "windows"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "d2a5edcfe9ab01e384a1bad447d8bac0d67fefc4",
+      "run_id": 41916181247,
+      "job_id": 126876345964,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41916181247/job/126876345964",
+      "platform": "linux"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "9add150e19ffbdb9bef761bd6bab9caaa5826ddc",
+      "tested_revision": "d2a5edcfe9ab01e384a1bad447d8bac0d67fefc4",
+      "run_id": 41916181247,
+      "job_id": 126876346043,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/41916181247/job/126876346043",
+      "platform": "windows"
+    }
+  ],
+  "semantics": {
+    "acceptance_evidence_only": true,
+    "duplicates_canonical_state": false
+  },
+  "coverage_notes": {
+    "revision_binding": "Immutable candidate definition 9add150e19ffbdb9bef761bd6bab9caaa5826ddc; platform acceptance and unit evidence tested exact PR head fb7e7ed1fe27f9d085b66bd56833e644c821bf9b; composed regression tested merged main d2a5edcfe9ab01e384a1bad447d8bac0d67fefc4.",
+    "candidate_acceptance": "All three supported platforms passed clean install, owner health, populated current-member update, optional package lifecycle and preservation.",
+    "restart_recovery": "Fail-closed unit and composed regressions passed on all platforms. No separate populated-platform interruption drill is claimed.",
+    "test_admission": "Pre-promotion populated update used a contained synthetic admission with an explicitly temporary reference only inside the disposable tool stack. It is not shipped or used as promotion evidence; the completed executable results below are the new qualification evidence."
+  }
+}
