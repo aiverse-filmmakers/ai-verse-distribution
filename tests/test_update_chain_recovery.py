@@ -56,6 +56,7 @@ class MultiHopRecoveryTests(unittest.TestCase):
             for a, b in zip(self.releases, self.releases[1:])
         }
         self.order = [r.id for r in self.releases]
+        self.unhealthy_release = None
 
         self.state = StateStore(self.base / "distribution")
         first = self.releases[0]
@@ -135,7 +136,7 @@ class MultiHopRecoveryTests(unittest.TestCase):
         app = self.app
         original = Catalog().get_release
         health_status = lambda: {"state": "setup", "release_set_id": self.installed()}
-        health_doctor = lambda: {"ok": True, "release_set_id": self.installed()}
+        health_doctor = lambda: {"ok": self.installed() != self.unhealthy_release, "release_set_id": self.installed()}
         return [
             patch.object(app, "resolve_core_update_target", side_effect=self._resolve),
             patch.object(app.transition_contract, "update_path", side_effect=self._path),
@@ -196,6 +197,26 @@ class MultiHopRecoveryTests(unittest.TestCase):
         self.assertEqual(self.installed(), r3.id)
         self.assertFalse(again["noop"])
 
+    def test_failed_walk_with_unfinished_source_recovery_is_reported_unresolved(self):
+        r1, r2, r3 = self.releases
+        self.unhealthy_release = r3.id  # hop two fails its final health gate and is recovered cleanly
+        # ... but a local-source preparation record could not be rolled back.
+        with patch.object(self.app, "_pending_source_preparation", return_value={"phase": "prepared"}):
+            with self.assertRaises(DistributionError) as caught:
+                self.run_with_patches(lambda: self.app.apply_update(r3.id))
+        progress = caught.exception.update_progress
+        self.assertEqual(self.installed(), r2.id)  # Core itself was recovered to the last good hop
+        self.assertEqual(progress["installed"], r2.id)
+        self.assertEqual(progress["completed"], [r2.id])
+        self.assertTrue(progress["recovery_unresolved"])
+
+    def test_failed_walk_with_clean_recovery_is_not_reported_unresolved(self):
+        r1, r2, r3 = self.releases
+        self.unhealthy_release = r3.id
+        with self.assertRaises(DistributionError) as caught:
+            self.run_with_patches(lambda: self.app.apply_update(r3.id))
+        self.assertFalse(caught.exception.update_progress["recovery_unresolved"])
+        self.assertEqual(self.installed(), r2.id)
 
 if __name__ == "__main__":
     unittest.main()

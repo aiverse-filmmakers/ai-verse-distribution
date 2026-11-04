@@ -203,6 +203,11 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
             "activation_allowed": infrastructure.get("activation_allowed") is True,
         }
 
+    def _recovery_pending(self) -> bool:
+        """Whether any interrupted-update recovery record still exists."""
+
+        return self.update_journal.load() is not None
+
     def _apply_update_chain(self, chain: list[str], target_release_set: Optional[str], **hop_options) -> dict:
         """Walk an admitted multi-hop path, one complete qualified update per hop.
 
@@ -247,7 +252,7 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
             except Exception:
                 actual = None
             try:
-                recovery_pending = self.update_journal.load() is not None
+                recovery_pending = self._recovery_pending()
             except Exception:
                 recovery_pending = True
             unresolved = recovery_pending or actual != expected

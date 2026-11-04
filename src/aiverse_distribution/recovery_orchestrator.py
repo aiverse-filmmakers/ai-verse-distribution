@@ -40,6 +40,10 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
             return None
         return SourceAdoptionTransaction(self.state.home, Path(lock["root"])).load()
 
+    def _recovery_pending(self) -> bool:
+        # A pending local-source preparation is recovery that has not finished too.
+        return super()._recovery_pending() or bool(self._pending_source_preparation())
+
     @contextmanager
     def _source_health_scope(self):
         previous = self._source_preparation_health_allowed
