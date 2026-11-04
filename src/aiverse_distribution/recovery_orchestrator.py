@@ -40,6 +40,10 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
             return None
         return SourceAdoptionTransaction(self.state.home, Path(lock["root"])).load()
 
+    def _recovery_pending(self) -> bool:
+        # A pending local-source preparation is recovery that has not finished too.
+        return super()._recovery_pending() or bool(self._pending_source_preparation())
+
     @contextmanager
     def _source_health_scope(self):
         previous = self._source_preparation_health_allowed
@@ -99,8 +103,11 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
     def update_plan(self, target_release_set=None, *, transition_kind="update", local_source_policy="preserve"):
         plan = super().update_plan(target_release_set, transition_kind=transition_kind)
         if transition_kind == "update":
+            # For a multi-hop path only the first hop can be judged now; later hops
+            # are judged against the installation each one finds when it runs.
+            first_hop = plan["transition_path"][0]["to"] if plan.get("transition_path") else target_release_set
             try:
-                source = self._local_source_plan(target_release_set, policy=local_source_policy)
+                source = self._local_source_plan(first_hop, policy=local_source_policy)
             except SourceAdoptionConflict as exc:
                 source = {"ready": False, "conflicts": [{"reason": str(exc)}]}
             if source is not None:
@@ -178,6 +185,13 @@ class RecoveryOrchestrator(CoreUpdateOrchestrator):
                     tx.rollback()
                 else:
                     raise LifecycleRecoveryRequired("Source preparation and Core receipt need coordinated recovery")
+            chain = self._update_chain(target_release_set) if transition_kind == "update" else []
+            if chain:
+                hop_options = {} if local_source_policy == "preserve" else {"local_source_policy": local_source_policy}
+                result = self._apply_update_chain(chain, target_release_set, **hop_options)
+                if recovery:
+                    result["recovery"] = recovery
+                return result
             plan_kwargs = {"transition_kind": transition_kind}
             if local_source_policy != "preserve":
                 plan_kwargs["local_source_policy"] = local_source_policy

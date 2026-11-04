@@ -56,6 +56,20 @@ A forward Core update is permitted only when all of the following are true:
 
 A forward update changes software identity only for components whose admitted revisions changed. Unchanged components are not implicitly refreshed, reinstalled, migrated, or reconfigured.
 
+## Updating across skipped releases
+
+A member may skip any number of releases. Each promotion qualifies exactly one hop (the previous default to the new default), so the updater reaches the current default by walking those already qualified hops in order. It never invents a transition between two releases that have no evidence of their own.
+
+- If the target directly lists the installed release in `update_from`, the update is that single hop, exactly as above.
+- Otherwise the updater takes the shortest chain of hops that were each separately qualified. A hop is walkable only when its preservation evidence is accepted, is a real cross-release kind (not a self no-op), is bound to that exact transition, comes from a lineage ancestor, preserves owner state and keeps software-only rollback.
+- Each hop is a complete ordinary update: its own pre-mutation Last-Known-Good, journal, owner migrations and final status and doctor gate. One lifecycle transaction covers the whole walk, so no other lifecycle command can interleave. Changes to the set of required setup upgrades are checked for every hop before the first one starts.
+- Because each hop rotates the single Last-Known-Good, after a walk the retained recovery point is the state just before the last hop. It is still a verified, healthy release.
+- If a hop fails, owner-native recovery returns the installation to the last completed hop. The failure carries `update_progress` with the hops completed, the release actually recorded in the receipt (never the one the walk expected) and `recovery_unresolved` when the receipt or a pending journal shows recovery did not finish; a successful walk reports staging, owner migration, reconciliation and generated refresh across every hop plus per-hop results. Running `aiverse update` again recomputes the path from the installation record and continues. Completed hops are not replayed.
+- A release that pins the same components as its predecessor (for example a Distribution-only release) is a record-only hop: no software changes and no owner migration, but the installation record advances so the next release's admitted source still matches. Without this a member would silently stay on the old release identity and be refused by the following release.
+- Backward targets, unknown releases and releases with no walkable path still fail with `CORE_UPDATE_TRANSITION_UNSUPPORTED`. Rollback is unchanged: forward evidence never authorizes a reverse transition.
+
+A promotion is refused unless every released Core (apart from the pinned legacy betas in `STRANDED_LEGACY_RELEASES`, which already had no qualified forward hop before promotion existed) still has such a path to the new default. The legacy betas (the two 2026-09-13 betas, 2026-10-06 and 2026-10-09) are exempt because nobody ever installed them as members and they never had a qualified forward hop; the guard covers every release from 2026-10-10 onward. See `docs/CORE-PROMOTION-GATE.md`.
+
 For a mutating `aiverse update`, the whole-install recovery layer must ensure that one verified pre-action LKG exists before the first admitted mutation. LKG creation/rotation does not grant the updater broader authority over user or owner state.
 
 ## State migration semantics

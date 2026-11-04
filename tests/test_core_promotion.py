@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -59,6 +60,11 @@ class CorePromotionTests(unittest.TestCase):
         )
         promotions.setdefault("system_sync_debts", [])
         _write(catalog_dir / "core_promotions.json", promotions)
+        # The promotion gate also reads the historical transition, lineage and
+        # release-set catalogs to prove no released Core is left stranded.
+        for name in ("core_update_transitions.json", "core_lineage.json", "release_sets.json",
+                     "profiles.json", "compatibility.json"):
+            shutil.copyfile(ROOT / "src/aiverse_distribution/catalog" / name, catalog_dir / name)
 
         current = next(item for item in promotions["release_sets"] if item["id"] == CURRENT)
         candidate = copy.deepcopy(current)
@@ -397,6 +403,65 @@ class CorePromotionTests(unittest.TestCase):
                 registry,
                 state,
             )
+
+    def test_promotion_is_refused_when_a_released_core_would_be_left_without_a_path(self):
+        # The real incident: 2026-11-04 admitted only the previous default, so a
+        # member on an older release was refused. Break one old hop in the ledger
+        # and the promotion gate must refuse to produce any plan.
+        root, candidate_id, qualification_ref, registry, state, _ = self.fixture()
+        promotions_path = root / "src/aiverse_distribution/catalog/core_promotions.json"
+        promotions = json.loads(promotions_path.read_text(encoding="utf-8"))
+        learn = next(
+            item for item in promotions["release_sets"]
+            if item["id"] == "core-learn-candidate-2026-10-27"
+        )
+        updates = learn["evidence"]["transition_policy"]["preservation_evidence"]["updates"]
+        updates["core-tool-placement-candidate-2026-10-23"]["kind"] = "hand-written"
+        _write(promotions_path, promotions)
+        before = promotions_path.read_bytes()
+        for attempt in (plan_core_promotion, apply_core_promotion):
+            with self.assertRaisesRegex(CorePromotionError, "without a qualified update path"):
+                attempt(root, candidate_id, qualification_ref, registry, state)
+        self.assertEqual(promotions_path.read_bytes(), before)
+        self.assertFalse((root / f"release-sets/{candidate_id}.json").exists())
+
+    def test_promotion_is_refused_when_the_post_promotion_catalog_would_not_load(self):
+        # Reachability alone is not enough: the updater members run must be able
+        # to load the catalog. A compatibility record that disagrees with the
+        # transition evidence makes CoreTransitionContract refuse to start.
+        root, candidate_id, qualification_ref, registry, state, _ = self.fixture()
+        promotions_path = root / "src/aiverse_distribution/catalog/core_promotions.json"
+        promotions = json.loads(promotions_path.read_text(encoding="utf-8"))
+        learn = "core-learn-candidate-2026-10-27"
+        promotions["compatibility"][learn]["update_from"] = [learn]
+        _write(promotions_path, promotions)
+        before = promotions_path.read_bytes()
+        for attempt in (plan_core_promotion, apply_core_promotion):
+            with self.assertRaisesRegex(CorePromotionError, "would not load for members"):
+                attempt(root, candidate_id, qualification_ref, registry, state)
+        self.assertEqual(promotions_path.read_bytes(), before)
+
+    def test_promotion_is_refused_when_transition_evidence_disagrees_with_compatibility(self):
+        root, candidate_id, qualification_ref, registry, state, _ = self.fixture()
+        promotions_path = root / "src/aiverse_distribution/catalog/core_promotions.json"
+        promotions = json.loads(promotions_path.read_text(encoding="utf-8"))
+        learn = next(r for r in promotions["release_sets"] if r["id"] == "core-learn-candidate-2026-10-27")
+        learn["evidence"]["transition_policy"]["update_from"] = ["core-learn-candidate-2026-10-27"]
+        _write(promotions_path, promotions)
+        with self.assertRaises(CorePromotionError):
+            plan_core_promotion(root, candidate_id, qualification_ref, registry, state)
+
+    def test_promotion_that_does_not_admit_the_current_default_is_refused(self):
+        root, candidate_id, qualification_ref, registry, state, _ = self.fixture()
+        overlay_path = root / "src/aiverse_distribution/catalog/core_candidates.json"
+        overlay = json.loads(overlay_path.read_text(encoding="utf-8"))
+        overlay["compatibility"][candidate_id]["update_from"] = [
+            "core-learn-candidate-2026-10-27",
+            candidate_id,
+        ]
+        _write(overlay_path, overlay)
+        with self.assertRaises(CorePromotionError):
+            plan_core_promotion(root, candidate_id, qualification_ref, registry, state)
 
     def test_non_passing_whole_product_qualification_cannot_promote(self):
         root, candidate_id, qualification_ref, registry, state, _ = self.fixture()

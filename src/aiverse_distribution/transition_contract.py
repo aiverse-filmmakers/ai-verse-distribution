@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from importlib import resources
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from .release_catalog import Catalog, DistributionError
+from .update_graph import edge_problem, find_update_path, reachability_problems, update_edges
 
 
 class TransitionMetadataError(DistributionError):
@@ -38,6 +39,7 @@ class CoreTransitionContract:
         self.payload = payload if payload is not None else self._load_payload()
         self._overlay_promoted_transitions()
         self._validate()
+        self._edges: Optional[Dict[str, List[str]]] = None
 
     def _overlay_promoted_transitions(self) -> None:
         """Read qualified future transitions from the same atomic Core promotion record.
@@ -249,6 +251,14 @@ class CoreTransitionContract:
             raise UnsupportedCoreTransition(
                 f"release {target_release} is not admitted for update from {source_release}"
             )
+        if source_release != target_release:
+            # One rule for direct and chained hops: only real, exactly bound,
+            # forward, owner-preserving qualification may move a member.
+            reason = edge_problem(target_release, metadata, source_release, self._parent_of)
+            if reason:
+                raise UnsupportedCoreTransition(
+                    f"release {target_release} is not admitted for update from {source_release}: {reason}"
+                )
         evidence = metadata["preservation_evidence"]["updates"][source_release]
         return TransitionAdmission(
             kind="update",
@@ -257,6 +267,59 @@ class CoreTransitionContract:
             evidence=dict(evidence),
             state_rule=metadata["state_rule"],
             rollback_rule=metadata["rollback_rule"],
+        )
+
+    def _release_raw(self, release_id: str) -> Dict[str, Any]:
+        for raw in self.catalog.release_data["release_sets"]:
+            if raw.get("id") == release_id:
+                return raw
+        return {}
+
+    def _parent_of(self, release_id: str) -> Optional[str]:
+        lineage = self._release_raw(release_id).get("lineage")
+        parent = lineage.get("parent") if isinstance(lineage, dict) else None
+        return parent if isinstance(parent, str) else None
+
+    def _update_edges(self) -> Dict[str, List[str]]:
+        if self._edges is None:
+            self._edges = update_edges(self.payload["releases"], self._parent_of)
+        return self._edges
+
+    def update_path(self, source_release: str, target_release: str) -> List[TransitionAdmission]:
+        """Return the admitted hops that carry `source_release` to `target_release`.
+
+        A directly admitted transition is always a single hop. Otherwise the path
+        is the shortest chain of hops that were each separately qualified; no
+        transition is ever invented between releases that have no evidence.
+        """
+        metadata = self.metadata_for(target_release)
+        if source_release == target_release or source_release in metadata["update_from"]:
+            return [self.require_update(source_release, target_release)]
+        path = find_update_path(self._update_edges(), source_release, target_release)
+        if path is None:
+            raise UnsupportedCoreTransition(
+                f"release {target_release} is not admitted for update from {source_release}"
+            )
+        return [self.require_update(a, b) for a, b in zip(path, path[1:])]
+
+    def reachability_problems(self, target_release: str) -> List[str]:
+        """Released Core versions that would be left without a qualified path to `target_release`."""
+        pending = {
+            raw.get("id")
+            for raw in self.catalog.core_candidates.get("release_sets", [])
+            if isinstance(raw, dict)
+        }
+        raws = {raw["id"]: raw for raw in self.catalog.release_data["release_sets"]}
+        sources = [
+            release.id
+            for release in self.catalog.release_sets()
+            if release.profile == "core" and release.status == "released" and release.id not in pending
+        ]
+        return reachability_problems(
+            releases=self.payload["releases"],
+            raw_releases=raws,
+            sources=sources,
+            target=target_release,
         )
 
     def require_rollback(self, current_release: str, target_release: str) -> TransitionAdmission:

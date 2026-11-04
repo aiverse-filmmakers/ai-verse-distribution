@@ -8,6 +8,8 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping
 
+from .release_catalog import CATALOG_DOCUMENTS, Catalog, DistributionError
+from .transition_contract import CoreTransitionContract
 from .whole_product_qualification import SCHEMA_ID as WHOLE_PRODUCT_QUALIFICATION_SCHEMA
 
 
@@ -352,6 +354,45 @@ def _validate_forward_candidate(
         )
 
 
+def _require_every_core_reaches_candidate(
+    root: Path,
+    candidate_id: str,
+    next_promotions: Mapping[str, Any],
+    next_candidates: Mapping[str, Any],
+) -> None:
+    """Refuse a promotion that would ship a broken updater or strand a released Core.
+
+    Members run the post-promotion catalog through the runtime `Catalog` and
+    `CoreTransitionContract`. Both are built here from the exact post-promotion
+    documents, so anything the installed updater would refuse to load (a
+    compatibility or transition mismatch, malformed evidence) refuses the
+    promotion. Then every released Core, except the pinned legacy betas, must
+    still reach the candidate through separately qualified hops.
+    """
+    catalog_dir = root / "src/aiverse_distribution/catalog"
+    documents: dict[str, Any] = {}
+    for name in CATALOG_DOCUMENTS:
+        documents[name], _ = _load_json(catalog_dir / name, f"catalog document {name}")
+    transitions, _ = _load_json(catalog_dir / "core_update_transitions.json", "Core transition metadata")
+    documents["core_promotions.json"] = copy.deepcopy(next_promotions)
+    documents["core_candidates.json"] = copy.deepcopy(next_candidates)
+    try:
+        catalog = Catalog(documents)
+        contract = CoreTransitionContract(catalog, payload=copy.deepcopy(transitions))
+        if catalog.resolve("core").id != candidate_id:
+            raise CorePromotionError(f"{candidate_id}: post-promotion default Core channel is not the candidate")
+        problems = contract.reachability_problems(candidate_id)
+    except DistributionError as exc:
+        raise CorePromotionError(
+            f"{candidate_id}: the post-promotion catalog would not load for members: {exc}"
+        ) from exc
+    if problems:
+        raise CorePromotionError(
+            f"{candidate_id}: promotion would leave released Core versions without a qualified update path: "
+            + "; ".join(problems)
+        )
+
+
 def plan_core_promotion(
     root: str | Path,
     candidate_id: str,
@@ -536,6 +577,8 @@ def plan_core_promotion(
     ]
     next_candidates["compatibility"].pop(candidate_id, None)
     next_candidates["candidate_evidence"].pop(candidate_id, None)
+
+    _require_every_core_reaches_candidate(root, candidate_id, next_promotions, next_candidates)
 
     promotion_evidence = {
         "schema_version": PROMOTION_SCHEMA,

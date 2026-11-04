@@ -213,6 +213,12 @@ class IsolatedCoreFixture:
                        "path": candidate_ref, "sha256": _sha(evidence_bytes),
                    }}}
         catalog = self.root / "src/aiverse_distribution/catalog"
+        # The promotion gate proves no released Core is stranded, so it reads the
+        # historical transition, lineage and release-set catalogs as well.
+        for name in ("core_update_transitions.json", "core_lineage.json", "release_sets.json",
+                     "profiles.json", "compatibility.json"):
+            if name in ("profiles.json", "compatibility.json") or not (catalog / name).exists():
+                (catalog / name).write_bytes((SOURCE / "src/aiverse_distribution/catalog" / name).read_bytes())
         _write(catalog / "core_candidates.json", overlay)
         profiles = _read(catalog / "profiles.json")
         profiles["profiles"]["core"]["required"] = [c["id"] for c in candidate["components"]]

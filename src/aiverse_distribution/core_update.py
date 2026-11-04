@@ -22,7 +22,7 @@ from .orchestrator import Orchestrator as BaseOrchestrator
 from .process import run
 from .release_catalog import Catalog, DistributionError, ReleaseSet
 from .state import LifecycleRecoveryRequired, StateStore, now_iso
-from .transition_contract import CoreTransitionContract, TransitionAdmission
+from .transition_contract import CoreTransitionContract, TransitionAdmission, UnsupportedCoreTransition
 from .update_journal import CoreUpdateJournal
 
 
@@ -90,6 +90,241 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
         admission = self.transition_contract.require_rollback(source.id, target.id)
         return target, admission
 
+    def _update_chain(self, target_release_set: Optional[str]) -> list[str]:
+        """Release ids of an admitted multi-hop path to the target, or [] for a direct update.
+
+        A member who skipped releases is carried through the hops that were each
+        separately qualified. Direct admissions, no-ops and unadmitted targets keep
+        the single-hop behaviour exactly.
+        """
+
+        lock = self.state.load()
+        if not lock or lock.get("profile") != "core":
+            return []
+        try:
+            self.resolve_core_update_target(target_release_set)
+            return []
+        except UnsupportedCoreTransition:
+            pass
+        except DistributionError:
+            # Not a path question (unknown release, wrong profile, ...): let the
+            # single-hop flow report it exactly as it always has.
+            return []
+        _, source = self._installed_core()
+        target = (
+            self.catalog.get_release(target_release_set, require_released=True)
+            if target_release_set
+            else self.catalog.resolve("core")
+        )
+        return [step.target_release for step in self.transition_contract.update_path(source.id, target.id)]
+
+    @staticmethod
+    def _component_changes(
+        old_revisions: dict[str, Optional[str]], new_revisions: dict[str, Optional[str]]
+    ) -> list[dict]:
+        return [
+            {
+                "component": component_id,
+                "from": old_revisions.get(component_id),
+                "to": new_revisions.get(component_id),
+            }
+            for component_id in sorted(set(old_revisions) | set(new_revisions))
+            if old_revisions.get(component_id) != new_revisions.get(component_id)
+        ]
+
+    def _chain_update_plan(self, lock: dict, chain: list[str]) -> dict:
+        """Read-only plan for a multi-hop update: one entry per qualified hop."""
+
+        source_id = str(lock["release_set_id"])
+        installed = self._component_revisions_from_lock(lock)
+        hops: list[dict] = []
+        union: set[str] = set()
+        previous_id, previous_revisions = source_id, installed
+        blocked: Optional[dict] = None
+        first_infrastructure: Optional[dict] = None
+        final_admission: Optional[TransitionAdmission] = None
+        for release_id in chain:
+            target = self.catalog.get_release(release_id, require_released=True)
+            admission = self.transition_contract.require_update(previous_id, release_id)
+            target_revisions = {component.id: component.revision for component in target.components}
+            changes = self._component_changes(previous_revisions, target_revisions)
+            changed = [item["component"] for item in changes]
+            infrastructure = self.infrastructure_gate.evaluate(target=target, changed_components=changed)
+            if first_infrastructure is None:
+                first_infrastructure = infrastructure
+            if blocked is None and infrastructure.get("activation_allowed") is not True:
+                blocked = infrastructure
+            evidence = admission.evidence
+            hops.append(
+                {
+                    "from": previous_id,
+                    "to": release_id,
+                    "kind": evidence.get("kind"),
+                    "qualification_ref": evidence.get("qualification_ref"),
+                    "changed_components": changed,
+                    "record_only": not changed,
+                    "infrastructure_state": infrastructure.get("state"),
+                }
+            )
+            union.update(changed)
+            previous_id, previous_revisions = release_id, target_revisions
+            final_admission = admission
+        assert final_admission is not None
+        final = self.catalog.get_release(chain[-1], require_released=True)
+        final_revisions = {component.id: component.revision for component in final.components}
+        net = [
+            {"component": component_id, "from": installed.get(component_id), "to": final_revisions.get(component_id)}
+            for component_id in sorted(union)
+        ]
+        infrastructure = blocked or first_infrastructure or {}
+        evidence = final_admission.evidence
+        return {
+            "from": source_id,
+            "to": chain[-1],
+            "profile": "core",
+            "transition_kind": "update",
+            "changes": net,
+            "changed_components": sorted(union),
+            "change_count": len(net),
+            "noop": False,
+            "record_only": not union,
+            "state_rule": final_admission.state_rule,
+            "rollback_rule": final_admission.rollback_rule,
+            "transition_evidence": {
+                "status": evidence.get("status"),
+                "kind": evidence.get("kind"),
+                "qualification_ref": evidence.get("qualification_ref"),
+            },
+            "transition_path": hops,
+            "hop_count": len(hops),
+            "brain_handover": False,
+            "permission_grants": False,
+            "infrastructure": infrastructure,
+            "activation_allowed": infrastructure.get("activation_allowed") is True,
+        }
+
+    def _recovery_pending(self) -> bool:
+        """Whether any interrupted-update recovery record still exists."""
+
+        return self.update_journal.load() is not None
+
+    def _apply_update_chain(self, chain: list[str], target_release_set: Optional[str], **hop_options) -> dict:
+        """Walk an admitted multi-hop path, one complete qualified update per hop.
+
+        Each hop is the ordinary single update with its own recovery point,
+        journal, owner migrations and final health gate. The caller holds the
+        lifecycle transaction for the whole walk, so no other lifecycle command
+        can interleave. A failure stops at the last completed hop; running the
+        update again recomputes the path from the installation record and resumes.
+        """
+
+        lock = self.state.load()
+        assert lock is not None
+        plan = self._chain_update_plan(lock, chain)
+        # Setup changes are a property of each target release, not of member
+        # state, so refuse before the first hop rather than strand a member midway.
+        require_update_activation(plan)
+        source_id = str(lock["release_set_id"])
+        installed = self._component_revisions_from_lock(lock)
+        results: list[dict] = []
+        expected = source_id
+        try:
+            for release_id in chain:
+                current = self.state.load()
+                if not current or current.get("release_set_id") != expected:
+                    raise LifecycleRecoveryRequired(
+                        f"the installation changed while updating: expected {expected}, "
+                        f"found {(current or {}).get('release_set_id')}"
+                    )
+                result = self.apply_update(release_id, transition_kind="update", **hop_options)
+                results.append(result)
+                advanced = self.state.load()
+                if not advanced or advanced.get("release_set_id") != release_id:
+                    raise DistributionError(
+                        f"update to {release_id} did not advance the installation record; stopping the chain"
+                    )
+                expected = release_id
+        except Exception as exc:
+            # Report what is really on disk, never what the walk expected: a hop
+            # can commit its receipt and then fail health and recovery too.
+            try:
+                actual = (self.state.load() or {}).get("release_set_id")
+            except Exception:
+                actual = None
+            try:
+                recovery_pending = self._recovery_pending()
+            except Exception:
+                recovery_pending = True
+            unresolved = recovery_pending or actual != expected
+            exc.update_progress = {  # type: ignore[attr-defined]
+                "completed": [item["to"] for item in results],
+                "installed": actual,
+                "expected_installed": expected,
+                "target": chain[-1],
+                "recovery_unresolved": unresolved,
+                "next": (
+                    "The installation did not return to a verified release. Run aiverse update to retry "
+                    "recovery first, then aiverse doctor; do not edit the install by hand."
+                    if unresolved
+                    else "Run aiverse update again to continue from the installed release."
+                ),
+            }
+            raise
+        final = dict(results[-1])
+        final_lock = self.state.load() or {}
+        final_revisions = self._component_revisions_from_lock(final_lock)
+        union = sorted({name for item in results for name in item.get("changed_components", [])})
+
+        def merged(key: str) -> list:
+            ordered: list = []
+            for item in results:
+                for value in item.get(key, []) or []:
+                    if value not in ordered:
+                        ordered.append(value)
+            return ordered
+
+        final.update(
+            {
+                "from": source_id,
+                "to": chain[-1],
+                "changed_components": union,
+                "changes": [
+                    {"component": name, "from": installed.get(name), "to": final_revisions.get(name)}
+                    for name in union
+                ],
+                "change_count": len(union),
+                "noop": False,
+                "record_only": not union,
+                "changed": True,
+                "transition_path": plan["transition_path"],
+                "hop_count": len(chain),
+                # Work done by every hop, not only the last one.
+                "staged_components": sorted(merged("staged_components")),
+                "owner_updated_components": merged("owner_updated_components"),
+                "owner_migrated_components": merged("owner_migrated_components"),
+                "reconciled_components": merged("reconciled_components"),
+                "generated_refreshed": merged("generated_refreshed"),
+                "hop_results": [
+                    {
+                        "to": item.get("to"),
+                        "changed_components": item.get("changed_components", []),
+                        "record_only": bool(item.get("record_only")),
+                        "owner_migrated_components": item.get("owner_migrated_components", []),
+                        "reconciled_components": item.get("reconciled_components", []),
+                        "generated_refreshed": item.get("generated_refreshed", []),
+                        "health": item.get("health"),
+                    }
+                    for item in results
+                ],
+                "message": (
+                    f"Updated through {len(chain)} releases in order."
+                    if union
+                    else "No software changes; the installed release record advanced."
+                ),
+            }
+        )
+        return final
+
     @staticmethod
     def _component_revisions_from_lock(lock: dict) -> dict[str, Optional[str]]:
         revisions: dict[str, Optional[str]] = {}
@@ -139,24 +374,20 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
                 raise DistributionError("rollback requires an explicit target release set")
             target, admission = self.resolve_core_rollback_target(target_release_set)
         else:
+            chain = self._update_chain(target_release_set)
+            if chain:
+                return self._chain_update_plan(lock, chain)
             target, admission = self.resolve_core_update_target(target_release_set)
 
         current_revisions = self._component_revisions_from_lock(lock)
         target_revisions = {component.id: component.revision for component in target.components}
-        changes = []
-        for component_id in sorted(set(current_revisions) | set(target_revisions)):
-            old_revision = current_revisions.get(component_id)
-            new_revision = target_revisions.get(component_id)
-            if old_revision != new_revision:
-                changes.append(
-                    {
-                        "component": component_id,
-                        "from": old_revision,
-                        "to": new_revision,
-                    }
-                )
+        changes = self._component_changes(current_revisions, target_revisions)
 
         evidence = admission.evidence
+        # A new release that pins the same components (for example a
+        # Distribution-only release) still has to advance the installation record,
+        # or the next release's admitted source would never match this install.
+        record_only = transition_kind == "update" and not changes and lock.get("release_set_id") != target.id
         plan = {
             "from": lock.get("release_set_id"),
             "to": target.id,
@@ -165,7 +396,8 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
             "changes": changes,
             "changed_components": [item["component"] for item in changes],
             "change_count": len(changes),
-            "noop": not changes,
+            "noop": not changes and not record_only,
+            "record_only": record_only,
             "state_rule": admission.state_rule,
             "rollback_rule": admission.rollback_rule,
             "transition_evidence": {
@@ -185,7 +417,9 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
             plan["activation_allowed"] = infrastructure.get("activation_allowed") is True
         else:
             plan["activation_allowed"] = True
-        if not changes:
+        if record_only:
+            plan["message"] = "No software changes; the installed release record will advance."
+        elif not changes:
             plan["message"] = "AI-Verse is already current."
         return plan
 
@@ -608,6 +842,12 @@ class CoreUpdateOrchestrator(BaseOrchestrator):
             return super().apply_update(target_release_set, transition_kind=transition_kind)
         with self.state.lifecycle_transaction():
             recovery = self._recover_interrupted_update()
+            chain = self._update_chain(target_release_set) if transition_kind == "update" else []
+            if chain:
+                result = self._apply_update_chain(chain, target_release_set)
+                if recovery:
+                    result["recovery"] = recovery
+                return result
             result = self._apply_core_update(
                 target_release_set,
                 transition_kind=transition_kind,
