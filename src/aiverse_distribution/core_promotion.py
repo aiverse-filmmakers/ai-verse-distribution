@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping
 
+from .update_graph import promoted_transition_releases, reachability_problems
 from .whole_product_qualification import SCHEMA_ID as WHOLE_PRODUCT_QUALIFICATION_SCHEMA
 
 
@@ -352,6 +353,65 @@ def _validate_forward_candidate(
         )
 
 
+def _require_every_core_reaches_candidate(
+    root: Path,
+    candidate_id: str,
+    next_promotions: Mapping[str, Any],
+    next_candidates: Mapping[str, Any],
+) -> None:
+    """Refuse a promotion that would leave any released Core without a qualified update path.
+
+    Members may skip releases. The installed updater walks chains of separately
+    qualified hops, so the new default must be reachable from every released Core
+    (except the pinned legacy set) through hops that each carry accepted
+    preservation evidence. This is judged on the post-promotion ledgers, the same
+    data members will receive.
+    """
+    catalog_dir = root / "src/aiverse_distribution/catalog"
+    transitions, _ = _load_json(catalog_dir / "core_update_transitions.json", "Core transition metadata")
+    lineage, _ = _load_json(catalog_dir / "core_lineage.json", "Core lineage")
+    legacy, _ = _load_json(catalog_dir / "release_sets.json", "release sets")
+
+    releases = copy.deepcopy(transitions.get("releases") or {})
+    try:
+        promoted = promoted_transition_releases(next_promotions.get("release_sets", []))
+    except ValueError as exc:
+        raise CorePromotionError(str(exc)) from exc
+    duplicated = sorted(set(releases) & set(promoted))
+    if duplicated:
+        raise CorePromotionError(
+            "transition metadata is duplicated between historical and promoted ledgers: "
+            + ", ".join(duplicated)
+        )
+    releases.update(promoted)
+
+    raws: dict[str, Any] = {}
+    for group in (
+        legacy.get("release_sets", []),
+        lineage.get("release_sets", []),
+        next_promotions.get("release_sets", []),
+    ):
+        for raw in group:
+            if isinstance(raw, dict) and isinstance(raw.get("id"), str):
+                raws[raw["id"]] = raw
+    pending = {
+        raw.get("id") for raw in next_candidates.get("release_sets", []) if isinstance(raw, dict)
+    }
+    sources = [
+        release_id
+        for release_id, raw in raws.items()
+        if raw.get("profile") == "core" and raw.get("status") == "released" and release_id not in pending
+    ]
+    problems = reachability_problems(
+        releases=releases, raw_releases=raws, sources=sources, target=candidate_id
+    )
+    if problems:
+        raise CorePromotionError(
+            f"{candidate_id}: promotion would leave released Core versions without a qualified update path: "
+            + "; ".join(problems)
+        )
+
+
 def plan_core_promotion(
     root: str | Path,
     candidate_id: str,
@@ -536,6 +596,8 @@ def plan_core_promotion(
     ]
     next_candidates["compatibility"].pop(candidate_id, None)
     next_candidates["candidate_evidence"].pop(candidate_id, None)
+
+    _require_every_core_reaches_candidate(root, candidate_id, next_promotions, next_candidates)
 
     promotion_evidence = {
         "schema_version": PROMOTION_SCHEMA,

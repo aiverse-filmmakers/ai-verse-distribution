@@ -457,6 +457,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         payload = {"error": code, "message": str(exc)}
         if isinstance(getattr(exc, "local_source", None), dict):
             payload["local_source"] = exc.local_source
+        if isinstance(getattr(exc, "update_progress", None), dict):
+            payload["update_progress"] = exc.update_progress
         if isinstance(exc, ProcessError):
             payload["command"] = exc.argv
             payload["returncode"] = exc.returncode

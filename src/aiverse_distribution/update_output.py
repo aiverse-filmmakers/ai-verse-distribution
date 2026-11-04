@@ -82,7 +82,9 @@ def format_core_update(payload: dict[str, Any]) -> Optional[str]:
 
     if "applied" not in payload:
         lines = ["AI-Verse update plan", "", "Core", f"{source_text} -> {target_text}"]
-        if payload.get("noop") or not components:
+        if payload.get("record_only") and not components:
+            lines.extend(["", "No software changes; the installed release record will advance."])
+        elif payload.get("noop") or not components:
             lines.extend(["", "AI-Verse is already up to date."])
         else:
             lines.extend(["", "Would update:"])
@@ -136,6 +138,12 @@ def format_core_update(payload: dict[str, Any]) -> Optional[str]:
         "Updated:",
     ]
     lines.extend(f"- {component}" for component in components)
+    if not components and payload.get("record_only"):
+        lines.append("- no software changes; the release record advanced")
+    hops = payload.get("transition_path")
+    if isinstance(hops, list) and len(hops) > 1:
+        lines.extend(["", f"Applied {len(hops)} qualified releases in order:"])
+        lines.extend(f"- {hop.get('to')}" for hop in hops if isinstance(hop, dict))
     if source_completed:
         lines.extend(["", "Official Core source is active; previous source edits are saved for recovery."])
     lines.extend(["", "Preserved:"])
