@@ -244,7 +244,7 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             app, state, package, root = make_app(Path(temporary))
             self.install_fixture(root, package)
             result, owner = self.refresh(app)
-            self.assertEqual(result, {"refreshed": [package.id], "skipped": [], "needs_later": False})
+            self.assertEqual(result, {"refreshed": [package.id], "problems": [], "release": "core-package-fixture"})
             owner.assert_called_once()
             self.assertIsNone(state.pending_effect())
 
@@ -252,7 +252,7 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             app, _, package, _ = make_app(Path(temporary))
             result, owner = self.refresh(app)
-            self.assertEqual(result, {"refreshed": [], "skipped": [], "needs_later": False})
+            self.assertEqual(result, {"refreshed": [], "problems": [], "release": "core-package-fixture"})
             owner.assert_not_called()
 
     def test_update_leaves_a_locally_edited_package_alone(self):
@@ -261,16 +261,32 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             directory = self.install_fixture(root, package)
             (directory / "install.py").write_bytes(b"edited by hand")
             result, owner = self.refresh(app)
-            self.assertEqual(result, {"refreshed": [], "skipped": [package.id], "needs_later": True})
+            self.assertEqual(result["problems"], [{"part": package.id, "reason": "its files were edited on this computer"}])
             owner.assert_not_called()
 
     def test_failed_refresh_leaves_no_recovery_marker(self):
         with tempfile.TemporaryDirectory() as temporary:
             app, state, package, root = make_app(Path(temporary))
             self.install_fixture(root, package)
-            result, _ = self.refresh(app, error=ValueError("owner refused"))
-            self.assertEqual(result, {"refreshed": [], "skipped": [package.id], "needs_later": True})
+            result, _ = self.refresh(app, error=ValueError(f"owner refused at {root}/secret"))
+            self.assertEqual(result["refreshed"], [])
+            self.assertEqual(result["problems"][0]["part"], package.id)
+            self.assertIn("owner refused", result["problems"][0]["reason"])
+            self.assertNotIn(str(root), result["problems"][0]["reason"])
             self.assertIsNone(state.pending_effect())
+
+    def test_member_message_names_no_feature_and_carries_the_report(self):
+        from aiverse_distribution.update_output import format_package_refresh
+
+        done = format_package_refresh({"refreshed": ["x"], "problems": [], "release": "r"})
+        self.assertNotIn("memory", done.lower())
+        failed = format_package_refresh(
+            {"refreshed": [], "problems": [{"part": "x", "reason": "boom"}], "release": "r1"}
+        )
+        self.assertIn("Send this to Bogdan:", failed)
+        self.assertIn("r1", failed)
+        self.assertIn("x: boom", failed)
+        self.assertIn("it will try again next update", failed)
 
     def test_failed_owner_action_keeps_exact_recovery_marker(self):
         with tempfile.TemporaryDirectory() as temporary:

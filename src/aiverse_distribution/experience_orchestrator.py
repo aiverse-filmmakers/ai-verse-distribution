@@ -21,6 +21,7 @@ from .infrastructure_upgrade import (
     require_owner_result,
 )
 from .optional_packages import run_optional_package_owner
+from .redaction import sanitize_text
 from .recovery_orchestrator import RecoveryOrchestrator
 from .release_catalog import DistributionError, ReleaseSet
 from .state import LifecycleRecoveryRequired, now_iso
@@ -550,11 +551,13 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
         with local edits, and never turns a successful update into a failed one.
         """
         refreshed: list[str] = []
-        skipped: list[str] = []
+        problems: list[Dict[str, str]] = []
+        release_id = str((self.state.load() or {}).get("release_set_id", "unknown"))
         try:
             with self.state.lifecycle_transaction():
                 if self.state.pending_effect() is not None:
-                    return {"refreshed": [], "skipped": [], "needs_later": True}
+                    problems.append({"part": "update", "reason": "another change was still waiting to finish"})
+                    return {"refreshed": [], "problems": problems, "release": release_id}
                 _, release = self._installed_core()
                 for candidate in self.catalog.optional_packages_for(release.id):
                     root = Path((self.state.load() or {})["root"]).expanduser().resolve()
@@ -562,17 +565,35 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                     if state in {"absent", "current"}:
                         continue
                     if state == "locally-changed":
-                        skipped.append(candidate.id)
+                        problems.append({"part": candidate.id, "reason": "its files were edited on this computer"})
                         continue
-                    if self._refresh_package(candidate.id):
+                    failure = self._refresh_package(candidate.id)
+                    if failure is None:
                         refreshed.append(candidate.id)
                     else:
-                        skipped.append(candidate.id)
-        except Exception:  # A finished update stays finished; the next update tries again.
-            return {"refreshed": refreshed, "skipped": skipped, "needs_later": True}
-        return {"refreshed": refreshed, "skipped": skipped, "needs_later": bool(skipped)}
+                        problems.append({"part": candidate.id, "reason": failure})
+        except Exception as exc:  # A finished update stays finished.
+            problems.append({"part": "update", "reason": self._problem_text(exc)})
+        return {"refreshed": refreshed, "problems": problems, "release": release_id}
 
-    def _refresh_package(self, package_id: str) -> bool:
+    def _problem_text(self, error: Exception) -> str:
+        """One short line a member can forward: the cause, without their folder names."""
+        parts = [type(error).__name__]
+        details = [getattr(error, "stderr", None), getattr(error, "stdout", None)]
+        parts.extend(text for text in details if isinstance(text, str) and text.strip())
+        if len(parts) == 1:
+            parts.append(str(error))
+        text = sanitize_text(" ".join(parts))
+        for private, label in (
+            (str((self.state.load() or {}).get("root", "")), "<project>"),
+            (str(Path.home()), "~"),
+        ):
+            if private:
+                text = text.replace(private, label)
+        return " ".join(text.split())[:400]
+
+    def _refresh_package(self, package_id: str) -> Optional[str]:
+        """Return None when the package was refreshed, otherwise why it was not."""
         plan = self._optional_package_plan(package_id, "install")
         package = plan["package"]
         metadata = {
@@ -589,14 +610,16 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
             run_optional_package_owner(
                 package, plan["owner_source"], plan["root"], "install", python=sys.executable, **options
             )
-            outcome = "REFRESHED"
-        except Exception:  # The owner's install restores its own files when it fails.
-            outcome = "REFRESH_DEFERRED"
+            outcome, failure = "REFRESHED", None
+        except Exception as exc:  # The owner's install restores its own files when it fails.
+            outcome, failure = "REFRESH_FAILED", self._problem_text(exc)
         updated = dict(self.state.load())
         updated.pop("_pending_lifecycle", None)
-        updated["last_optional_package_operation"] = {**metadata, "state": outcome, "completed_at": now_iso()}
+        updated["last_optional_package_operation"] = {
+            **metadata, "state": outcome, "failure": failure, "completed_at": now_iso(),
+        }
         self.state.commit_effect(updated, marker)
-        return outcome == "REFRESHED"
+        return failure
 
     def optional_package_apply(self, package_id: str, action: str) -> Dict[str, Any]:
         with self.state.lifecycle_transaction():

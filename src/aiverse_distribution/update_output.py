@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import platform
 from typing import Any, Optional
 
 
@@ -164,15 +165,22 @@ def format_core_update(payload: dict[str, Any]) -> Optional[str]:
 
 
 def format_package_refresh(refresh: Any) -> Optional[str]:
-    """Plain words for members, who should never need to know what was refreshed."""
+    """Plain words for members. This runs on every future update, so it names no feature."""
     if not isinstance(refresh, dict):
         return None
-    lines = []
+    blocks = []
     if refresh.get("refreshed"):
-        lines.append("Your AI-Verse memory tools were updated too, so everything is ready to use.")
-        lines.append("If Codex asks you to approve updated settings for this project, just say yes.")
-    if refresh.get("needs_later"):
-        lines.append(
-            "One small part couldn't update this time. Everything else is working, and it will try again next update."
+        blocks.append(
+            "Everything else you use with AI-Verse was updated too, so it's all ready to go.\n"
+            "If Codex asks you to approve updated settings for this project, just say yes."
         )
-    return "\n".join(lines) or None
+    problems = refresh.get("problems")
+    if problems:
+        details = "; ".join(f"{item.get('part')}: {item.get('reason')}" for item in problems)
+        report = f"AI-Verse update report | {refresh.get('release')} | {platform.system()} | {details}"
+        blocks.append(
+            "One small part couldn't update this time. Send this to Bogdan:\n\n"
+            f"{report}\n\n"
+            "Everything else is working, and it will try again next update."
+        )
+    return "\n\n".join(blocks) or None

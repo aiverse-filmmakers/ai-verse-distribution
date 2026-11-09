@@ -410,7 +410,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                 payload = app.apply_update(args.release_set, **source_kwargs)
                 if hasattr(app, "refresh_installed_packages") and (payload.get("applied") or payload.get("noop")):
                     refresh = app.refresh_installed_packages()
-                    if isinstance(refresh, dict) and (refresh.get("refreshed") or refresh.get("needs_later")):
+                    if isinstance(refresh, dict) and (refresh.get("refreshed") or refresh.get("problems")):
                         payload["package_refresh"] = refresh
             _emit(payload, args.json)
             if not args.json and isinstance(payload, dict):
