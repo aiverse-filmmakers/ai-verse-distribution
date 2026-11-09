@@ -14,7 +14,7 @@ from .diagnostics import create_support_bundle
 from .orchestrator import Orchestrator
 from .process import ProcessError
 from .redaction import sanitize, sanitize_text
-from .update_output import format_core_update, format_update_conflict
+from .update_output import format_package_refresh, format_core_update, format_update_conflict
 
 
 def _emit(payload: Any, as_json: bool = False) -> None:
@@ -408,7 +408,16 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                     print("Updating AI-Verse...")
                     print()
                 payload = app.apply_update(args.release_set, **source_kwargs)
+                if hasattr(app, "refresh_installed_packages") and (payload.get("applied") or payload.get("noop")):
+                    refresh = app.refresh_installed_packages()
+                    if isinstance(refresh, dict) and (refresh.get("refreshed") or refresh.get("needs_later")):
+                        payload["package_refresh"] = refresh
             _emit(payload, args.json)
+            if not args.json and isinstance(payload, dict):
+                note = format_package_refresh(payload.get("package_refresh"))
+                if note:
+                    print()
+                    print(note)
             return 0
 
         if args.command == "rollback":

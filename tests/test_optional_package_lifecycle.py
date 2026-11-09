@@ -221,6 +221,57 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             self.assertEqual(receipt["last_optional_package_operation"]["action"], "install")
             self.assertEqual(receipt["last_optional_package_operation"]["manifest_sha256"], package.manifest_sha256)
 
+    def install_fixture(self, root, package, content=b"old"):
+        import hashlib
+        import json
+        directory = root / ".aiverse/extensions" / package.id
+        directory.mkdir(parents=True)
+        (directory / "install.py").write_bytes(content)
+        (directory / "install-receipt.json").write_text(
+            json.dumps({"files": {"install.py": hashlib.sha256(content).hexdigest()}})
+        )
+        return directory
+
+    def refresh(self, app, result=None, error=None):
+        with patch("aiverse_distribution.optional_packages.verify_optional_package_source"), patch(
+            "aiverse_distribution.experience_orchestrator.run_optional_package_owner",
+            return_value=result or {"installed": True, "state": "setup-required"}, side_effect=error,
+        ) as owner, patch.object(app, "_optional_package_runtime_options", return_value={}):
+            return app.refresh_installed_packages(), owner
+
+    def test_update_refreshes_a_package_the_member_already_has(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, state, package, root = make_app(Path(temporary))
+            self.install_fixture(root, package)
+            result, owner = self.refresh(app)
+            self.assertEqual(result, {"refreshed": [package.id], "skipped": [], "needs_later": False})
+            owner.assert_called_once()
+            self.assertIsNone(state.pending_effect())
+
+    def test_update_never_adds_a_package_the_member_does_not_have(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, _, package, _ = make_app(Path(temporary))
+            result, owner = self.refresh(app)
+            self.assertEqual(result, {"refreshed": [], "skipped": [], "needs_later": False})
+            owner.assert_not_called()
+
+    def test_update_leaves_a_locally_edited_package_alone(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, _, package, root = make_app(Path(temporary))
+            directory = self.install_fixture(root, package)
+            (directory / "install.py").write_bytes(b"edited by hand")
+            result, owner = self.refresh(app)
+            self.assertEqual(result, {"refreshed": [], "skipped": [package.id], "needs_later": True})
+            owner.assert_not_called()
+
+    def test_failed_refresh_leaves_no_recovery_marker(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, state, package, root = make_app(Path(temporary))
+            self.install_fixture(root, package)
+            result, _ = self.refresh(app, error=ValueError("owner refused"))
+            self.assertEqual(result, {"refreshed": [], "skipped": [package.id], "needs_later": True})
+            self.assertIsNone(state.pending_effect())
+
     def test_failed_owner_action_keeps_exact_recovery_marker(self):
         with tempfile.TemporaryDirectory() as temporary:
             app, state, package, root = make_app(Path(temporary))

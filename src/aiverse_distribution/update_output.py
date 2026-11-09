@@ -161,3 +161,18 @@ def format_core_update(payload: dict[str, Any]) -> Optional[str]:
         ])
     lines.append("AI-Verse is up to date.")
     return "\n".join(lines)
+
+
+def format_package_refresh(refresh: Any) -> Optional[str]:
+    """Plain words for members, who should never need to know what was refreshed."""
+    if not isinstance(refresh, dict):
+        return None
+    lines = []
+    if refresh.get("refreshed"):
+        lines.append("Your AI-Verse memory tools were updated too, so everything is ready to use.")
+        lines.append("If Codex asks you to approve updated settings for this project, just say yes.")
+    if refresh.get("needs_later"):
+        lines.append(
+            "One small part couldn't update this time. Everything else is working, and it will try again next update."
+        )
+    return "\n".join(lines) or None

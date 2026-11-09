@@ -522,6 +522,82 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
             options.update(skills_root=str(active_root.resolve()), skills_entrypoint=str(entrypoint))
         return options
 
+    @staticmethod
+    def _installed_package_state(package: Any, root: Path) -> str:
+        """Compare a package already in this project with the admitted release."""
+        import hashlib
+        import json
+
+        directory = root / ".aiverse" / "extensions" / package.id
+        try:
+            recorded = json.loads((directory / "install-receipt.json").read_text(encoding="utf-8"))["files"]
+            installed = {
+                name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
+                for name in package.files
+            }
+        except (OSError, ValueError, KeyError, TypeError):
+            return "absent"
+        if installed == dict(package.files):
+            return "current"
+        if any(recorded.get(name) != value for name, value in installed.items()):
+            return "locally-changed"
+        return "outdated"
+
+    def refresh_installed_packages(self) -> Dict[str, Any]:
+        """Bring packages the member already has up to the installed release.
+
+        Runs after a successful update. It never adds a package, never touches one
+        with local edits, and never turns a successful update into a failed one.
+        """
+        refreshed: list[str] = []
+        skipped: list[str] = []
+        try:
+            with self.state.lifecycle_transaction():
+                if self.state.pending_effect() is not None:
+                    return {"refreshed": [], "skipped": [], "needs_later": True}
+                _, release = self._installed_core()
+                for candidate in self.catalog.optional_packages_for(release.id):
+                    root = Path((self.state.load() or {})["root"]).expanduser().resolve()
+                    state = self._installed_package_state(candidate, root)
+                    if state in {"absent", "current"}:
+                        continue
+                    if state == "locally-changed":
+                        skipped.append(candidate.id)
+                        continue
+                    if self._refresh_package(candidate.id):
+                        refreshed.append(candidate.id)
+                    else:
+                        skipped.append(candidate.id)
+        except Exception:  # A finished update stays finished; the next update tries again.
+            return {"refreshed": refreshed, "skipped": skipped, "needs_later": True}
+        return {"refreshed": refreshed, "skipped": skipped, "needs_later": bool(skipped)}
+
+    def _refresh_package(self, package_id: str) -> bool:
+        plan = self._optional_package_plan(package_id, "install")
+        package = plan["package"]
+        metadata = {
+            "release_set_id": plan["release"].id,
+            "package_id": package.id,
+            "package_version": package.version,
+            "manifest_sha256": package.manifest_sha256,
+            "source_revision": package.source_revision,
+            "action": "refresh",
+        }
+        options = self._optional_package_runtime_options()
+        marker = self.state.begin_effect(f"optional-package:refresh:{package.id}", metadata=metadata)
+        try:
+            run_optional_package_owner(
+                package, plan["owner_source"], plan["root"], "install", python=sys.executable, **options
+            )
+            outcome = "REFRESHED"
+        except Exception:  # The owner's install restores its own files when it fails.
+            outcome = "REFRESH_DEFERRED"
+        updated = dict(self.state.load())
+        updated.pop("_pending_lifecycle", None)
+        updated["last_optional_package_operation"] = {**metadata, "state": outcome, "completed_at": now_iso()}
+        self.state.commit_effect(updated, marker)
+        return outcome == "REFRESHED"
+
     def optional_package_apply(self, package_id: str, action: str) -> Dict[str, Any]:
         with self.state.lifecycle_transaction():
             if self.update_journal.load() is not None or self.infrastructure_upgrade_journal.load() is not None:
