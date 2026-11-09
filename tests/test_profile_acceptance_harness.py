@@ -75,9 +75,12 @@ class HistoricalLabelExpectationTests(unittest.TestCase):
         previous_0312 = workflow.split("  os-0312-release:", 1)[1].split("  os-0313-release:", 1)[0]
         self.assertIn("AI_VERSE_ACCEPTANCE_OS_REVISION: ff29d65b56511c8d936fd16a6e7941719c75af0c", previous_0312)
         self.assertNotIn("AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION:", previous_0312)
-        current = workflow.split("  os-0313-release:", 1)[1]
-        self.assertIn("AI_VERSE_ACCEPTANCE_OS_REVISION: 725dfb43f756156ac9bf4c4214005b2390dc91a4", current)
-        self.assertIn("AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION: 0.3.13", current)
+        previous_0313 = workflow.split("  os-0313-release:", 1)[1].split("  os-0314-release:", 1)[0]
+        self.assertIn("AI_VERSE_ACCEPTANCE_OS_REVISION: 725dfb43f756156ac9bf4c4214005b2390dc91a4", previous_0313)
+        self.assertNotIn("AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION:", previous_0313)
+        current = workflow.split("  os-0314-release:", 1)[1]
+        self.assertIn("AI_VERSE_ACCEPTANCE_OS_REVISION: b473e0822aad97d97b6d1863fd0486c1bf99d227", current)
+        self.assertIn("AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION: 0.3.14", current)
 
 
 class CandidateTransitionFixtureTests(unittest.TestCase):
