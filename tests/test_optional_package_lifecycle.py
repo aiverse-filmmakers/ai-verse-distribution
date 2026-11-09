@@ -244,7 +244,7 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             app, state, package, root = make_app(Path(temporary))
             self.install_fixture(root, package)
             result, owner = self.refresh(app)
-            self.assertEqual(result, {"refreshed": [package.id], "problems": [], "release": "core-package-fixture"})
+            self.assertEqual(result, {"refreshed": [package.id], "problems": [], "release": "core-package-fixture", "codex_review_needed": False})
             owner.assert_called_once()
             self.assertIsNone(state.pending_effect())
 
@@ -252,7 +252,7 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             app, _, package, _ = make_app(Path(temporary))
             result, owner = self.refresh(app)
-            self.assertEqual(result, {"refreshed": [], "problems": [], "release": "core-package-fixture"})
+            self.assertEqual(result, {"refreshed": [], "problems": [], "release": "core-package-fixture", "codex_review_needed": False})
             owner.assert_not_called()
 
     def test_update_leaves_a_locally_edited_package_alone(self):
@@ -287,6 +287,57 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
         self.assertIn("r1", failed)
         self.assertIn("x: boom", failed)
         self.assertIn("it will try again next update", failed)
+
+    def test_codex_steps_appear_only_when_codex_hooks_changed(self):
+        from aiverse_distribution.update_output import format_package_refresh
+
+        with tempfile.TemporaryDirectory() as temporary:
+            app, _, package, root = make_app(Path(temporary))
+            self.install_fixture(root, package)
+            (root / ".codex").mkdir()
+            hooks = root / ".codex/hooks.json"
+            hooks.write_text("old")
+
+            def owner(*args, **kwargs):
+                hooks.write_text("new")
+                return {"installed": True, "state": "setup-required"}
+
+            with patch("aiverse_distribution.optional_packages.verify_optional_package_source"), patch(
+                "aiverse_distribution.experience_orchestrator.run_optional_package_owner", side_effect=owner
+            ), patch.object(app, "_optional_package_runtime_options", return_value={}):
+                result = app.refresh_installed_packages()
+            self.assertTrue(result["codex_review_needed"])
+            self.assertIn("Settings, then Hooks", format_package_refresh(result))
+        unchanged = format_package_refresh({"refreshed": ["x"], "problems": [], "codex_review_needed": False})
+        self.assertNotIn("Hooks", unchanged)
+
+    def test_whats_new_combines_skipped_releases_without_repeats(self):
+        from types import SimpleNamespace
+
+        with tempfile.TemporaryDirectory() as temporary:
+            app, _, _, _ = make_app(Path(temporary))
+            notes = {
+                "r1": [{"title": "A", "detail": "first"}],
+                "r2": [{"title": "A", "detail": "again"}, {"title": "B", "detail": "second"}],
+            }
+            app.catalog.get_release.side_effect = lambda release_id, require_released=True: SimpleNamespace(
+                raw={"whats_new": notes[release_id]}
+            )
+            found = app.whats_new({"to": "r2", "transition_path": [{"to": "r1"}, {"to": "r2"}]})
+            self.assertEqual([item["title"] for item in found], ["A", "B"])
+
+    def test_member_update_reads_plainly_when_notes_exist(self):
+        from aiverse_distribution.update_output import format_core_update
+
+        text = format_core_update({
+            "transition_kind": "update", "applied": True, "from": "a", "to": "b",
+            "changed_components": ["ai-verse-memory"], "health": {"ok": True},
+            "whats_new": [{"title": "Finds things more easily", "detail": "Ask in your own words."}],
+        })
+        self.assertIn("What's new:", text)
+        self.assertIn("Finds things more easily", text)
+        self.assertIn("Everything was checked and is working.", text)
+        self.assertNotIn("ai-verse-memory", text)
 
     def test_failed_owner_action_keeps_exact_recovery_marker(self):
         with tempfile.TemporaryDirectory() as temporary:

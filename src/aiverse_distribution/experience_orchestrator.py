@@ -22,6 +22,7 @@ from .infrastructure_upgrade import (
 )
 from .optional_packages import run_optional_package_owner
 from .redaction import sanitize_text
+from .update_output import CODEX_APPROVAL_STEPS
 from .recovery_orchestrator import RecoveryOrchestrator
 from .release_catalog import DistributionError, ReleaseSet
 from .state import LifecycleRecoveryRequired, now_iso
@@ -552,12 +553,14 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
         """
         refreshed: list[str] = []
         problems: list[Dict[str, str]] = []
+        codex_review_needed = False
         release_id = str((self.state.load() or {}).get("release_set_id", "unknown"))
         try:
             with self.state.lifecycle_transaction():
                 if self.state.pending_effect() is not None:
                     problems.append({"part": "update", "reason": "another change was still waiting to finish"})
-                    return {"refreshed": [], "problems": problems, "release": release_id}
+                    return {"refreshed": [], "problems": problems, "release": release_id,
+                            "codex_review_needed": False}
                 _, release = self._installed_core()
                 for candidate in self.catalog.optional_packages_for(release.id):
                     root = Path((self.state.load() or {})["root"]).expanduser().resolve()
@@ -567,14 +570,40 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                     if state == "locally-changed":
                         problems.append({"part": candidate.id, "reason": "its files were edited on this computer"})
                         continue
+                    codex_hooks = root / ".codex" / "hooks.json"
+                    before = codex_hooks.read_bytes() if codex_hooks.is_file() else None
                     failure = self._refresh_package(candidate.id)
                     if failure is None:
                         refreshed.append(candidate.id)
+                        after = codex_hooks.read_bytes() if codex_hooks.is_file() else None
+                        codex_review_needed = codex_review_needed or (after is not None and after != before)
                     else:
                         problems.append({"part": candidate.id, "reason": failure})
         except Exception as exc:  # A finished update stays finished.
             problems.append({"part": "update", "reason": self._problem_text(exc)})
-        return {"refreshed": refreshed, "problems": problems, "release": release_id}
+        return {"refreshed": refreshed, "problems": problems, "release": release_id,
+                "codex_review_needed": codex_review_needed}
+
+    def whats_new(self, payload: Dict[str, Any]) -> list[Dict[str, str]]:
+        """The hand-written notes for every release this update moved through."""
+        hops = payload.get("transition_path")
+        targets = [hop.get("to") for hop in hops if isinstance(hop, dict)] if isinstance(hops, list) else []
+        notes: list[Dict[str, str]] = []
+        seen = set()
+        for release_id in targets or [payload.get("to")]:
+            try:
+                raw = self.catalog.get_release(release_id, require_released=True).raw
+            except Exception:
+                continue
+            entries = raw.get("whats_new") if isinstance(raw, dict) else None
+            for entry in entries if isinstance(entries, list) else []:
+                if not isinstance(entry, dict):
+                    continue
+                title, detail = entry.get("title"), entry.get("detail")
+                if isinstance(title, str) and isinstance(detail, str) and title.strip() and title not in seen:
+                    seen.add(title)
+                    notes.append({"title": title, "detail": detail})
+        return notes
 
     def _problem_text(self, error: Exception) -> str:
         """One short line a member can forward: the cause, without their folder names."""
@@ -674,7 +703,7 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
             }
             self.state.commit_effect(updated, marker)
             message = (
-                "The optional package was installed. Review and trust its hooks in your host settings to activate them."
+                "Installed. " + CODEX_APPROVAL_STEPS
                 if action == "install"
                 else "The optional package was removed. Its files, settings, trust, and user data were preserved."
             )

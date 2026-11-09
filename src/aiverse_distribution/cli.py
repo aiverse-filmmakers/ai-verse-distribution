@@ -412,9 +412,13 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                     refresh = app.refresh_installed_packages()
                     if isinstance(refresh, dict) and (refresh.get("refreshed") or refresh.get("problems")):
                         payload["package_refresh"] = refresh
+                if hasattr(app, "whats_new") and payload.get("applied") and not payload.get("noop"):
+                    notes = app.whats_new(payload)
+                    if isinstance(notes, list) and notes:
+                        payload["whats_new"] = notes
             _emit(payload, args.json)
             if not args.json and isinstance(payload, dict):
-                note = format_package_refresh(payload.get("package_refresh"))
+                note = format_package_refresh(payload.get("package_refresh"), whats_new_shown=bool(payload.get("whats_new")))
                 if note:
                     print()
                     print(note)
