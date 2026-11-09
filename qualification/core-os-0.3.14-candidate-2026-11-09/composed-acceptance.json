@@ -1,0 +1,189 @@
+{
+  "schema_version": "aiverse.distribution-composed-acceptance/v1",
+  "candidate_id": "core-os-0.3.14-candidate-2026-11-09",
+  "distribution_revision": "0680d9b3f8c759a63e0a17ed723165171c7296c2",
+  "platforms": {
+    "linux": {
+      "clean_install": "pass",
+      "status": "pass",
+      "doctor": "pass",
+      "health": "pass",
+      "components": {
+        "ai-verse-os": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-brain": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-memory": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-skills": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-data": {
+          "status": "ready",
+          "doctor": "ready"
+        }
+      }
+    },
+    "macos": {
+      "clean_install": "pass",
+      "status": "pass",
+      "doctor": "pass",
+      "health": "pass",
+      "components": {
+        "ai-verse-os": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-brain": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-memory": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-skills": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-data": {
+          "status": "ready",
+          "doctor": "ready"
+        }
+      }
+    },
+    "windows": {
+      "clean_install": "pass",
+      "status": "pass",
+      "doctor": "pass",
+      "health": "pass",
+      "components": {
+        "ai-verse-os": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-brain": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-memory": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-skills": {
+          "status": "ready",
+          "doctor": "ready"
+        },
+        "ai-verse-data": {
+          "status": "ready",
+          "doctor": "ready"
+        }
+      }
+    }
+  },
+  "evidence": [
+    {
+      "kind": "clean-machine-os-0314-candidate-acceptance",
+      "status": "pass",
+      "revision": "0680d9b3f8c759a63e0a17ed723165171c7296c2",
+      "tested_revision": "1dcb113199c5bdb1ccecc5f41f7da5ec4968b37c",
+      "run_id": 42692251632,
+      "job_id": 129414719285,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/42692251632/job/129414719285",
+      "platform": "linux"
+    },
+    {
+      "kind": "clean-machine-os-0314-candidate-acceptance",
+      "status": "pass",
+      "revision": "0680d9b3f8c759a63e0a17ed723165171c7296c2",
+      "tested_revision": "1dcb113199c5bdb1ccecc5f41f7da5ec4968b37c",
+      "run_id": 42692251632,
+      "job_id": 129414719297,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/42692251632/job/129414719297",
+      "platform": "macos"
+    },
+    {
+      "kind": "clean-machine-os-0314-candidate-acceptance",
+      "status": "pass",
+      "revision": "0680d9b3f8c759a63e0a17ed723165171c7296c2",
+      "tested_revision": "1dcb113199c5bdb1ccecc5f41f7da5ec4968b37c",
+      "run_id": 42692251632,
+      "job_id": 129414719144,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/42692251632/job/129414719144",
+      "platform": "windows"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "0680d9b3f8c759a63e0a17ed723165171c7296c2",
+      "tested_revision": "5cd4da64ea8d6441e1462cf4ad03478b9309157a",
+      "run_id": 42696990426,
+      "job_id": 129431363913,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/42696990426/job/129431363913",
+      "platform": "windows"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "0680d9b3f8c759a63e0a17ed723165171c7296c2",
+      "tested_revision": "5cd4da64ea8d6441e1462cf4ad03478b9309157a",
+      "run_id": 42696990426,
+      "job_id": 129431364203,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/42696990426/job/129431364203",
+      "platform": "macos"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "0680d9b3f8c759a63e0a17ed723165171c7296c2",
+      "tested_revision": "5cd4da64ea8d6441e1462cf4ad03478b9309157a",
+      "run_id": 42696990426,
+      "job_id": 129431364270,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/42696990426/job/129431364270",
+      "platform": "linux"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "0680d9b3f8c759a63e0a17ed723165171c7296c2",
+      "tested_revision": "5cd4da64ea8d6441e1462cf4ad03478b9309157a",
+      "run_id": 42696990426,
+      "job_id": 129431364351,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/42696990426/job/129431364351",
+      "platform": "linux"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "0680d9b3f8c759a63e0a17ed723165171c7296c2",
+      "tested_revision": "5cd4da64ea8d6441e1462cf4ad03478b9309157a",
+      "run_id": 42696990426,
+      "job_id": 129431364526,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/42696990426/job/129431364526",
+      "platform": "macos"
+    },
+    {
+      "kind": "distribution-composed-regression",
+      "status": "pass",
+      "revision": "0680d9b3f8c759a63e0a17ed723165171c7296c2",
+      "tested_revision": "5cd4da64ea8d6441e1462cf4ad03478b9309157a",
+      "run_id": 42696990426,
+      "job_id": 129431364559,
+      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/42696990426/job/129431364559",
+      "platform": "windows"
+    }
+  ],
+  "coverage_notes": {
+    "revision_binding": "Immutable candidate definition 0680d9b3f8c759a63e0a17ed723165171c7296c2; platform acceptance and unit evidence tested exact PR head 1dcb113199c5bdb1ccecc5f41f7da5ec4968b37c; composed regression tested merged main 5cd4da64ea8d6441e1462cf4ad03478b9309157a.",
+    "candidate_acceptance": "All three supported platforms passed clean install, owner health, populated current-member update, optional package lifecycle and preservation.",
+    "restart_recovery": "Fail-closed unit and composed regressions passed on all platforms. No separate populated-platform interruption drill is claimed.",
+    "test_admission": "Pre-promotion populated update used a contained synthetic admission with an explicitly temporary reference only inside the disposable tool stack. It is not shipped or used as promotion evidence; the completed executable results below are the new qualification evidence."
+  }
+}

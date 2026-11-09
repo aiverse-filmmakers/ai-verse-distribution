@@ -12,14 +12,14 @@ profile = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(profile)
 
 class ProfileAcceptanceModeTests(unittest.TestCase):
-    def test_os_0312_release_uses_forward_mode_after_promotion(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-os-0.3.12-candidate-2026-11-04"), "admitted-forward")
+    def test_os_0313_release_uses_forward_mode_after_promotion(self):
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-os-0.3.13-candidate-2026-11-04"), "admitted-forward")
 
     def test_current_release_uses_noop_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-os-0.3.12-candidate-2026-11-04"), "admitted-forward")
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-os-0.3.14-candidate-2026-11-09"), "current")
 
     def test_accepted_parent_uses_forward_plan_and_self_update_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-os-0.3.12-candidate-2026-11-04"), "admitted-forward")
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-os-0.3.13-candidate-2026-11-04"), "admitted-forward")
 
     def test_explicit_only_candidate_keeps_blocked_update_check(self):
         self.assertEqual(profile.default_update_mode(Catalog(), "core-local-upgrades-candidate-2026-10-19-v5"), "unadmitted")

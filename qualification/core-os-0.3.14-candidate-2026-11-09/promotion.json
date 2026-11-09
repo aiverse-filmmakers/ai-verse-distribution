@@ -1,0 +1,31 @@
+{
+  "schema_version": "aiverse.distribution-core-promotion/v1",
+  "release_id": "core-os-0.3.14-candidate-2026-11-09",
+  "previous_release_id": "core-os-0.3.13-candidate-2026-11-04",
+  "status": "applied",
+  "mode": "normal",
+  "qualification": {
+    "schema_version": "aiverse.distribution-whole-product-qualification/v1",
+    "ref": "qualification/core-os-0.3.14-candidate-2026-11-09/whole-product-qualification.json",
+    "sha256": "cde28b2da111d2c2c33765d901e54eefef38cf131eec4ae3595d70db40c7054a"
+  },
+  "system_sync": {
+    "status": "synchronized",
+    "repository_state_sha256": "78e6cb33cb956a45dcb53c244add5e31e721f9aedfe9cbc96b365745680d41b1",
+    "debt_ids": []
+  },
+  "writes": [
+    "src/aiverse_distribution/catalog/core_promotions.json",
+    "src/aiverse_distribution/catalog/core_candidates.json",
+    "release-sets/core-os-0.3.14-candidate-2026-11-09.json",
+    "qualification/core-os-0.3.14-candidate-2026-11-09/release-receipt.json",
+    "qualification/core-os-0.3.14-candidate-2026-11-09/promotion.json"
+  ],
+  "authority": {
+    "promotion_decision": true,
+    "registry_authority": false,
+    "repository_state_authority": false,
+    "owner_acceptance_authority": false,
+    "member_state_authority": false
+  }
+}
