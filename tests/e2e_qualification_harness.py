@@ -97,6 +97,7 @@ class IsolatedCoreFixture:
         candidate["id"] = CANDIDATE
         candidate["components"] = copy.deepcopy(self.source_release["components"])
         candidate["lineage"] = {"parent": self.previous_release_id, "policy": "same-or-descendant"}
+        candidate["whats_new"] = [{"title": "Test change", "detail": "A plain description members read."}]
         # Keep the real exact component pins and lock metadata from the accepted
         # release; synthetic owner evidence below is used only in this test.
         compatibility = overlay["compatibility"][seed_id]

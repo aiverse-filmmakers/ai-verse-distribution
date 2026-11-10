@@ -160,6 +160,21 @@ def _load_candidate_context(
     if len(matches) != 1:
         raise CorePromotionError(f"{candidate_id}: candidate must exist exactly once in the explicit overlay")
     candidate = matches[0]
+    notes = candidate.get("whats_new")
+    if not (
+        isinstance(notes, list)
+        and notes
+        and all(
+            isinstance(item, dict)
+            and isinstance(item.get("title"), str) and item["title"].strip()
+            and isinstance(item.get("detail"), str) and item["detail"].strip()
+            for item in notes
+        )
+    ):
+        raise CorePromotionError(
+            f"{candidate_id}: add a whats_new list to the candidate first. Members read it when they update: "
+            'plain words, one {"title", "detail"} entry per change, drafted from what merged since the current release'
+        )
     candidate_compatibility = compatibility.get(candidate_id)
     candidate_binding = evidence_bindings.get(candidate_id)
     if not isinstance(candidate_compatibility, dict) or not isinstance(candidate_binding, dict):

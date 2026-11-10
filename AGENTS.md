@@ -23,6 +23,10 @@ Follow `INSTALL.md`.
 13. After installation, continue from the installed project root and follow that project's generated `AGENTS.md`, `CLAUDE.md`, `AI-VERSE.yaml`, and capability adapters.
 14. AI-Verse onboarding is progressive after installation. Do not force a separate questionnaire unless the user asks for one or missing information blocks safe/correct work.
 
+## Release notes for members
+
+Every Core candidate needs a `whats_new` list before it can be promoted; promotion refuses without it. When preparing a candidate, draft it yourself from what merged into the component repositories since the current release, then show it to the owner to approve. One `{"title", "detail"}` entry per change a member would notice, in plain everyday words with no technical terms. Never invent a change or promise more than it does.
+
 ## Member-facing behavior
 
 Keep normal responses concise and plain English. The member should not need repository names, paths, generations, migration operation IDs, exact component refs or recovery-manifest details to use the lifecycle.

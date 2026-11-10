@@ -68,10 +68,9 @@ CODEX_APPROVAL_STEPS = (
     "AI-Verse has small background steps that load what it knows about you and save what it learns. "
     "Codex calls them hooks. When they change, Codex switches them off until you approve them, "
     "and it doesn't tell you, so here's how:\n"
-    "  1. In Codex, open Settings, then Hooks. On a Mac you can press \u2318 and the comma key.\n"
+    "  1. In Codex, open Settings, then Hooks.\n"
     "  2. Find the ones for this project that are waiting for approval and choose Trust.\n"
     "  3. Start a new chat.\n"
-    "In the Codex terminal, type /hooks instead.\n"
     "Until then AI-Verse still works in Codex, but it won't remember things there."
 )
 
