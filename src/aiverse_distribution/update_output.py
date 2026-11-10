@@ -60,7 +60,16 @@ def format_update_conflict(payload: dict[str, Any]) -> Optional[str]:
     source = payload.get("local_source")
     if not isinstance(source, dict):
         source = {"conflicts": [{"reason": payload.get("message", "Local changes need review")}]}
-    return "\n".join(["AI-Verse update paused", "", *_source_review_lines(source)])
+    return "\n".join([
+        "Your update paused to protect changes made to AI-Verse's own files on this computer.",
+        "Nothing was changed. Your notes, memories and projects are safe.",
+        "",
+        "To finish, tell your assistant: \"Help me finish my AI-Verse update.\"",
+        "It will look at each change with you, keep a copy, and finish the update.",
+        "",
+        "Details for your assistant:",
+        *_source_review_lines(source),
+    ])
 
 
 CODEX_APPROVAL_STEPS = (

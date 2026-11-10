@@ -339,6 +339,17 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
         self.assertIn("Everything was checked and is working.", text)
         self.assertNotIn("ai-verse-memory", text)
 
+    def test_paused_update_reads_plainly_and_keeps_details(self):
+        from aiverse_distribution.update_output import format_update_conflict
+
+        text = format_update_conflict({
+            "error": "CORE_LOCAL_SOURCE_REVIEW_REQUIRED",
+            "local_source": {"conflicts": [{"path": "scripts/x.py", "reason": "edited"}]},
+        })
+        self.assertTrue(text.startswith("Your update paused to protect changes"))
+        self.assertIn("Help me finish my AI-Verse update.", text)
+        self.assertIn("- scripts/x.py: edited", text)
+
     def test_failed_owner_action_keeps_exact_recovery_marker(self):
         with tempfile.TemporaryDirectory() as temporary:
             app, state, package, root = make_app(Path(temporary))

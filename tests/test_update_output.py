@@ -50,7 +50,7 @@ class CoreUpdateOutputTests(unittest.TestCase):
         app.apply_update.side_effect = SourceAdoptionConflict("Local changes need review", plan=plan)
         code, output = self._run(["update"], app)
         self.assertEqual(code, 2)
-        self.assertIn("AI-Verse update paused", output)
+        self.assertIn("Your update paused", output)
         self.assertIn("AGENTS.md: Needs review", output)
         self.assertIn("will not overwrite", output)
         code, output = self._run(["update", "--json"], app)
