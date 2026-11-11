@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import datetime
 import os
@@ -187,9 +188,17 @@ def _install_test_transition(layout: ProjectLayout) -> None:
     transitions_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _admit_registry_serialization(before_document, after_document, before_snapshot, after_snapshot):
+def _admit_registry_serialization(before_document, after_document, before_snapshot, after_snapshot,
+                                  *, admitted_extensions=None):
     if (not isinstance(before_document, dict) or before_document.get("schema_version") != "1.0"
-            or not isinstance(before_document.get("extensions"), dict) or before_document != after_document):
+            or not isinstance(before_document.get("extensions"), dict)):
+        raise RuntimeError("Core update changed extension registration values or member metadata")
+    expected = json.loads(json.dumps(before_document))
+    for package_id, registration in (admitted_extensions or {}).items():
+        if package_id not in expected["extensions"]:
+            raise RuntimeError("Core update unexpectedly installed an absent helper")
+        expected["extensions"][package_id] = registration
+    if expected != after_document:
         raise RuntimeError("Core update changed extension registration values or member metadata")
     result = dict(before_snapshot)
     result["files"] = dict(before_snapshot["files"])
@@ -198,6 +207,44 @@ def _admit_registry_serialization(before_document, after_document, before_snapsh
         raise RuntimeError("extension registry missing before or after update")
     result["files"][name] = after_snapshot["files"][name]
     return result
+
+
+def _verified_helper_refresh(project, package, update, prior_registration, prior_settings):
+    """Admit exact release-owned helper changes, never member settings or files."""
+    refreshed = update.get("package_refresh", {})
+    if refreshed.get("problems"):
+        raise RuntimeError("normal update did not refresh the existing optional helper")
+    helper = project / ".aiverse/extensions" / package.id
+    receipt = json.loads((helper / "install-receipt.json").read_text(encoding="utf-8"))
+    if receipt.get("files") != package.files:
+        raise RuntimeError("updated helper receipt does not match the exact release")
+    for name, expected in package.files.items():
+        path = helper / name
+        if path.is_symlink() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            raise RuntimeError("updated helper files do not match the exact release")
+    settings = json.loads((helper / "config.json").read_text(encoding="utf-8"))
+    runtime_keys = {"runtime_path", "skills_root", "skills_entrypoint"}
+    if ({k: v for k, v in prior_settings.items() if k not in runtime_keys}
+            != {k: v for k, v in settings.items() if k not in runtime_keys}):
+        raise RuntimeError("helper refresh changed member recording or learning preferences")
+    configuration = json.loads((project / ".aiverse/capability-providers.json").read_text(encoding="utf-8"))
+    if Path(settings["skills_entrypoint"]).resolve() != Path(configuration["skills_entrypoint"]).resolve():
+        raise RuntimeError("existing optional package did not converge to the current installation Skills owner")
+    hooks = json.loads((project / ".codex/hooks.json").read_text(encoding="utf-8"))
+    handlers = [h for groups in hooks["hooks"].values() for group in groups for h in group["hooks"]
+                if f"{package.id}/bridge.py" in h.get("command", "").replace("\\", "/")]
+    if len(handlers) != 6 or any("--build " + package.files["bridge.py"] not in h["command"] for h in handlers):
+        raise RuntimeError("Codex definitions do not reference the updated helper build")
+    if package.id not in refreshed.get("refreshed", []):
+        # A historical transition can retain the exact same package and runtime.
+        # The checks above still require current files and bindings without repair.
+        return prior_registration
+    return {**prior_registration, "id": package.id, "supported": True, "installed": True,
+            "enabled": prior_settings.get("enabled", True), "version": package.version,
+            "source": "ai-verse-codex-learning-package", "engine": f".aiverse/extensions/{package.id}/bridge.py",
+            "instructions": f".aiverse/extensions/{package.id}/INSTRUCTIONS.md", "adapters": [".codex/hooks.json"],
+            "hook_build_sha256": package.files["bridge.py"],
+            "compatibility": {"os_schema_major": 2, "codex_hooks": "command-v1"}}
 
 
 def _verified_skills_owner_metadata(before, after, prior_generation, active_generation):
@@ -341,6 +388,8 @@ def main() -> int:
     optional_on_update = os.environ.get("AI_VERSE_ACCEPTANCE_OPTIONAL_ON_UPDATE") == "1"
     if optional_on_update:
         _run_project(layout, "upgrade", "--package", "ai-verse-codex-learning", "--apply")
+        helper_settings_before = json.loads(
+            (project / ".aiverse/extensions/ai-verse-codex-learning/config.json").read_text(encoding="utf-8"))
         (project / ".aiverse/extensions/ai-verse-codex-learning/member-preservation-marker.txt").write_text(
             "member-owned optional package file\n", encoding="utf-8")
 
@@ -537,8 +586,16 @@ def main() -> int:
         if update.get("local_source", {}).get("state") != "completed":
             raise RuntimeError("source preparation did not complete through the canonical updater")
     extension_registry_after = json.loads((project / ".aiverse/extensions/registry.json").read_text(encoding="utf-8"))
+    admitted_extensions = {}
+    if optional_on_update:
+        helper_package = next(p for p in Catalog().optional_packages_for(CANDIDATE_ID)
+                              if p.id == "ai-verse-codex-learning")
+        admitted_extensions[helper_package.id] = _verified_helper_refresh(
+            project, helper_package, update, extension_registry_before["extensions"][helper_package.id],
+            helper_settings_before)
     other_state_before = _admit_registry_serialization(
-        extension_registry_before, extension_registry_after, other_state_before, after)
+        extension_registry_before, extension_registry_after, other_state_before, after,
+        admitted_extensions=admitted_extensions)
     require_member_state_preserved(other_state_before, after)
 
     blocked = _run_project(layout, "rollback", "--to", CURRENT_RELEASE, "--apply", expect=2)
@@ -554,14 +611,7 @@ def main() -> int:
         raise RuntimeError("blocked reverse rollback changed the installed release")
 
     if optional_on_update:
-        # Optional code remains a separately admitted package operation. Converge
-        # the existing package through that public operation after Core update.
-        _run_project(layout, "upgrade", "--package", "ai-verse-codex-learning", "--apply")
-        configuration = json.loads((project / ".aiverse/capability-providers.json").read_text(encoding="utf-8"))
         helper = project / ".aiverse/extensions/ai-verse-codex-learning"
-        settings = json.loads((helper / "config.json").read_text(encoding="utf-8"))
-        if Path(settings["skills_entrypoint"]).resolve() != Path(configuration["skills_entrypoint"]).resolve():
-            raise RuntimeError("existing optional package did not converge to the current installation Skills owner")
         if (helper / "member-preservation-marker.txt").read_text(encoding="utf-8") != "member-owned optional package file\n":
             raise RuntimeError("optional package upgrade altered an unknown member file")
 

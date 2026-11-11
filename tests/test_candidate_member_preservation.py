@@ -79,3 +79,30 @@ class ExtensionRegistrySerializationTests(unittest.TestCase):
     def test_disabled_extension_cannot_be_enabled(self):
         after=self.value();after["extensions"]["member"]["enabled"]=True
         with self.assertRaises(RuntimeError):fixture._admit_registry_serialization(self.value(),after,{}, {})
+
+    def test_verified_helper_refresh_admits_only_its_exact_registration(self):
+        before = self.value()
+        before["extensions"]["helper"] = {"enabled": True, "build": "old"}
+        after = self.value()
+        after["extensions"]["helper"] = {"enabled": True, "build": "admitted"}
+        snapshot = {"files": {".aiverse/extensions/registry.json": {"sha256": "registry"}}}
+        expected = {"helper": {"enabled": True, "build": "admitted"}}
+        fixture._admit_registry_serialization(before, after, snapshot, snapshot,
+                                              admitted_extensions=expected)
+        after["extensions"]["member"]["enabled"] = True
+        with self.assertRaises(RuntimeError):
+            fixture._admit_registry_serialization(before, after, snapshot, snapshot,
+                                                  admitted_extensions=expected)
+
+    def test_refresh_cannot_admit_an_absent_helper_or_another_build(self):
+        before = self.value()
+        snapshot = {"files": {".aiverse/extensions/registry.json": {"sha256": "registry"}}}
+        with self.assertRaises(RuntimeError):
+            fixture._admit_registry_serialization(before, before, snapshot, snapshot,
+                                                  admitted_extensions={"absent": {"build": "admitted"}})
+        before["extensions"]["helper"] = {"build": "old"}
+        after = self.value()
+        after["extensions"]["helper"] = {"build": "unexpected"}
+        with self.assertRaises(RuntimeError):
+            fixture._admit_registry_serialization(before, after, snapshot, snapshot,
+                                                  admitted_extensions={"helper": {"build": "admitted"}})

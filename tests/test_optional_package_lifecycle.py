@@ -1,3 +1,5 @@
+import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -34,7 +36,7 @@ def make_app(home: Path):
         source_path="system/extensions/packages/ai-verse-codex-learning",
         version="0.3.0",
         manifest_sha256="a" * 64,
-        files={"install.py": "b" * 64},
+        files={"install.py": hashlib.sha256(b"new").hexdigest()},
         qualified_platforms=("macos",),
         host_api={"codex_hooks": "command-v1"},
     )
@@ -233,9 +235,19 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
         return directory
 
     def refresh(self, app, result=None, error=None):
+        def install(*args, **kwargs):
+            if error is not None:
+                raise error
+            package, _, root, _ = args
+            directory = root / ".aiverse/extensions" / package.id
+            for name in package.files:
+                (directory / name).write_bytes(b"new")
+            (directory / "install-receipt.json").write_text(json.dumps({"files": package.files}))
+            return result or {"installed": True, "state": "setup-required"}
+
         with patch("aiverse_distribution.optional_packages.verify_optional_package_source"), patch(
             "aiverse_distribution.experience_orchestrator.run_optional_package_owner",
-            return_value=result or {"installed": True, "state": "setup-required"}, side_effect=error,
+            side_effect=install,
         ) as owner, patch.object(app, "_optional_package_runtime_options", return_value={}):
             return app.refresh_installed_packages(), owner
 
@@ -253,7 +265,7 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             app, _, package, root = make_app(Path(temporary))
             self.install_fixture(root, package)
-            candidate = replace(package, files={**package.files, "chat_archive.py": "c" * 64})
+            candidate = replace(package, files={**package.files, "chat_archive.py": hashlib.sha256(b"new").hexdigest()})
             app.catalog.optional_packages_for.return_value = (candidate,)
             result, owner = self.refresh(app)
             self.assertEqual(result["refreshed"], [package.id])
@@ -331,6 +343,9 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
 
             def owner(*args, **kwargs):
                 hooks.write_text("new")
+                directory = root / ".aiverse/extensions" / package.id
+                (directory / "install.py").write_bytes(b"new")
+                (directory / "install-receipt.json").write_text(json.dumps({"files": package.files}))
                 return {"installed": True, "state": "setup-required"}
 
             with patch("aiverse_distribution.optional_packages.verify_optional_package_source"), patch(

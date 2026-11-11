@@ -399,7 +399,10 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             source_kwargs = {}
             if args.local_source is not None:
                 from .recovery_orchestrator import RecoveryOrchestrator
-                app = RecoveryOrchestrator(state=app.state, catalog=app.catalog)
+                # Preserve a helper-aware subclass selected by the installed
+                # entrypoint instead of dropping its post-update behavior.
+                if not isinstance(app, RecoveryOrchestrator):
+                    app = RecoveryOrchestrator(state=app.state, catalog=app.catalog)
                 source_kwargs["local_source_policy"] = args.local_source
             if args.plan:
                 payload = app.update_plan(args.release_set, **source_kwargs)

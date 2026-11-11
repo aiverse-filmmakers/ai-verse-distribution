@@ -568,6 +568,30 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
             return "locally-changed"
         return "current" if installed == dict(package.files) else "outdated"
 
+    @staticmethod
+    def _installed_package_runtime_current(package: Any, root: Path, options: dict) -> bool:
+        """Unchanged package code can still point at a previous Core runtime."""
+        if not options:
+            return True
+        import json
+
+        directory = root / ".aiverse/extensions" / package.id
+        try:
+            receipt_path, config_path = directory / "install-receipt.json", directory / "config.json"
+            if receipt_path.is_symlink() or config_path.is_symlink():
+                return False
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            expected = {"python": options.get("runtime_python"),
+                        "skills_root": options.get("skills_root"),
+                        "skills_entrypoint": options.get("skills_entrypoint")}
+            actual = {"python": receipt.get("python"),
+                      "skills_root": config.get("skills_root"),
+                      "skills_entrypoint": config.get("skills_entrypoint")}
+            return all(actual[key] == value for key, value in expected.items() if value is not None)
+        except (OSError, ValueError, AttributeError):
+            return False
+
     def refresh_installed_packages(self) -> Dict[str, Any]:
         """Bring packages the member already has up to the installed release.
 
@@ -588,10 +612,14 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
                 for candidate in self.catalog.optional_packages_for(release.id):
                     root = Path((self.state.load() or {})["root"]).expanduser().resolve()
                     state = self._installed_package_state(candidate, root)
-                    if state in {"absent", "current"}:
+                    if state == "absent":
                         continue
                     if state == "locally-changed":
                         problems.append({"part": candidate.id, "reason": "its files were edited on this computer"})
+                        continue
+                    if state == "current" and self._installed_package_runtime_current(
+                        candidate, root, self._optional_package_runtime_options()
+                    ):
                         continue
                     codex_hooks = root / ".codex" / "hooks.json"
                     before = codex_hooks.read_bytes() if codex_hooks.is_file() else None
@@ -662,6 +690,9 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
             run_optional_package_owner(
                 package, plan["owner_source"], plan["root"], "install", python=sys.executable, **options
             )
+            if (self._installed_package_state(package, plan["root"]) != "current"
+                    or not self._installed_package_runtime_current(package, plan["root"], options)):
+                raise DistributionError("Installed helper files still do not match the admitted update")
             outcome, failure = "REFRESHED", None
         except Exception as exc:  # The owner's install restores its own files when it fails.
             outcome, failure = "REFRESH_FAILED", self._problem_text(exc)

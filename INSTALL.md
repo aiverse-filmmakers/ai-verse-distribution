@@ -74,6 +74,14 @@ aiverse update --plan
 
 Normal update does not silently apply optional structural convergence.
 
+Normal updates also refresh already installed optional helper packages to the
+versions admitted by the installed Core, including when Core itself is already
+current. This uses each package owner's supported installer and verifies the
+installed files afterwards. Packages that are absent are not added. Local edits
+are preserved and reported. Changed Codex entries require the member's review;
+the updater never grants trust or enables chat recording. Repeated bootstrap
+updates use this same path.
+
 ### Whole-install health
 
 If the member asks whether AI-Verse is healthy or what needs attention, use:

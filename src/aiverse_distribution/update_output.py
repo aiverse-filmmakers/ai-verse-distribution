@@ -93,7 +93,11 @@ def _format_member_update(payload: dict[str, Any], notes: list[Any]) -> str:
     lines.extend(["", "Your projects, notes and settings were all kept safe."])
     health = payload.get("health")
     if isinstance(health, dict) and health.get("ok") is True:
-        lines.append("Everything was checked and is working.")
+        refresh = payload.get("package_refresh")
+        if isinstance(refresh, dict) and (refresh.get("problems") or refresh.get("codex_review_needed")):
+            lines.append("The software health checks passed. Helper setup is explained below.")
+        else:
+            lines.append("Everything was checked and is working.")
     return "\n".join(lines)
 
 
@@ -209,7 +213,7 @@ def format_package_refresh(refresh: Any, *, whats_new_shown: bool = False) -> Op
         return None
     blocks = []
     if refresh.get("refreshed") and not whats_new_shown:
-        blocks.append("Everything else you use with AI-Verse was updated too, so it's all ready to go.")
+        blocks.append("Your existing AI-Verse helpers were refreshed.")
     if refresh.get("codex_review_needed"):
         blocks.append(CODEX_APPROVAL_STEPS)
     problems = refresh.get("problems")
@@ -217,8 +221,8 @@ def format_package_refresh(refresh: Any, *, whats_new_shown: bool = False) -> Op
         details = "; ".join(f"{item.get('part')}: {item.get('reason')}" for item in problems)
         report = f"AI-Verse update report | {refresh.get('release')} | {platform.system()} | {details}"
         blocks.append(
-            "One small part couldn't update this time. Send this to Bogdan:\n\n"
+            "One part still needs attention. Send this to Bogdan:\n\n"
             f"{report}\n\n"
-            "Everything else is working, and it will try again next update."
+            "The software update completed; it will try again next update."
         )
     return "\n\n".join(blocks) or None
