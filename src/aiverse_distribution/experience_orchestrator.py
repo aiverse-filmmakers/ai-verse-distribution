@@ -21,6 +21,8 @@ from .infrastructure_upgrade import (
     require_owner_result,
 )
 from .optional_packages import run_optional_package_owner
+from .redaction import sanitize_text
+from .update_output import CODEX_APPROVAL_STEPS
 from .recovery_orchestrator import RecoveryOrchestrator
 from .release_catalog import DistributionError, ReleaseSet
 from .state import LifecycleRecoveryRequired, now_iso
@@ -522,6 +524,155 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
             options.update(skills_root=str(active_root.resolve()), skills_entrypoint=str(entrypoint))
         return options
 
+    @staticmethod
+    def _installed_package_state(package: Any, root: Path) -> str:
+        """Compare a package already in this project with the admitted release."""
+        import hashlib
+        import json
+
+        from .optional_packages import _safe_relative_path
+
+        directory = root / ".aiverse" / "extensions" / package.id
+        if not directory.exists() and not directory.is_symlink():
+            return "absent"
+
+        def owned_file(name: str) -> Path:
+            relative = _safe_relative_path(name, label="installed package receipt")
+            path = directory / relative
+            cursor = root
+            for part in path.relative_to(root).parts:
+                cursor = cursor / part
+                if cursor.is_symlink():
+                    raise ValueError("package contains a symbolic link")
+            return path
+
+        try:
+            receipt = json.loads(owned_file("install-receipt.json").read_text(encoding="utf-8"))
+            recorded = receipt["files"]
+            if not isinstance(recorded, dict) or not recorded:
+                return "locally-changed"
+            # Verify ALL previously installed files, including ones removed by
+            # this release. New files are expected to be absent in an old build.
+            installed = {
+                name: hashlib.sha256(owned_file(name).read_bytes()).hexdigest()
+                for name in recorded
+            }
+            if installed != recorded:
+                return "locally-changed"
+            for name in set(package.files) - set(recorded):
+                path = owned_file(name)
+                if path.exists() or path.is_symlink():
+                    return "locally-changed"  # Never adopt an unowned collision.
+        except (OSError, ValueError, KeyError, TypeError):
+            # Existing but damaged/unrecognized is never silently "absent".
+            return "locally-changed"
+        return "current" if installed == dict(package.files) else "outdated"
+
+    def refresh_installed_packages(self) -> Dict[str, Any]:
+        """Bring packages the member already has up to the installed release.
+
+        Runs after a successful update. It never adds a package, never touches one
+        with local edits, and never turns a successful update into a failed one.
+        """
+        refreshed: list[str] = []
+        problems: list[Dict[str, str]] = []
+        codex_review_needed = False
+        release_id = str((self.state.load() or {}).get("release_set_id", "unknown"))
+        try:
+            with self.state.lifecycle_transaction():
+                if self.state.pending_effect() is not None:
+                    problems.append({"part": "update", "reason": "another change was still waiting to finish"})
+                    return {"refreshed": [], "problems": problems, "release": release_id,
+                            "codex_review_needed": False}
+                _, release = self._installed_core()
+                for candidate in self.catalog.optional_packages_for(release.id):
+                    root = Path((self.state.load() or {})["root"]).expanduser().resolve()
+                    state = self._installed_package_state(candidate, root)
+                    if state in {"absent", "current"}:
+                        continue
+                    if state == "locally-changed":
+                        problems.append({"part": candidate.id, "reason": "its files were edited on this computer"})
+                        continue
+                    codex_hooks = root / ".codex" / "hooks.json"
+                    before = codex_hooks.read_bytes() if codex_hooks.is_file() else None
+                    failure = self._refresh_package(candidate.id)
+                    if failure is None:
+                        refreshed.append(candidate.id)
+                        after = codex_hooks.read_bytes() if codex_hooks.is_file() else None
+                        codex_review_needed = codex_review_needed or (after is not None and after != before)
+                    else:
+                        problems.append({"part": candidate.id, "reason": failure})
+        except Exception as exc:  # A finished update stays finished.
+            problems.append({"part": "update", "reason": self._problem_text(exc)})
+        return {"refreshed": refreshed, "problems": problems, "release": release_id,
+                "codex_review_needed": codex_review_needed}
+
+    def whats_new(self, payload: Dict[str, Any]) -> list[Dict[str, str]]:
+        """The hand-written notes for every release this update moved through."""
+        hops = payload.get("transition_path")
+        targets = [hop.get("to") for hop in hops if isinstance(hop, dict)] if isinstance(hops, list) else []
+        notes: list[Dict[str, str]] = []
+        seen = set()
+        for release_id in targets or [payload.get("to")]:
+            try:
+                raw = self.catalog.get_release(release_id, require_released=True).raw
+            except Exception:
+                continue
+            entries = raw.get("whats_new") if isinstance(raw, dict) else None
+            for entry in entries if isinstance(entries, list) else []:
+                if not isinstance(entry, dict):
+                    continue
+                title, detail = entry.get("title"), entry.get("detail")
+                if isinstance(title, str) and isinstance(detail, str) and title.strip() and title not in seen:
+                    seen.add(title)
+                    notes.append({"title": title, "detail": detail})
+        return notes
+
+    def _problem_text(self, error: Exception) -> str:
+        """One short line a member can forward: the cause, without their folder names."""
+        parts = [type(error).__name__]
+        details = [getattr(error, "stderr", None), getattr(error, "stdout", None)]
+        parts.extend(text for text in details if isinstance(text, str) and text.strip())
+        if len(parts) == 1:
+            parts.append(str(error))
+        text = sanitize_text(" ".join(parts))
+        for private, label in (
+            (str((self.state.load() or {}).get("root", "")), "<project>"),
+            (str(Path.home()), "~"),
+        ):
+            if private:
+                text = text.replace(private, label)
+        return " ".join(text.split())[:400]
+
+    def _refresh_package(self, package_id: str) -> Optional[str]:
+        """Return None when the package was refreshed, otherwise why it was not."""
+        plan = self._optional_package_plan(package_id, "install")
+        package = plan["package"]
+        metadata = {
+            "release_set_id": plan["release"].id,
+            "package_id": package.id,
+            "package_version": package.version,
+            "manifest_sha256": package.manifest_sha256,
+            "source_revision": package.source_revision,
+            "action": "refresh",
+        }
+        options = self._optional_package_runtime_options()
+        marker = self.state.begin_effect(f"optional-package:refresh:{package.id}", metadata=metadata)
+        try:
+            run_optional_package_owner(
+                package, plan["owner_source"], plan["root"], "install", python=sys.executable, **options
+            )
+            outcome, failure = "REFRESHED", None
+        except Exception as exc:  # The owner's install restores its own files when it fails.
+            outcome, failure = "REFRESH_FAILED", self._problem_text(exc)
+        updated = dict(self.state.load())
+        updated.pop("_pending_lifecycle", None)
+        updated["last_optional_package_operation"] = {
+            **metadata, "state": outcome, "failure": failure, "completed_at": now_iso(),
+        }
+        self.state.commit_effect(updated, marker)
+        return failure
+
     def optional_package_apply(self, package_id: str, action: str) -> Dict[str, Any]:
         with self.state.lifecycle_transaction():
             if self.update_journal.load() is not None or self.infrastructure_upgrade_journal.load() is not None:
@@ -575,7 +726,7 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
             }
             self.state.commit_effect(updated, marker)
             message = (
-                "The optional package was installed. Review and trust its hooks in your host settings to activate them."
+                "Installed. " + CODEX_APPROVAL_STEPS
                 if action == "install"
                 else "The optional package was removed. Its files, settings, trust, and user data were preserved."
             )

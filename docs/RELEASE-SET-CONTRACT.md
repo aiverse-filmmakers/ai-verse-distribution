@@ -107,6 +107,8 @@ Software update and canonical-state migration are different operations.
 
 Distribution may move to a target software set only when the target compatibility contract explicitly lists the current set as an allowed update source and owner lifecycle permits it. Rollback is allowed only when the current set explicitly lists the target as a rollback destination.
 
+A release may carry `whats_new`, a list of `{"title", "detail"}` entries written by hand for members in plain language. An update shows these in place of the technical component list, combined across every release it moved through. Without them the technical summary is shown.
+
 Rollback is software rollback. Canonical user state remains owner-controlled and is never silently rewound.
 
 ## Profile completeness

@@ -23,6 +23,14 @@ Follow `INSTALL.md`.
 13. After installation, continue from the installed project root and follow that project's generated `AGENTS.md`, `CLAUDE.md`, `AI-VERSE.yaml`, and capability adapters.
 14. AI-Verse onboarding is progressive after installation. Do not force a separate questionnaire unless the user asks for one or missing information blocks safe/correct work.
 
+## Helping a member finish a paused update
+
+When an update pauses because AI-Verse's own files were changed locally, the member should not have to understand it. Run `aiverse update --plan` and explain each item in plain words. Personal material (notes, preferences, project content) belongs in the member's own folders: move it there through the owners' supported routes, never into Core files. For edited software files, preview `aiverse update --plan --local-source official`, which keeps a recovery copy of every edit, explain that the old edits stop being active, and apply only after the member agrees. If an edit is something the member relies on, rebuild it in a supported extension point instead of keeping a Core override. If a conflict remains that you cannot resolve safely, stop and give the member a short report to send to Bogdan. Never force, reset or delete to get past a conflict.
+
+## Release notes for members
+
+Every Core candidate needs a `whats_new` list before it can be promoted; promotion refuses without it. When preparing a candidate, draft it yourself from what merged into the component repositories since the current release, then show it to the owner to approve. One `{"title", "detail"}` entry per change a member would notice, in plain everyday words with no technical terms. Never invent a change or promise more than it does.
+
 ## Member-facing behavior
 
 Keep normal responses concise and plain English. The member should not need repository names, paths, generations, migration operation IDs, exact component refs or recovery-manifest details to use the lifecycle.

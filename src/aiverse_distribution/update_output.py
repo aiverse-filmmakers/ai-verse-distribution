@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import platform
+import textwrap
 from typing import Any, Optional
 
 
@@ -58,7 +60,41 @@ def format_update_conflict(payload: dict[str, Any]) -> Optional[str]:
     source = payload.get("local_source")
     if not isinstance(source, dict):
         source = {"conflicts": [{"reason": payload.get("message", "Local changes need review")}]}
-    return "\n".join(["AI-Verse update paused", "", *_source_review_lines(source)])
+    return "\n".join([
+        "Your update paused to protect changes made to AI-Verse's own files on this computer.",
+        "Nothing was changed. Your notes, memories and projects are safe.",
+        "",
+        "To finish, tell your assistant: \"Help me finish my AI-Verse update.\"",
+        "It will look at each change with you, keep a copy, and finish the update.",
+        "",
+        "Details for your assistant:",
+        *_source_review_lines(source),
+    ])
+
+
+CODEX_APPROVAL_STEPS = (
+    "One thing to do if you use Codex:\n"
+    "AI-Verse has small background steps that load what it knows about you and save what it learns. "
+    "Codex calls them hooks. When they change, Codex switches them off until you approve them, "
+    "and it doesn't tell you, so here's how:\n"
+    "  1. In Codex, open Settings, then Hooks.\n"
+    "  2. Find the ones for this project that are waiting for approval and choose Trust.\n"
+    "  3. Start a new chat.\n"
+    "Until then AI-Verse still works in Codex, but it won't remember things there."
+)
+
+
+def _format_member_update(payload: dict[str, Any], notes: list[Any]) -> str:
+    """The update as a member reads it. Technical detail stays in --json."""
+    lines = ["Your AI-Verse is up to date.", "", "What's new:"]
+    for note in notes:
+        lines.extend(["", f"\u2022 {note['title']}"])
+        lines.extend(textwrap.wrap(note["detail"], width=66, initial_indent="  ", subsequent_indent="  "))
+    lines.extend(["", "Your projects, notes and settings were all kept safe."])
+    health = payload.get("health")
+    if isinstance(health, dict) and health.get("ok") is True:
+        lines.append("Everything was checked and is working.")
+    return "\n".join(lines)
 
 
 def format_core_update(payload: dict[str, Any]) -> Optional[str]:
@@ -131,6 +167,10 @@ def format_core_update(payload: dict[str, Any]) -> Optional[str]:
                     "Local material was preserved and health checks passed.")
         return f"AI-Verse is already up to date.\nCore: {target_text}"
 
+    notes = payload.get("whats_new")
+    if isinstance(notes, list) and notes:
+        return _format_member_update(payload, notes)
+
     lines = [
         "Core",
         f"{source_text} -> {target_text}",
@@ -161,3 +201,24 @@ def format_core_update(payload: dict[str, Any]) -> Optional[str]:
         ])
     lines.append("AI-Verse is up to date.")
     return "\n".join(lines)
+
+
+def format_package_refresh(refresh: Any, *, whats_new_shown: bool = False) -> Optional[str]:
+    """Plain words for members. This runs on every future update, so it names no feature."""
+    if not isinstance(refresh, dict):
+        return None
+    blocks = []
+    if refresh.get("refreshed") and not whats_new_shown:
+        blocks.append("Everything else you use with AI-Verse was updated too, so it's all ready to go.")
+    if refresh.get("codex_review_needed"):
+        blocks.append(CODEX_APPROVAL_STEPS)
+    problems = refresh.get("problems")
+    if problems:
+        details = "; ".join(f"{item.get('part')}: {item.get('reason')}" for item in problems)
+        report = f"AI-Verse update report | {refresh.get('release')} | {platform.system()} | {details}"
+        blocks.append(
+            "One small part couldn't update this time. Send this to Bogdan:\n\n"
+            f"{report}\n\n"
+            "Everything else is working, and it will try again next update."
+        )
+    return "\n\n".join(blocks) or None

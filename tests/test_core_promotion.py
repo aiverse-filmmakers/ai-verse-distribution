@@ -71,6 +71,7 @@ class CorePromotionTests(unittest.TestCase):
         candidate["id"] = candidate_id
         candidate["classification"] = "explicit-install-qualification-candidate"
         candidate["lineage"] = {"parent": CURRENT, "policy": "same-or-descendant"}
+        candidate["whats_new"] = [{"title": "Test change", "detail": "A plain description members read."}]
         candidate["promotion"] = {
             "default_channel": False,
             "automatic_update": False,
@@ -301,6 +302,7 @@ class CorePromotionTests(unittest.TestCase):
         self.assertEqual(promotions["release_sets"][0], original_promotions["release_sets"][0])
         release = next(item for item in promotions["release_sets"] if item["id"] == candidate_id)
         self.assertEqual(release["promotion"]["qualification_gate"], "whole-product-v1")
+        self.assertEqual(release["whats_new"][0]["title"], "Test change")
         self.assertEqual(release["promotion"]["mode"], "normal")
         self.assertEqual(release["promotion"]["system_sync"]["status"], "synchronized")
         self.assertEqual(
@@ -381,6 +383,17 @@ class CorePromotionTests(unittest.TestCase):
         )
         self.assertEqual(reconciled["status"], "reconciled")
         self.assertIn("repository_state_sha256", reconciled["reconciliation"])
+
+    def test_promotion_is_refused_without_whats_new_notes(self):
+        root, candidate_id, qualification_ref, registry, state, _ = self.fixture()
+        path = root / "src/aiverse_distribution/catalog/core_candidates.json"
+        overlay = json.loads(path.read_text())
+        for item in overlay["release_sets"]:
+            if item["id"] == candidate_id:
+                item.pop("whats_new")
+        path.write_text(json.dumps(overlay))
+        with self.assertRaisesRegex(Exception, "add a whats_new list"):
+            apply_core_promotion(root, candidate_id, qualification_ref, registry, state)
 
     def test_normal_promotion_is_blocked_while_prior_system_sync_debt_is_open(self):
         root, candidate_id, qualification_ref, registry, state, _ = self.fixture()

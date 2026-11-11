@@ -221,6 +221,166 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             self.assertEqual(receipt["last_optional_package_operation"]["action"], "install")
             self.assertEqual(receipt["last_optional_package_operation"]["manifest_sha256"], package.manifest_sha256)
 
+    def install_fixture(self, root, package, content=b"old"):
+        import hashlib
+        import json
+        directory = root / ".aiverse/extensions" / package.id
+        directory.mkdir(parents=True)
+        (directory / "install.py").write_bytes(content)
+        (directory / "install-receipt.json").write_text(
+            json.dumps({"files": {"install.py": hashlib.sha256(content).hexdigest()}})
+        )
+        return directory
+
+    def refresh(self, app, result=None, error=None):
+        with patch("aiverse_distribution.optional_packages.verify_optional_package_source"), patch(
+            "aiverse_distribution.experience_orchestrator.run_optional_package_owner",
+            return_value=result or {"installed": True, "state": "setup-required"}, side_effect=error,
+        ) as owner, patch.object(app, "_optional_package_runtime_options", return_value={}):
+            return app.refresh_installed_packages(), owner
+
+    def test_update_refreshes_a_package_the_member_already_has(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, state, package, root = make_app(Path(temporary))
+            self.install_fixture(root, package)
+            result, owner = self.refresh(app)
+            self.assertEqual(result, {"refreshed": [package.id], "problems": [], "release": "core-package-fixture", "codex_review_needed": False})
+            owner.assert_called_once()
+            self.assertIsNone(state.pending_effect())
+
+    def test_update_refreshes_when_new_release_adds_files(self):
+        from dataclasses import replace
+        with tempfile.TemporaryDirectory() as temporary:
+            app, _, package, root = make_app(Path(temporary))
+            self.install_fixture(root, package)
+            candidate = replace(package, files={**package.files, "chat_archive.py": "c" * 64})
+            app.catalog.optional_packages_for.return_value = (candidate,)
+            result, owner = self.refresh(app)
+            self.assertEqual(result["refreshed"], [package.id])
+            owner.assert_called_once()
+
+    def test_removed_owned_file_edits_and_new_file_collisions_are_preserved(self):
+        from dataclasses import replace
+        for scenario in ("removed-edit", "new-collision", "broken-receipt", "missing-owned"):
+            with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
+                app, _, package, root = make_app(Path(temporary))
+                directory = self.install_fixture(root, package)
+                candidate = replace(package, files={"chat_archive.py": "c" * 64})
+                app.catalog.optional_packages_for.return_value = (candidate,)
+                if scenario == "removed-edit":
+                    (directory / "install.py").write_bytes(b"personal edit")
+                elif scenario == "new-collision":
+                    (directory / "chat_archive.py").write_bytes(b"personal tool")
+                elif scenario == "broken-receipt":
+                    (directory / "install-receipt.json").write_text("{}")
+                else:
+                    (directory / "install.py").unlink()
+                result, owner = self.refresh(app)
+                self.assertTrue(result["problems"])
+                owner.assert_not_called()
+
+    def test_update_never_adds_a_package_the_member_does_not_have(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, _, package, _ = make_app(Path(temporary))
+            result, owner = self.refresh(app)
+            self.assertEqual(result, {"refreshed": [], "problems": [], "release": "core-package-fixture", "codex_review_needed": False})
+            owner.assert_not_called()
+
+    def test_update_leaves_a_locally_edited_package_alone(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, _, package, root = make_app(Path(temporary))
+            directory = self.install_fixture(root, package)
+            (directory / "install.py").write_bytes(b"edited by hand")
+            result, owner = self.refresh(app)
+            self.assertEqual(result["problems"], [{"part": package.id, "reason": "its files were edited on this computer"}])
+            owner.assert_not_called()
+
+    def test_failed_refresh_leaves_no_recovery_marker(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, state, package, root = make_app(Path(temporary))
+            self.install_fixture(root, package)
+            result, _ = self.refresh(app, error=ValueError(f"owner refused at {root}/secret"))
+            self.assertEqual(result["refreshed"], [])
+            self.assertEqual(result["problems"][0]["part"], package.id)
+            self.assertIn("owner refused", result["problems"][0]["reason"])
+            self.assertNotIn(str(root), result["problems"][0]["reason"])
+            self.assertIsNone(state.pending_effect())
+
+    def test_member_message_names_no_feature_and_carries_the_report(self):
+        from aiverse_distribution.update_output import format_package_refresh
+
+        done = format_package_refresh({"refreshed": ["x"], "problems": [], "release": "r"})
+        self.assertNotIn("memory", done.lower())
+        failed = format_package_refresh(
+            {"refreshed": [], "problems": [{"part": "x", "reason": "boom"}], "release": "r1"}
+        )
+        self.assertIn("Send this to Bogdan:", failed)
+        self.assertIn("r1", failed)
+        self.assertIn("x: boom", failed)
+        self.assertIn("it will try again next update", failed)
+
+    def test_codex_steps_appear_only_when_codex_hooks_changed(self):
+        from aiverse_distribution.update_output import format_package_refresh
+
+        with tempfile.TemporaryDirectory() as temporary:
+            app, _, package, root = make_app(Path(temporary))
+            self.install_fixture(root, package)
+            (root / ".codex").mkdir()
+            hooks = root / ".codex/hooks.json"
+            hooks.write_text("old")
+
+            def owner(*args, **kwargs):
+                hooks.write_text("new")
+                return {"installed": True, "state": "setup-required"}
+
+            with patch("aiverse_distribution.optional_packages.verify_optional_package_source"), patch(
+                "aiverse_distribution.experience_orchestrator.run_optional_package_owner", side_effect=owner
+            ), patch.object(app, "_optional_package_runtime_options", return_value={}):
+                result = app.refresh_installed_packages()
+            self.assertTrue(result["codex_review_needed"])
+            self.assertIn("Settings, then Hooks", format_package_refresh(result))
+        unchanged = format_package_refresh({"refreshed": ["x"], "problems": [], "codex_review_needed": False})
+        self.assertNotIn("Hooks", unchanged)
+
+    def test_whats_new_combines_skipped_releases_without_repeats(self):
+        from types import SimpleNamespace
+
+        with tempfile.TemporaryDirectory() as temporary:
+            app, _, _, _ = make_app(Path(temporary))
+            notes = {
+                "r1": [{"title": "A", "detail": "first"}],
+                "r2": [{"title": "A", "detail": "again"}, {"title": "B", "detail": "second"}],
+            }
+            app.catalog.get_release.side_effect = lambda release_id, require_released=True: SimpleNamespace(
+                raw={"whats_new": notes[release_id]}
+            )
+            found = app.whats_new({"to": "r2", "transition_path": [{"to": "r1"}, {"to": "r2"}]})
+            self.assertEqual([item["title"] for item in found], ["A", "B"])
+
+    def test_member_update_reads_plainly_when_notes_exist(self):
+        from aiverse_distribution.update_output import format_core_update
+
+        text = format_core_update({
+            "transition_kind": "update", "applied": True, "from": "a", "to": "b",
+            "changed_components": ["ai-verse-memory"], "health": {"ok": True},
+            "whats_new": [{"title": "Finds things more easily", "detail": "Ask in your own words."}],
+        })
+        self.assertIn("What's new:", text)
+        self.assertIn("Finds things more easily", text)
+        self.assertIn("Everything was checked and is working.", text)
+        self.assertNotIn("ai-verse-memory", text)
+
+    def test_paused_update_reads_plainly_and_keeps_details(self):
+        from aiverse_distribution.update_output import format_update_conflict
+
+        text = format_update_conflict({
+            "error": "CORE_LOCAL_SOURCE_REVIEW_REQUIRED",
+            "local_source": {"conflicts": [{"path": "scripts/x.py", "reason": "edited"}]},
+        })
+        self.assertTrue(text.startswith("Your update paused to protect changes"))
+        self.assertIn("Help me finish my AI-Verse update.", text)
+        self.assertIn("- scripts/x.py: edited", text)
+
     def test_failed_owner_action_keeps_exact_recovery_marker(self):
         with tempfile.TemporaryDirectory() as temporary:
             app, state, package, root = make_app(Path(temporary))
