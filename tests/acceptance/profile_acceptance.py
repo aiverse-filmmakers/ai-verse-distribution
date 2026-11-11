@@ -26,7 +26,7 @@ def default_update_mode(catalog, installed_release):
     if target == installed_release:
         return "current"
     try:
-        CoreTransitionContract(catalog).require_update(installed_release, target)
+        CoreTransitionContract(catalog).update_path(installed_release, target)
     except UnsupportedCoreTransition:
         return "unadmitted"
     return "admitted-forward"
