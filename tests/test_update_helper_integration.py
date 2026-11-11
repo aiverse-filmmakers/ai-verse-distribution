@@ -41,7 +41,7 @@ class UpdateHelperIntegrationTests(unittest.TestCase):
         app.whats_new = Mock(return_value=[])
         return app, package, directory, install
 
-    def invoke(self, app, arguments, install):
+    def invoke(self, app, arguments, install, runtime_options=None):
         output = io.StringIO()
         previous = cli.Orchestrator
         try:
@@ -50,7 +50,7 @@ class UpdateHelperIntegrationTests(unittest.TestCase):
                 side_effect=AssertionError("update bypassed the helper-aware orchestrator"),
             ), patch("aiverse_distribution.optional_packages.verify_optional_package_source"), patch(
                 "aiverse_distribution.experience_orchestrator.run_optional_package_owner", side_effect=install,
-            ) as owner, patch.object(app, "_optional_package_runtime_options", return_value={}):
+            ) as owner, patch.object(app, "_optional_package_runtime_options", return_value=runtime_options or {}):
                 with redirect_stdout(output):
                     code = entrypoint._local_main(arguments)
         finally:
@@ -124,6 +124,27 @@ class UpdateHelperIntegrationTests(unittest.TestCase):
             self.assertIn("One part still needs attention", output)
             self.assertNotIn("Everything was checked and is working", output)
             self.assertNotIn("all ready to go", output)
+
+    def test_unchanged_helper_code_rebinds_a_previous_core_runtime(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app, package, directory, install = self.fixture(Path(temporary))
+            install()
+            receipt = directory / "install-receipt.json"
+            receipt.write_text(json.dumps({"files": package.files, "python": "previous-python"}))
+            (directory / "config.json").write_text(json.dumps({"enabled": False, "chat_history": "off"}))
+
+            def rebind(*args, **kwargs):
+                install(*args, **kwargs)
+                receipt.write_text(json.dumps({"files": package.files, "python": "current-python"}))
+                return {"installed": True, "state": "setup-required"}
+
+            code, output, owner = self.invoke(app, ["update", "--json"], rebind,
+                                             runtime_options={"runtime_python": "current-python"})
+            self.assertEqual(code, 0)
+            owner.assert_called_once()
+            self.assertEqual(json.loads(output)["package_refresh"]["refreshed"], [package.id])
+            self.assertEqual(json.loads((directory / "config.json").read_text()),
+                             {"enabled": False, "chat_history": "off"})
 
 
 if __name__ == "__main__":
