@@ -530,20 +530,43 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
         import hashlib
         import json
 
+        from .optional_packages import _safe_relative_path
+
         directory = root / ".aiverse" / "extensions" / package.id
-        try:
-            recorded = json.loads((directory / "install-receipt.json").read_text(encoding="utf-8"))["files"]
-            installed = {
-                name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
-                for name in package.files
-            }
-        except (OSError, ValueError, KeyError, TypeError):
+        if not directory.exists() and not directory.is_symlink():
             return "absent"
-        if installed == dict(package.files):
-            return "current"
-        if any(recorded.get(name) != value for name, value in installed.items()):
+
+        def owned_file(name: str) -> Path:
+            relative = _safe_relative_path(name, label="installed package receipt")
+            path = directory / relative
+            cursor = root
+            for part in path.relative_to(root).parts:
+                cursor = cursor / part
+                if cursor.is_symlink():
+                    raise ValueError("package contains a symbolic link")
+            return path
+
+        try:
+            receipt = json.loads(owned_file("install-receipt.json").read_text(encoding="utf-8"))
+            recorded = receipt["files"]
+            if not isinstance(recorded, dict) or not recorded:
+                return "locally-changed"
+            # Verify ALL previously installed files, including ones removed by
+            # this release. New files are expected to be absent in an old build.
+            installed = {
+                name: hashlib.sha256(owned_file(name).read_bytes()).hexdigest()
+                for name in recorded
+            }
+            if installed != recorded:
+                return "locally-changed"
+            for name in set(package.files) - set(recorded):
+                path = owned_file(name)
+                if path.exists() or path.is_symlink():
+                    return "locally-changed"  # Never adopt an unowned collision.
+        except (OSError, ValueError, KeyError, TypeError):
+            # Existing but damaged/unrecognized is never silently "absent".
             return "locally-changed"
-        return "outdated"
+        return "current" if installed == dict(package.files) else "outdated"
 
     def refresh_installed_packages(self) -> Dict[str, Any]:
         """Bring packages the member already has up to the installed release.

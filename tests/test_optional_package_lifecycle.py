@@ -248,6 +248,37 @@ class OptionalPackageLifecycleTests(unittest.TestCase):
             owner.assert_called_once()
             self.assertIsNone(state.pending_effect())
 
+    def test_update_refreshes_when_new_release_adds_files(self):
+        from dataclasses import replace
+        with tempfile.TemporaryDirectory() as temporary:
+            app, _, package, root = make_app(Path(temporary))
+            self.install_fixture(root, package)
+            candidate = replace(package, files={**package.files, "chat_archive.py": "c" * 64})
+            app.catalog.optional_packages_for.return_value = (candidate,)
+            result, owner = self.refresh(app)
+            self.assertEqual(result["refreshed"], [package.id])
+            owner.assert_called_once()
+
+    def test_removed_owned_file_edits_and_new_file_collisions_are_preserved(self):
+        from dataclasses import replace
+        for scenario in ("removed-edit", "new-collision", "broken-receipt", "missing-owned"):
+            with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
+                app, _, package, root = make_app(Path(temporary))
+                directory = self.install_fixture(root, package)
+                candidate = replace(package, files={"chat_archive.py": "c" * 64})
+                app.catalog.optional_packages_for.return_value = (candidate,)
+                if scenario == "removed-edit":
+                    (directory / "install.py").write_bytes(b"personal edit")
+                elif scenario == "new-collision":
+                    (directory / "chat_archive.py").write_bytes(b"personal tool")
+                elif scenario == "broken-receipt":
+                    (directory / "install-receipt.json").write_text("{}")
+                else:
+                    (directory / "install.py").unlink()
+                result, owner = self.refresh(app)
+                self.assertTrue(result["problems"])
+                owner.assert_not_called()
+
     def test_update_never_adds_a_package_the_member_does_not_have(self):
         with tempfile.TemporaryDirectory() as temporary:
             app, _, package, _ = make_app(Path(temporary))
