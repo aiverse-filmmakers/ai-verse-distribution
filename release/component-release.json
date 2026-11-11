@@ -2,7 +2,7 @@
   "schema_version": "ai-verse.component-release/v1",
   "component_id": "ai-verse-distribution",
   "version": "0.1.0b1",
-  "revision": "1e05ea2c491a8fba85b9ce1b1a1e65d4b53f11f5",
+  "revision": "87fad278e29fae66ebcfbf8dc10bd93e4788d5f5",
   "release_status": "accepted",
   "package": {
     "repository": "aiverse-filmmakers/ai-verse-distribution",
@@ -10,7 +10,11 @@
     "package_name": "ai-verse-distribution",
     "integrity": null
   },
-  "supported_platforms": ["linux", "macos", "windows"],
+  "supported_platforms": [
+    "linux",
+    "macos",
+    "windows"
+  ],
   "runtime_requirements": {
     "python": ">=3.11",
     "node": ">=22",
@@ -49,20 +53,24 @@
     "exposes_remote_listener": false
   },
   "evidence": {
-    "ci": [{
-      "kind": "owner-native-ci",
-      "status": "pass",
-      "revision": "1e05ea2c491a8fba85b9ce1b1a1e65d4b53f11f5",
-      "run_id": "39209620873",
-      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/39209620873"
-    }],
-    "acceptance": [{
-      "kind": "owner-native-acceptance",
-      "status": "pass",
-      "revision": "1e05ea2c491a8fba85b9ce1b1a1e65d4b53f11f5",
-      "run_id": "39209620807",
-      "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/39209620807"
-    }]
+    "ci": [
+      {
+        "kind": "owner-native-ci",
+        "status": "pass",
+        "revision": "87fad278e29fae66ebcfbf8dc10bd93e4788d5f5",
+        "run_id": "43011015036",
+        "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43011015036"
+      }
+    ],
+    "acceptance": [
+      {
+        "kind": "owner-native-acceptance",
+        "status": "pass",
+        "revision": "87fad278e29fae66ebcfbf8dc10bd93e4788d5f5",
+        "run_id": "43011014903",
+        "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43011014903"
+      }
+    ]
   },
   "semantics": {
     "release_metadata_only": true,
