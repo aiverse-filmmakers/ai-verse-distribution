@@ -148,7 +148,14 @@ def _local_main(values: list[str]) -> int:
         return _experience_main("setup", values[1:])
 
     # Component-scoped doctor remains an expert/internal compatibility surface.
-    cli.Orchestrator = RecoveryOrchestrator
+    # Updates must retain the optional-package refresh and member release notes.
+    # RecoveryOrchestrator alone completes Core but silently skips both steps.
+    if values and values[0] == "update":
+        from .experience_orchestrator import ExperienceOrchestrator
+
+        cli.Orchestrator = ExperienceOrchestrator
+    else:
+        cli.Orchestrator = RecoveryOrchestrator
     return cli.main(values)
 
 

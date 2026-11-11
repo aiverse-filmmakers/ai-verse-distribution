@@ -662,6 +662,8 @@ class ExperienceOrchestrator(RecoveryOrchestrator):
             run_optional_package_owner(
                 package, plan["owner_source"], plan["root"], "install", python=sys.executable, **options
             )
+            if self._installed_package_state(package, plan["root"]) != "current":
+                raise DistributionError("Installed helper files still do not match the admitted update")
             outcome, failure = "REFRESHED", None
         except Exception as exc:  # The owner's install restores its own files when it fails.
             outcome, failure = "REFRESH_FAILED", self._problem_text(exc)
