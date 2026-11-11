@@ -252,5 +252,7 @@ class CandidateLifecycleMappingTests(unittest.TestCase):
             for component in candidate["components"]:
                 if component["id"] == "ai-verse-os":
                     self.assertTrue(adapters._is_public_beta_os(component["revision"]), candidate["id"])
+                if component["id"] == "ai-verse-memory":
+                    self.assertIn(component["revision"], adapters.SUPPORTED_MEMORY_REVISIONS, candidate["id"])
                 if component["id"] == "ai-verse-skills":
                     self.assertIn(component["revision"], adapters.SUPPORTED_SKILLS_REVISIONS, candidate["id"])
