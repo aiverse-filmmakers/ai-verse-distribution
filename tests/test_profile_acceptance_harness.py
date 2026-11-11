@@ -16,10 +16,11 @@ class ProfileAcceptanceModeTests(unittest.TestCase):
         self.assertEqual(profile.default_update_mode(Catalog(), "core-os-0.3.12-candidate-2026-11-04"), "admitted-forward")
 
     def test_current_release_uses_noop_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-os-0.3.12-candidate-2026-11-04"), "admitted-forward")
+        catalog = Catalog()
+        self.assertEqual(profile.default_update_mode(catalog, catalog.resolve("core").id), "current")
 
     def test_accepted_parent_uses_forward_plan_and_self_update_check(self):
-        self.assertEqual(profile.default_update_mode(Catalog(), "core-os-0.3.12-candidate-2026-11-04"), "admitted-forward")
+        self.assertEqual(profile.default_update_mode(Catalog(), "core-os-0.3.13-candidate-2026-11-04"), "admitted-forward")
 
     def test_explicit_only_candidate_keeps_blocked_update_check(self):
         self.assertEqual(profile.default_update_mode(Catalog(), "core-local-upgrades-candidate-2026-10-19-v5"), "unadmitted")
