@@ -17,7 +17,7 @@ class CoreFirstRunReleaseTests(unittest.TestCase):
         self.release = self.catalog.get_release(RELEASE)
 
     def test_u36_release_remains_historical_in_forward_core_lineage(self):
-        promoted = "core-os-0.3.15-candidate-2026-11-11-v2"
+        promoted = "core-os-0.3.16-candidate-2026-11-14-v2"
         self.assertEqual(self.catalog.resolve("core").id, promoted)
         self.assertEqual(self.catalog.core_promotions["current_release"], promoted)
         candidate_id = "core-local-upgrades-candidate-2026-10-19"

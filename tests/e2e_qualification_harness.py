@@ -18,7 +18,7 @@ from test_whole_product_qualification import _valid_preservation, _valid_compose
 SOURCE = Path(__file__).resolve().parents[1]
 SYSTEM = "aiverse-filmmakers/AI-Verse-System"
 DISTRIBUTION = "aiverse-filmmakers/ai-verse-distribution"
-CURRENT = "core-os-0.3.15-candidate-2026-11-11-v2"
+CURRENT = "core-os-0.3.16-candidate-2026-11-14-v2"
 HISTORICAL = "core-first-run-rc1-2026-10-12"
 CANDIDATE = "core-distribution-origin-fixture"
 
