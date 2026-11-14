@@ -53,8 +53,16 @@ class ProjectRebindTests(unittest.TestCase):
         (copy / ".aiverse" / "os").mkdir(parents=True)
         (copy / ".aiverse" / "os" / "install-id").write_text(self.stack.name)
         with self.assertRaisesRegex(DistributionError, "copy"):
-            rebind_project(ProjectLayout.resolve(copy))
+            rebind_project(ProjectLayout(copy.resolve(), self.stack))
         self.assertEqual(json.loads((self.stack / "project.json").read_text())["project"], str(self.old))
+
+    def test_a_copy_with_the_original_id_gets_its_own_program_folder(self):
+        copy = self.base / "Copy"
+        make_os(copy)
+        (copy / ".aiverse" / "os").mkdir(parents=True)
+        (copy / ".aiverse" / "os" / "install-id").write_text(self.stack.name)
+        self.assertNotEqual(ProjectLayout.resolve(copy).stack, self.stack)
+        self.assertEqual(ProjectLayout.resolve(self.old).stack, self.stack)
 
     def test_without_an_id_file_the_old_path_rule_still_applies(self):
         (self.old / ".aiverse" / "os" / "install-id").unlink()

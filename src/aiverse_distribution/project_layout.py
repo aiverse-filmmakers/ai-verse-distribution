@@ -15,6 +15,18 @@ from typing import Any
 from .release_catalog import DistributionError
 
 
+def _belongs_to_another_live_os(stack: Path, project: Path) -> bool:
+    """A copied OS folder carries the original's ID; it must never share the original's program folder."""
+    try:
+        owner = json.loads((stack / "project.json").read_text(encoding="utf-8")).get("project")
+    except (OSError, ValueError, AttributeError):
+        return False
+    if not isinstance(owner, str) or not owner or Path(owner) == project:
+        return False
+    original = Path(owner)
+    return (original / "AI-VERSE.yaml").is_file() and (original / "system" / "capabilities").is_dir()
+
+
 @dataclass(frozen=True)
 class ProjectLayout:
     project: Path
@@ -32,7 +44,8 @@ class ProjectLayout:
             recorded = id_file.read_text(encoding="utf-8").strip() if id_file.is_file() and not id_file.is_symlink() else ""
         except OSError:
             recorded = ""
-        if len(recorded) == 16 and all(ch in "0123456789abcdef" for ch in recorded):
+        if len(recorded) == 16 and all(ch in "0123456789abcdef" for ch in recorded) \
+                and not _belongs_to_another_live_os(project.parent / ".ai-verse-tools" / recorded, project):
             identity = recorded
         stack = (stack or project.parent / ".ai-verse-tools" / identity).expanduser().resolve()
         if project == stack or project in stack.parents or stack in project.parents:
