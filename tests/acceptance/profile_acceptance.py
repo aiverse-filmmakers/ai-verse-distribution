@@ -170,7 +170,9 @@ def prove_skills(install: dict) -> str:
     return str(generation_id)
 
 
-CHAT_SKILL_PROBES = ("ai-realism", "copywriting", "action-items")
+# Shipped in every Skills profile (the update acceptance installs "universal",
+# members get "full"), so the probe proves listing without assuming a profile.
+CHAT_SKILL_PROBES = ("action-items", "weekly-review-planning", "change-review")
 
 
 def prove_chat_skills(root: Path) -> dict:
