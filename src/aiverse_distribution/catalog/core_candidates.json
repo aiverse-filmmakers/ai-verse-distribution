@@ -663,6 +663,254 @@
           "detail": "A normal update also refreshes helpers you already use, preserves their settings and leaves local edits alone. AI-Verse explains when another step is needed."
         }
       ]
+    },
+    {
+      "id": "core-os-0.3.16-candidate-2026-11-14",
+      "profile": "core",
+      "status": "released",
+      "created_at": "2026-11-14",
+      "classification": "explicit-install-qualification-candidate",
+      "promotion": {
+        "default_channel": false,
+        "automatic_update": false,
+        "cross_release_transition_admitted": false
+      },
+      "runtime_requirements": {
+        "git_lfs": true
+      },
+      "components": [
+        {
+          "id": "ai-verse-os",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+          "revision": "2060fe7764cfe0a7483737840c48ca1ae4520e4c",
+          "install_order": 10
+        },
+        {
+          "id": "ai-verse-brain",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+          "revision": "14ded0120c11362024864d50d47f1996e66530e8",
+          "install_order": 20
+        },
+        {
+          "id": "ai-verse-memory",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+          "revision": "5a853e31628837adaf7135f46f75f24ae748bd46",
+          "install_order": 30
+        },
+        {
+          "id": "ai-verse-skills",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+          "revision": "4664880a852e07649d7e38c5e40b262eac316fac",
+          "install_order": 40
+        },
+        {
+          "id": "ai-verse-data",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+          "revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
+          "install_order": 50,
+          "dependency_lock": {
+            "scheme": "distribution-companion-npm-lock-v1",
+            "manifest": "ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/lock.json",
+            "manifest_sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
+          }
+        }
+      ],
+      "optional_packages": [
+        {
+          "id": "ai-verse-codex-learning",
+          "owner_component": "ai-verse-os",
+          "source_revision": "2060fe7764cfe0a7483737840c48ca1ae4520e4c",
+          "source_path": "system/extensions/packages/ai-verse-codex-learning",
+          "version": "0.3.0-local",
+          "manifest_sha256": "26748aa4b08eca4afbeff169fe6e1c724b1b9b0bfae230851ae9571d483358be",
+          "files": {
+            "bridge.py": "a0d1a2851e2195eb5b5824d1bc683d8fb7719b4a68614441df18590ad4e241e0",
+            "lifecycle.py": "f3c4bf7096b780aadfa50992c8db19f2828b9ce71c840e658196476982974281",
+            "install.py": "3b7546e99e8c52cb88309c20ae33e04e0d88fdf32d3d7257ddac7b4abff21e8b",
+            "maintenance.py": "7239b9f3b686edd9c3521f9224de6e5fe87b4fb9bd29248d41252b5a4668d295",
+            "inspect_runtime.py": "1b5810e3e323e0432fb1f9f7db8fe6b31e3c16c3fc11dcd9a6edc0d2ac357538",
+            "INSTRUCTIONS.md": "b6fbf8b09b6bedf4078948ce43c4b539d8e52e4bacc0cb994c2a54ba9be00407",
+            "README.md": "014ca782119fca0f1db1f9067eac06ae09dec4912965f03df27bc7c02b897323",
+            "REVIEW-SCHEMA.md": "dab55c2e014be5227d0982d20b04bc3891cff7234e91303acbe0d80579f804ca",
+            "SETUP.md": "453eec67ef63afb20d39086af0ef2aeec3cb8dd46a6c245f9f5512ffc74666f5",
+            "intent.py": "f418171e744ce5a8a288a2683cc6c21c319aa478ba9cbe5a2e43657440de5e49",
+            "brain_read.py": "be53f0eebbb312570079d474e8b8156375ede0c68ee2ca0301378b2a2a8cead1",
+            "INTENT.md": "661cdd1983800d8eb389380d3c4943b56c5f25adff0a7ffde9a8068fa0d4702d",
+            "reflect.py": "15d8199874403a71ca785e4b413965328b68f8c8187d88c2ca66ed0fdba7abf0",
+            "claude_transcript.py": "d41155882c3399619977563cec302b62c4fcf99d09913f29612bd6bd26727695",
+            "chat_archive.py": "3aba0eaa173206a914366f97c50326b9048e3aa908a5c77f443aa8ddb52d9566",
+            "claude_capture.py": "a8d49e018e590800037945f203ed2c0a75baf445e47f5b60a4ab4cc8dfb8d0f2",
+            "prospective_capture.py": "9dc982effa7e5c30049ab15f15aacb00499191cfbefc673bc219dfbf700e2e77"
+          },
+          "qualified_platforms": [
+            "linux",
+            "macos",
+            "windows"
+          ],
+          "host_api": {
+            "codex_hooks": "command-v1"
+          }
+        }
+      ],
+      "authority": {
+        "grants_permissions": false,
+        "transfers_brain_strategy": false,
+        "initializes_all_workspaces": false
+      },
+      "lineage": {
+        "parent": "core-os-0.3.15-candidate-2026-11-11-v2",
+        "policy": "same-or-descendant"
+      },
+      "whats_new": [
+        {
+          "title": "A cleaner skills library",
+          "detail": "59 well described skills replace 120. Overlapping, broken and rarely useful ones were removed or merged, and every skill now ships with AI-Verse instead of being downloaded from elsewhere."
+        },
+        {
+          "title": "Your chats can find every skill",
+          "detail": "Claude and Codex now see every library skill in your OS folder, so they pick the right one when your request fits, without you naming it."
+        },
+        {
+          "title": "New filmmaking skills",
+          "detail": "AI Realism writes finished Seedance prompts and Higgsfield Acting writes performances that feel alive. They work with the director, video director and still image skills as one chain."
+        },
+        {
+          "title": "Skill notes per project",
+          "detail": "Each project can keep its own notes for a skill, such as its brand and offer for marketing. Marketing skills read the current project's notes."
+        },
+        {
+          "title": "Make your own skills",
+          "detail": "Use /skill to make a new skill, bring one in or see how a skill is set up. /learn now follows the same standard."
+        },
+        {
+          "title": "Old skill names still work",
+          "detail": "Retired skill names point to the skill that replaced them."
+        }
+      ]
+    },
+    {
+      "id": "core-os-0.3.16-candidate-2026-11-14-v2",
+      "profile": "core",
+      "status": "released",
+      "created_at": "2026-11-14",
+      "classification": "explicit-install-qualification-candidate",
+      "promotion": {
+        "default_channel": false,
+        "automatic_update": false,
+        "cross_release_transition_admitted": false
+      },
+      "runtime_requirements": {
+        "git_lfs": true
+      },
+      "components": [
+        {
+          "id": "ai-verse-os",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-OS.git",
+          "revision": "2060fe7764cfe0a7483737840c48ca1ae4520e4c",
+          "install_order": 10
+        },
+        {
+          "id": "ai-verse-brain",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Brain.git",
+          "revision": "14ded0120c11362024864d50d47f1996e66530e8",
+          "install_order": 20
+        },
+        {
+          "id": "ai-verse-memory",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Memory.git",
+          "revision": "5a853e31628837adaf7135f46f75f24ae748bd46",
+          "install_order": 30
+        },
+        {
+          "id": "ai-verse-skills",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Skills.git",
+          "revision": "4f2cef7785215eb6d62ce4edd02dfa84b00052c5",
+          "install_order": 40
+        },
+        {
+          "id": "ai-verse-data",
+          "repository": "https://github.com/aiverse-filmmakers/AI-Verse-Data.git",
+          "revision": "f8978f8f7a1bc94edecddc2662112233289159a3",
+          "install_order": 50,
+          "dependency_lock": {
+            "scheme": "distribution-companion-npm-lock-v1",
+            "manifest": "ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/lock.json",
+            "manifest_sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
+          }
+        }
+      ],
+      "optional_packages": [
+        {
+          "id": "ai-verse-codex-learning",
+          "owner_component": "ai-verse-os",
+          "source_revision": "2060fe7764cfe0a7483737840c48ca1ae4520e4c",
+          "source_path": "system/extensions/packages/ai-verse-codex-learning",
+          "version": "0.3.0-local",
+          "manifest_sha256": "26748aa4b08eca4afbeff169fe6e1c724b1b9b0bfae230851ae9571d483358be",
+          "files": {
+            "bridge.py": "a0d1a2851e2195eb5b5824d1bc683d8fb7719b4a68614441df18590ad4e241e0",
+            "lifecycle.py": "f3c4bf7096b780aadfa50992c8db19f2828b9ce71c840e658196476982974281",
+            "install.py": "3b7546e99e8c52cb88309c20ae33e04e0d88fdf32d3d7257ddac7b4abff21e8b",
+            "maintenance.py": "7239b9f3b686edd9c3521f9224de6e5fe87b4fb9bd29248d41252b5a4668d295",
+            "inspect_runtime.py": "1b5810e3e323e0432fb1f9f7db8fe6b31e3c16c3fc11dcd9a6edc0d2ac357538",
+            "INSTRUCTIONS.md": "b6fbf8b09b6bedf4078948ce43c4b539d8e52e4bacc0cb994c2a54ba9be00407",
+            "README.md": "014ca782119fca0f1db1f9067eac06ae09dec4912965f03df27bc7c02b897323",
+            "REVIEW-SCHEMA.md": "dab55c2e014be5227d0982d20b04bc3891cff7234e91303acbe0d80579f804ca",
+            "SETUP.md": "453eec67ef63afb20d39086af0ef2aeec3cb8dd46a6c245f9f5512ffc74666f5",
+            "intent.py": "f418171e744ce5a8a288a2683cc6c21c319aa478ba9cbe5a2e43657440de5e49",
+            "brain_read.py": "be53f0eebbb312570079d474e8b8156375ede0c68ee2ca0301378b2a2a8cead1",
+            "INTENT.md": "661cdd1983800d8eb389380d3c4943b56c5f25adff0a7ffde9a8068fa0d4702d",
+            "reflect.py": "15d8199874403a71ca785e4b413965328b68f8c8187d88c2ca66ed0fdba7abf0",
+            "claude_transcript.py": "d41155882c3399619977563cec302b62c4fcf99d09913f29612bd6bd26727695",
+            "chat_archive.py": "3aba0eaa173206a914366f97c50326b9048e3aa908a5c77f443aa8ddb52d9566",
+            "claude_capture.py": "a8d49e018e590800037945f203ed2c0a75baf445e47f5b60a4ab4cc8dfb8d0f2",
+            "prospective_capture.py": "9dc982effa7e5c30049ab15f15aacb00499191cfbefc673bc219dfbf700e2e77"
+          },
+          "qualified_platforms": [
+            "linux",
+            "macos",
+            "windows"
+          ],
+          "host_api": {
+            "codex_hooks": "command-v1"
+          }
+        }
+      ],
+      "authority": {
+        "grants_permissions": false,
+        "transfers_brain_strategy": false,
+        "initializes_all_workspaces": false
+      },
+      "lineage": {
+        "parent": "core-os-0.3.15-candidate-2026-11-11-v2",
+        "policy": "same-or-descendant"
+      },
+      "whats_new": [
+        {
+          "title": "A cleaner skills library",
+          "detail": "59 well described skills replace 120. Overlapping, broken and rarely useful ones were removed or merged, and every skill now ships with AI-Verse instead of being downloaded from elsewhere."
+        },
+        {
+          "title": "Your chats can find every skill",
+          "detail": "Claude and Codex now see every library skill in your OS folder, so they pick the right one when your request fits, without you naming it."
+        },
+        {
+          "title": "New filmmaking skills",
+          "detail": "AI Realism writes finished Seedance prompts and Higgsfield Acting writes performances that feel alive. They work with the director, video director and still image skills as one chain."
+        },
+        {
+          "title": "Skill notes per project",
+          "detail": "Each project can keep its own notes for a skill, such as its brand and offer for marketing. Marketing skills read the current project's notes."
+        },
+        {
+          "title": "Make your own skills",
+          "detail": "Use /skill to make a new skill, bring one in or see how a skill is set up. /learn now follows the same standard."
+        },
+        {
+          "title": "Old skill names still work",
+          "detail": "Retired skill names point to the skill that replaced them."
+        }
+      ]
     }
   ],
   "compatibility": {
@@ -800,6 +1048,46 @@
       "rollback_to": [
         "core-os-0.3.15-candidate-2026-11-11"
       ]
+    },
+    "core-os-0.3.16-candidate-2026-11-14": {
+      "profile": "core",
+      "status": "released",
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "python_min": "3.11",
+      "node_min": "22.23.3",
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "update_from": [
+        "core-os-0.3.15-candidate-2026-11-11-v2",
+        "core-os-0.3.16-candidate-2026-11-14"
+      ],
+      "rollback_to": [
+        "core-os-0.3.16-candidate-2026-11-14"
+      ]
+    },
+    "core-os-0.3.16-candidate-2026-11-14-v2": {
+      "profile": "core",
+      "status": "released",
+      "platforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "python_min": "3.11",
+      "node_min": "22.23.3",
+      "state_rule": "owner-preserved",
+      "rollback_rule": "software-only-owner-state-preserved",
+      "update_from": [
+        "core-os-0.3.15-candidate-2026-11-11-v2",
+        "core-os-0.3.16-candidate-2026-11-14-v2"
+      ],
+      "rollback_to": [
+        "core-os-0.3.16-candidate-2026-11-14-v2"
+      ]
     }
   },
   "candidate_evidence": {
@@ -830,6 +1118,14 @@
     "core-os-0.3.15-candidate-2026-11-11": {
       "path": "qualification/core-os-0.3.15-candidate-2026-11-11/candidate-evidence.json",
       "sha256": "e4f67ad8f5d14df6bca9c251b44062ddc5518ebf1399be9130d8f82d73881b12"
+    },
+    "core-os-0.3.16-candidate-2026-11-14": {
+      "path": "qualification/core-os-0.3.16-candidate-2026-11-14/candidate-evidence.json",
+      "sha256": "fa8b75a4df493b621b6d58c0fe60fe5664b154f84ee7c3b18fee96bd5fd453d3"
+    },
+    "core-os-0.3.16-candidate-2026-11-14-v2": {
+      "path": "qualification/core-os-0.3.16-candidate-2026-11-14-v2/candidate-evidence.json",
+      "sha256": "24d7a93b97406f20f72b304d3a711d36fff89d07eca6497ee8ad3afa7e4a456d"
     }
   }
 }
