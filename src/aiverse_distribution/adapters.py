@@ -167,6 +167,35 @@ def _skills(source: Path, *args: str) -> List[str]:
 
 
 
+CHAT_SKILL_FOLDERS = (("claude", ".claude/skills"), ("codex", ".agents/skills"))
+
+
+def _skills_can_list_for_chats(source: Path) -> bool:
+    """True when this Skills source can keep chat folders in step (adapt --sync)."""
+    impl = source / "installer" / "aiverse_skills_v3.py"
+    try:
+        return '"--sync"' in impl.read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+
+def list_skills_for_chats(source: Path, root: Path) -> List[CommandResult]:
+    """List every library skill in this OS folder's Claude and Codex skill folders.
+
+    Claude and Codex only pick a skill by themselves when it sits in a folder they
+    read at the start of a chat. The Skills owner copies its active generation,
+    replaces only what it listed before, removes retired skills and leaves every
+    other folder (including OS built in capabilities) untouched.
+    """
+    if not _skills_can_list_for_chats(source):
+        return []
+    results: List[CommandResult] = []
+    for runtime, rel in CHAT_SKILL_FOLDERS:
+        target = Path(root) / rel
+        results.append(run(_skills(source, "adapt", "--runtime", runtime, "--target", str(target), "--sync"), cwd=source))
+    return results
+
+
 def _gateway(source: Path, *args: str) -> List[str]:
     return [_node(), str(source / "bin" / "aiverse-gateway.mjs"), *args]
 
@@ -308,6 +337,7 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
             results.append(run(_skills(source, "setup", "--json"), cwd=source))
             from .member_skills import configure_member_skills
             results.extend(configure_member_skills(root, source, _skills(source), _skills(source, "status", "--json")))
+            results.extend(list_skills_for_chats(source, root))
             return results
         # The frozen Core Skills generation predates the later explicit setup verb.
         # Read-only owner doctor/readiness is the safe setup verification for this exact artifact.
@@ -548,8 +578,11 @@ def owner_update(component_id: str, *, root: Path, source: Path, revision: str, 
         ])
     if component_id == "ai-verse-skills":
         if revision in SUPPORTED_SKILLS_REVISIONS:
-            return run(_skills(source, "update", "--json"), cwd=source)
-        return run(_skills(source, "update"), cwd=source)
+            result = run(_skills(source, "update", "--json"), cwd=source)
+        else:
+            result = run(_skills(source, "update"), cwd=source)
+        list_skills_for_chats(source, root)
+        return result
     if component_id == "ai-verse-data":
         return run([
             _node(), str(source / "dist" / "src" / "cli.js"),
