@@ -21,8 +21,9 @@ def verify_member_library(root: Path, *, fresh: bool):
     if not config.get("configured"):
         raise RuntimeError("public lifecycle did not establish provider configuration")
     managed, personal = Path(config["skillsRoot"]), Path(config["localSkillsRoot"])
-    if fresh and personal != managed.parent / "member-skills":
-        raise RuntimeError("fresh installation did not use its private sibling member library")
+    expected_fresh = (root / "my-skills").resolve() if (root / "scripts/sync-my-skills.mjs").is_file() else managed.parent / "member-skills"
+    if fresh and personal != expected_fresh:
+        raise RuntimeError(f"fresh installation did not use its expected member library {expected_fresh}: {personal}")
     entrypoint = Path(config["skillsEntrypoint"])
     owner = [sys.executable, entrypoint, "--root", managed, "library", "--library-root", personal]
     cli = ["node", root / "scripts/capability-resolver-cli.mjs", "--root", root]

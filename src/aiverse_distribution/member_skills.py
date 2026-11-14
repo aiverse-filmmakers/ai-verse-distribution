@@ -32,6 +32,9 @@ def configure_member_skills(root: Path, source: Path, skills_command, status_com
     elif (root / ".aiverse/os/setup.json").exists():
         # Preserve the prior canonical reader default; do not move old skills.
         personal = Path(os.environ.get("AI_VERSE_LOCAL_SKILLS_ROOT") or Path.home() / ".aiverse/local-skills").expanduser().resolve()
+    elif (root / "scripts/sync-my-skills.mjs").is_file():
+        # New installs of an OS that lists "My skills" keep them in a visible folder inside the OS folder.
+        personal = (root / "my-skills").resolve()
     else:
         personal = managed.parent / "member-skills"
     payload = {"operation": "plan", "skills_root": str(managed.resolve()), "local_skills_root": str(personal),
