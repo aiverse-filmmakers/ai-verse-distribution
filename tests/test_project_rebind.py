@@ -18,7 +18,7 @@ class ProjectRebindTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name).resolve()
-        self.old = self.base / "AI-Verse OS | Mine"
+        self.old = self.base / "AI-Verse OS Mine"
         make_os(self.old)
         layout = ProjectLayout.resolve(self.old)
         self.stack = layout.stack
@@ -33,7 +33,7 @@ class ProjectRebindTests(unittest.TestCase):
         (self.stack / "run.py").write_text(f"PROJECT = {str(self.old)!r}\n")
 
     def test_renamed_folder_finds_its_program_folder_and_is_rebound(self):
-        new = self.base / "AI-Verse OS | Renamed"
+        new = self.base / "AI-Verse OS Renamed"
         self.old.rename(new)
         layout = ProjectLayout.resolve(new)
         self.assertEqual(layout.stack, self.stack, "the permanent ID keeps the same program folder")
