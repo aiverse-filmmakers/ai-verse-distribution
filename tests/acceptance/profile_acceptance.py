@@ -170,6 +170,25 @@ def prove_skills(install: dict) -> str:
     return str(generation_id)
 
 
+CHAT_SKILL_PROBES = ("ai-realism", "copywriting", "action-items")
+
+
+def prove_chat_skills(root: Path) -> dict:
+    """Claude and Codex must find library skills in this OS folder, beside the OS built ins."""
+    counts = {}
+    for rel in (".claude/skills", ".agents/skills"):
+        folder = Path(root) / rel
+        for skill in CHAT_SKILL_PROBES:
+            if not (folder / skill / "SKILL.md").is_file():
+                raise RuntimeError(f"library skill {skill} is not listed for chats in {folder}")
+        if not (folder / "learn" / "SKILL.md").is_file():
+            raise RuntimeError(f"OS built in capability learn is missing from {folder}")
+        if not (folder / ".aiverse-adapter.json").is_file():
+            raise RuntimeError(f"chat skill listing manifest is missing from {folder}")
+        counts[rel] = sum(1 for p in folder.iterdir() if (p / "SKILL.md").is_file())
+    return counts
+
+
 def brain_onboarding_payload(onboard_result: dict) -> dict:
     brain = onboard_result.get("brain")
     if not isinstance(brain, dict):
@@ -340,6 +359,8 @@ def main() -> int:
 
     prove_memory(root)
     initial_skills_generation = prove_skills(install)
+    if os.environ.get("AI_VERSE_ACCEPTANCE_CHAT_SKILLS") == "1":
+        print(json.dumps({"chat_skills": prove_chat_skills(root)}))
     if os.environ.get("AI_VERSE_ACCEPTANCE_TOOL_PLACEMENT") == "1":
         from personal_tool_acceptance import verify_tool_placement
         print(json.dumps({"personal_tool_placement": verify_tool_placement(root)}))

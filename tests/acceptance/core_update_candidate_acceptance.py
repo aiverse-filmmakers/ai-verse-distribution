@@ -621,6 +621,8 @@ def main() -> int:
     if os.environ.get("AI_VERSE_ACCEPTANCE_SHARED_SKILLS") == "1":
         from shared_skills_member_acceptance import verify_member_library
         print(json.dumps({"shared_member_skills": verify_member_library(project, fresh=False)}))
+    if os.environ.get("AI_VERSE_ACCEPTANCE_CHAT_SKILLS") == "1":
+        print(json.dumps({"chat_skills_after_update": profile.prove_chat_skills(project)}))
 
     print(json.dumps({
         "result": "passed",
