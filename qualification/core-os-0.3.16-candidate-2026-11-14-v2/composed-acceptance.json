@@ -1,0 +1,190 @@
+{
+ "schema_version": "aiverse.distribution-composed-acceptance/v1",
+ "candidate_id": "core-os-0.3.16-candidate-2026-11-14-v2",
+ "distribution_revision": "9582646474a0ea1a2f2dbb313a90071c5924fdb6",
+ "platforms": {
+  "linux": {
+   "clean_install": "pass",
+   "status": "pass",
+   "doctor": "pass",
+   "health": "pass",
+   "components": {
+    "ai-verse-os": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-brain": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-memory": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-skills": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-data": {
+     "status": "ready",
+     "doctor": "ready"
+    }
+   }
+  },
+  "macos": {
+   "clean_install": "pass",
+   "status": "pass",
+   "doctor": "pass",
+   "health": "pass",
+   "components": {
+    "ai-verse-os": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-brain": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-memory": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-skills": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-data": {
+     "status": "ready",
+     "doctor": "ready"
+    }
+   }
+  },
+  "windows": {
+   "clean_install": "pass",
+   "status": "pass",
+   "doctor": "pass",
+   "health": "pass",
+   "components": {
+    "ai-verse-os": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-brain": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-memory": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-skills": {
+     "status": "ready",
+     "doctor": "ready"
+    },
+    "ai-verse-data": {
+     "status": "ready",
+     "doctor": "ready"
+    }
+   }
+  }
+ },
+ "evidence": [
+  {
+   "kind": "clean-machine-os-0316-candidate-acceptance",
+   "status": "pass",
+   "revision": "9582646474a0ea1a2f2dbb313a90071c5924fdb6",
+   "tested_revision": "08789160df27489e802ed2e526dc987a8596a6fb",
+   "run_id": 43597436266,
+   "job_id": 132454865605,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43597436266/job/132454865605",
+   "platform": "linux"
+  },
+  {
+   "kind": "distribution-unit-regression-and-fail-closed-suite",
+   "status": "pass",
+   "revision": "9582646474a0ea1a2f2dbb313a90071c5924fdb6",
+   "tested_revision": "08789160df27489e802ed2e526dc987a8596a6fb",
+   "run_id": 43597436385,
+   "job_id": 132454865817,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43597436385/job/132454865817",
+   "platform": "linux"
+  },
+  {
+   "kind": "distribution-composed-regression",
+   "status": "pass",
+   "revision": "9582646474a0ea1a2f2dbb313a90071c5924fdb6",
+   "tested_revision": "08789160df27489e802ed2e526dc987a8596a6fb",
+   "run_id": 43597436352,
+   "job_id": 132454865576,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43597436352/job/132454865576",
+   "platform": "linux"
+  },
+  {
+   "kind": "clean-machine-os-0316-candidate-acceptance",
+   "status": "pass",
+   "revision": "9582646474a0ea1a2f2dbb313a90071c5924fdb6",
+   "tested_revision": "08789160df27489e802ed2e526dc987a8596a6fb",
+   "run_id": 43597436266,
+   "job_id": 132454865626,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43597436266/job/132454865626",
+   "platform": "macos"
+  },
+  {
+   "kind": "distribution-unit-regression-and-fail-closed-suite",
+   "status": "pass",
+   "revision": "9582646474a0ea1a2f2dbb313a90071c5924fdb6",
+   "tested_revision": "08789160df27489e802ed2e526dc987a8596a6fb",
+   "run_id": 43597436385,
+   "job_id": 132454865742,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43597436385/job/132454865742",
+   "platform": "macos"
+  },
+  {
+   "kind": "distribution-composed-regression",
+   "status": "pass",
+   "revision": "9582646474a0ea1a2f2dbb313a90071c5924fdb6",
+   "tested_revision": "08789160df27489e802ed2e526dc987a8596a6fb",
+   "run_id": 43597436352,
+   "job_id": 132454865533,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43597436352/job/132454865533",
+   "platform": "macos"
+  },
+  {
+   "kind": "clean-machine-os-0316-candidate-acceptance",
+   "status": "pass",
+   "revision": "9582646474a0ea1a2f2dbb313a90071c5924fdb6",
+   "tested_revision": "08789160df27489e802ed2e526dc987a8596a6fb",
+   "run_id": 43597436266,
+   "job_id": 132454865767,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43597436266/job/132454865767",
+   "platform": "windows"
+  },
+  {
+   "kind": "distribution-unit-regression-and-fail-closed-suite",
+   "status": "pass",
+   "revision": "9582646474a0ea1a2f2dbb313a90071c5924fdb6",
+   "tested_revision": "08789160df27489e802ed2e526dc987a8596a6fb",
+   "run_id": 43597436385,
+   "job_id": 132454865775,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43597436385/job/132454865775",
+   "platform": "windows"
+  },
+  {
+   "kind": "distribution-composed-regression",
+   "status": "pass",
+   "revision": "9582646474a0ea1a2f2dbb313a90071c5924fdb6",
+   "tested_revision": "08789160df27489e802ed2e526dc987a8596a6fb",
+   "run_id": 43597436352,
+   "job_id": 132454865274,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43597436352/job/132454865274",
+   "platform": "windows"
+  }
+ ],
+ "coverage_notes": {
+  "revision_binding": "Immutable candidate definition 9582646474a0ea1a2f2dbb313a90071c5924fdb6; actual executable qualification and unit/composed regressions tested exact PR head 08789160df27489e802ed2e526dc987a8596a6fb, merged as 66bf58a6d921a10fa86a65ebe56e066eeb8fce82. Changes after definition are the candidate evidence binding and the chat skill probe choice (skills shipped in every profile); production lifecycle code is unchanged.",
+  "candidate_acceptance": "All three supported platforms passed fresh install, owner status/doctor/health, populated member update from 0.3.15, optional helper lifecycle/preservation, the 0.3.16 friendly label, and the new check that library skills are listed in the OS folder's .claude/skills and .agents/skills after install and after update with OS capabilities intact.",
+  "restart_recovery": "Fail closed recovery unit and composed regressions passed on all three platforms. No separate populated platform updater interruption drill is claimed.",
+  "test_admission": "Pre promotion populated update used contained synthetic admission only inside the disposable test tool stack. It is not shipped and is not reused as promotion evidence.",
+  "prior_attempt": "The first 0.3.16 candidate snapshot is retained unchanged and never promoted. Its populated update failed on all three platforms because Skills refused the member's older generation after catalogue licence changes; this v2 binds Skills 1.3.1, which fixes that."
+ }
+}
