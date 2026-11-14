@@ -467,14 +467,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     env:
-      AI_VERSE_ACCEPTANCE_RELEASE_SET: core-os-0.3.16-candidate-2026-11-14
+      AI_VERSE_ACCEPTANCE_RELEASE_SET: core-os-0.3.16-candidate-2026-11-14-v2
       AI_VERSE_ACCEPTANCE_PREVIOUS_RELEASE: core-os-0.3.15-candidate-2026-11-11-v2
       AI_VERSE_ACCEPTANCE_OS_REVISION: 2060fe7764cfe0a7483737840c48ca1ae4520e4c
       AI_VERSE_ACCEPTANCE_EXPECT_OS_VERSION: 0.3.16
       AI_VERSE_ACCEPTANCE_CHAT_SKILLS: '1'
       AI_VERSE_ACCEPTANCE_SHARED_SKILLS: '1'
       AI_VERSE_ACCEPTANCE_OPTIONAL_ON_UPDATE: '1'
-      AI_VERSE_ACCEPTANCE_EXPECTED_REFS: '{"ai-verse-os":"2060fe7764cfe0a7483737840c48ca1ae4520e4c","ai-verse-brain":"14ded0120c11362024864d50d47f1996e66530e8","ai-verse-memory":"5a853e31628837adaf7135f46f75f24ae748bd46","ai-verse-skills":"4664880a852e07649d7e38c5e40b262eac316fac","ai-verse-data":"f8978f8f7a1bc94edecddc2662112233289159a3"}'
+      AI_VERSE_ACCEPTANCE_EXPECTED_REFS: '{"ai-verse-os":"2060fe7764cfe0a7483737840c48ca1ae4520e4c","ai-verse-brain":"14ded0120c11362024864d50d47f1996e66530e8","ai-verse-memory":"5a853e31628837adaf7135f46f75f24ae748bd46","ai-verse-skills":"4f2cef7785215eb6d62ce4edd02dfa84b00052c5","ai-verse-data":"f8978f8f7a1bc94edecddc2662112233289159a3"}'
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
