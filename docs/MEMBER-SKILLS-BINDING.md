@@ -10,7 +10,7 @@ Skills `library configure-learning` destination, then applies the OS binding wit
 its expected metadata digest. Both owners remain authoritative. A partial failure
 can be retried with the same roots; conflicts refuse without moving member files.
 
-Fresh setup uses `<managed-root-parent>/member-skills`. An existing OS setup with
+Fresh setup of an OS that ships `scripts/sync-my-skills.mjs` uses a visible `my-skills/` folder inside the OS folder, and every Skills setup and update also lists those skills for Claude and Codex in the OS folder. Older OS versions keep `<managed-root-parent>/member-skills`. An existing OS setup with
 no new binding retains its prior canonical personal root, including its established
 explicit environment override. Existing bindings are preserved; only an exact
 owner entrypoint refresh can accompany a source update. Binding writes never move

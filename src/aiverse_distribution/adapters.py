@@ -196,7 +196,16 @@ def list_skills_for_chats(source: Path, root: Path) -> List[CommandResult]:
     for runtime, rel in CHAT_SKILL_FOLDERS:
         target = Path(root) / rel
         results.append(run(_skills(source, "adapt", "--runtime", runtime, "--target", str(target), "--sync"), cwd=source))
+    results.extend(list_my_skills_for_chats(root))
     return results
+
+
+def list_my_skills_for_chats(root: Path) -> List[CommandResult]:
+    """Also list the member's own skills for chats when this OS version can (scripts/sync-my-skills.mjs)."""
+    script = Path(root) / "scripts" / "sync-my-skills.mjs"
+    if not script.is_file():
+        return []
+    return [run([_node(), str(script), "--json"], cwd=root)]
 
 
 def _gateway(source: Path, *args: str) -> List[str]:

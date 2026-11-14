@@ -50,3 +50,16 @@ class SkillsChatListingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MySkillsFolderTests(unittest.TestCase):
+    def test_my_skills_are_listed_only_when_the_os_can(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with patch("aiverse_distribution.adapters.run", side_effect=fake_run) as mocked:
+                self.assertEqual(adapters.list_my_skills_for_chats(root), [])
+                (root / "scripts").mkdir()
+                (root / "scripts" / "sync-my-skills.mjs").write_text("// stub\n")
+                results = adapters.list_my_skills_for_chats(root)
+            self.assertEqual(len(results), 1)
+            self.assertEqual(mocked.call_args.args[0][1], str(root / "scripts" / "sync-my-skills.mjs"))
