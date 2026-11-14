@@ -31,6 +31,7 @@ SHARED_MEMBER_OS = "4a134190355e590f4f52e0607ca13bbddd1ac36e"
 PERSONAL_TOOL_OS = "7bb6226783396ef7a00b325306da26b0f4b17474"
 LEARN_CORE_OS = "00805bc7d866703d3ef5ca1359faa769d88ecdae"
 PUBLIC_BETA_OS_REVISIONS = frozenset({
+    "2060fe7764cfe0a7483737840c48ca1ae4520e4c",
     "c949bca4e5b6155b0632f36b81f6d4a62a74073c",
     "b473e0822aad97d97b6d1863fd0486c1bf99d227",
     "725dfb43f756156ac9bf4c4214005b2390dc91a4",
@@ -88,6 +89,7 @@ INVISIBLE_INTELLIGENCE_SKILLS = "71264af6b2b9a575812fe18858d75a54ea2ff545"
 VIDEO_EDITOR_SKILLS = "afde5c06307fba7d074de2929c2eb6c3dc6bdab8"
 SHARED_MEMBER_SKILLS = "390c6e1633afc809040bd1159840045f4f9ff27e"
 SUPPORTED_SKILLS_REVISIONS = frozenset({
+    "4664880a852e07649d7e38c5e40b262eac316fac",
     SHARED_MEMBER_SKILLS,
     "424e2a7b130011b715ff6c3fc3a5218c627765a1",
     PUBLIC_BETA_SKILLS,
@@ -165,6 +167,35 @@ def _skills(source: Path, *args: str) -> List[str]:
     options = ["--root", str(Path(root).expanduser().resolve())] if root else []
     return [sys.executable, str(source / "installer" / "aiverse_skills.py"), *options, *args]
 
+
+
+CHAT_SKILL_FOLDERS = (("claude", ".claude/skills"), ("codex", ".agents/skills"))
+
+
+def _skills_can_list_for_chats(source: Path) -> bool:
+    """True when this Skills source can keep chat folders in step (adapt --sync)."""
+    impl = source / "installer" / "aiverse_skills_v3.py"
+    try:
+        return '"--sync"' in impl.read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+
+def list_skills_for_chats(source: Path, root: Path) -> List[CommandResult]:
+    """List every library skill in this OS folder's Claude and Codex skill folders.
+
+    Claude and Codex only pick a skill by themselves when it sits in a folder they
+    read at the start of a chat. The Skills owner copies its active generation,
+    replaces only what it listed before, removes retired skills and leaves every
+    other folder (including OS built in capabilities) untouched.
+    """
+    if not _skills_can_list_for_chats(source):
+        return []
+    results: List[CommandResult] = []
+    for runtime, rel in CHAT_SKILL_FOLDERS:
+        target = Path(root) / rel
+        results.append(run(_skills(source, "adapt", "--runtime", runtime, "--target", str(target), "--sync"), cwd=source))
+    return results
 
 
 def _gateway(source: Path, *args: str) -> List[str]:
@@ -308,6 +339,7 @@ def owner_setup(component_id: str, *, root: Path, source: Path, revision: str, s
             results.append(run(_skills(source, "setup", "--json"), cwd=source))
             from .member_skills import configure_member_skills
             results.extend(configure_member_skills(root, source, _skills(source), _skills(source, "status", "--json")))
+            results.extend(list_skills_for_chats(source, root))
             return results
         # The frozen Core Skills generation predates the later explicit setup verb.
         # Read-only owner doctor/readiness is the safe setup verification for this exact artifact.
@@ -548,8 +580,11 @@ def owner_update(component_id: str, *, root: Path, source: Path, revision: str, 
         ])
     if component_id == "ai-verse-skills":
         if revision in SUPPORTED_SKILLS_REVISIONS:
-            return run(_skills(source, "update", "--json"), cwd=source)
-        return run(_skills(source, "update"), cwd=source)
+            result = run(_skills(source, "update", "--json"), cwd=source)
+        else:
+            result = run(_skills(source, "update"), cwd=source)
+        list_skills_for_chats(source, root)
+        return result
     if component_id == "ai-verse-data":
         return run([
             _node(), str(source / "dist" / "src" / "cli.js"),
