@@ -974,6 +974,10 @@
     "core-os-0.3.15-candidate-2026-11-11": {
       "path": "qualification/core-os-0.3.15-candidate-2026-11-11/candidate-evidence.json",
       "sha256": "e4f67ad8f5d14df6bca9c251b44062ddc5518ebf1399be9130d8f82d73881b12"
+    },
+    "core-os-0.3.16-candidate-2026-11-14": {
+      "path": "qualification/core-os-0.3.16-candidate-2026-11-14/candidate-evidence.json",
+      "sha256": "fa8b75a4df493b621b6d58c0fe60fe5664b154f84ee7c3b18fee96bd5fd453d3"
     }
   }
 }
