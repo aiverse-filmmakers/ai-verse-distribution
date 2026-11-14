@@ -211,6 +211,11 @@ def _parser() -> argparse.ArgumentParser:
     q.add_argument("--stack", type=Path)
     q.add_argument("--json", action="store_true")
 
+    q = sub.add_parser("project-rebind", help="after renaming or moving the OS folder, point this install at its new place")
+    q.add_argument("--project", type=Path, default=Path.cwd())
+    q.add_argument("--stack", type=Path)
+    q.add_argument("--json", action="store_true")
+
     q = sub.add_parser("start", help="one-action first run using the exact released Agent profile")
     q.add_argument("--release-set", help="advanced exact released Agent set override")
     q.add_argument("--root", type=Path, help="installation root; defaults to ~/AI-Verse for a fresh install")
@@ -318,6 +323,13 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             from .project_install import refresh_project_launcher
             from .project_layout import ProjectLayout
             payload = refresh_project_launcher(ProjectLayout.resolve(args.project, args.stack))
+            _emit(payload, args.json)
+            return 0
+
+        if args.command == "project-rebind":
+            from .project_layout import ProjectLayout
+            from .project_rebind import rebind_project
+            payload = rebind_project(ProjectLayout.resolve(args.project, args.stack))
             _emit(payload, args.json)
             return 0
 

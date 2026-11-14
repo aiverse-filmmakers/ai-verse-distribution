@@ -26,6 +26,14 @@ class ProjectLayout:
         if project == project.parent:
             raise DistributionError("Choose a project folder, not a filesystem root")
         identity = hashlib.sha256(str(project).encode("utf-8")).hexdigest()[:16]
+        # A permanent ID kept inside the OS folder survives renames; older installs have none.
+        id_file = project / ".aiverse" / "os" / "install-id"
+        try:
+            recorded = id_file.read_text(encoding="utf-8").strip() if id_file.is_file() and not id_file.is_symlink() else ""
+        except OSError:
+            recorded = ""
+        if len(recorded) == 16 and all(ch in "0123456789abcdef" for ch in recorded):
+            identity = recorded
         stack = (stack or project.parent / ".ai-verse-tools" / identity).expanduser().resolve()
         if project == stack or project in stack.parents or stack in project.parents:
             raise DistributionError("The tool stack and OS project must be separate, non-nested folders")
