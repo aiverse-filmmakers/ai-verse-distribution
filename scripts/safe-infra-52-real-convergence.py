@@ -132,6 +132,8 @@ def main() -> int:
             write_workspace(project, "beta")
             source_path = write_capability(project)
             (project / "member-custom.txt").write_text("custom-before\n", encoding="utf-8")
+            (project / "operator" / "context").mkdir(parents=True, exist_ok=True)
+            (project / "operator" / "context" / "member-state.md").write_text("state-before\n", encoding="utf-8")
             (project / ".env").write_text("SECRET=before\n", encoding="utf-8")
             source_custom = (source_path / "custom-user-file.txt").read_text(encoding="utf-8")
 
@@ -266,7 +268,8 @@ def main() -> int:
             require(replay.get("status") == "already-promoted" and replay.get("effect_occurred") is False, "owner promotion replay is not idempotent")
 
             (project / "member-custom.txt").write_text("custom-after\n", encoding="utf-8")
-            (project / "post-update-covered.txt").write_text("remove-on-restore\n", encoding="utf-8")
+            (project / "operator" / "context" / "member-state.md").write_text("state-after\n", encoding="utf-8")
+            (project / "operator" / "context" / "post-update-covered.txt").write_text("remove-on-restore\n", encoding="utf-8")
             (project / ".env").write_text("SECRET=current-must-survive\n", encoding="utf-8")
             (local_skills / "member-personal-note.txt").write_text("personal-after\n", encoding="utf-8")
 
@@ -274,15 +277,16 @@ def main() -> int:
             preview = app.restore_preview()
             require(preview.get("state") == "restore-preview" and preview.get("safe_to_apply") is True, "restore preview is not safe/truthful")
             require(app.last_known_good.current_path.read_bytes() == lkg_pointer_before, "restore preview mutated the retained LKG")
-            require((project / "member-custom.txt").read_text(encoding="utf-8") == "custom-after\n", "restore preview mutated covered member state")
+            require((project / "operator" / "context" / "member-state.md").read_text(encoding="utf-8") == "state-after\n", "restore preview mutated covered member state")
 
             restored = app.restore(apply=True)
             require(restored.get("state") == "restored" and restored.get("applied") is True, "explicit restore did not complete")
             require(restored.get("release_set_id") == STABLE, "restore did not return to the retained pre-update release")
             require(restored.get("health", {}).get("ok") is True, "restored installation final health did not pass")
             require((state.load() or {}).get("release_set_id") == STABLE, "Distribution receipt did not return to the retained release")
-            require((project / "member-custom.txt").read_text(encoding="utf-8") == "custom-before\n", "covered project state did not reproduce the retained point")
-            require(not (project / "post-update-covered.txt").exists(), "post-LKG covered file survived exact restore")
+            require((project / "operator" / "context" / "member-state.md").read_text(encoding="utf-8") == "state-before\n", "covered project state did not reproduce the retained point")
+            require(not (project / "operator" / "context" / "post-update-covered.txt").exists(), "post-LKG covered file survived exact restore")
+            require((project / "member-custom.txt").read_text(encoding="utf-8") == "custom-after\n", "restore rewound a member creation outside the update backup")
             require((project / ".env").read_text(encoding="utf-8") == "SECRET=current-must-survive\n", "excluded credential-shaped state was incorrectly rewound")
             require((local_skills / "member-personal-note.txt").read_text(encoding="utf-8") == "personal-before\n", "covered personal capability state did not reproduce the retained point")
             require(not target_path.exists() or not any(item.is_file() or item.is_symlink() for item in target_path.rglob("*")), "post-LKG promoted target retained covered files after restore")
