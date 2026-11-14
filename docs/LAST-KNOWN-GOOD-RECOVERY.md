@@ -4,7 +4,7 @@ Status: implemented by Safe Infrastructure Slice 4.1.
 
 ## Purpose
 
-AI-Verse keeps one whole-install Last-Known-Good (LKG) recovery point before an admitted mutating Core update. The recovery point is owned by Distribution and stored under Distribution private state. It is recovery evidence and recovery material, not another live copy of OS or owner state.
+AI-Verse keeps the last two Last-Known-Good (LKG) recovery points, one made before each admitted mutating Core update. Each covers what an update can change and the member's personal state, not the member's creations (see CAPTURE). The recovery point is owned by Distribution and stored under Distribution private state. It is recovery evidence and recovery material, not another live copy of OS or owner state.
 
 The implementation extends the existing Distribution lifecycle transaction rather than creating a second lock/journal system.
 
@@ -32,9 +32,11 @@ recovery/
   transactions/
 ```
 
-`current.json` is the sole retained LKG pointer. Candidate bytes are first written under a private staging directory, verified, renamed into an immutable generation, and only then published through the same atomic JSON writer used by Distribution receipts.
+`current.json` points to the current LKG and records the previous one. Candidate bytes are first written under a private staging directory, verified, renamed into an immutable generation, and only then published through the same atomic JSON writer used by Distribution receipts.
 
-The previous valid pointer/generation remains untouched until the successor is verified. After pointer promotion the obsolete generation is deleted. If obsolete-generation retirement fails, the pointer is restored to the previous valid generation and the candidate is discarded rather than reporting a successful rotation with two retained LKGs.
+The previous valid pointer/generation remains untouched until the successor is verified. After pointer promotion the current and the previous generation are kept (`RETAINED_GENERATIONS = 2`); every older generation is deleted. A previous generation made before the update-state scope (a whole-folder backup) is deleted as well, so the first update with this rule frees its space. If retirement fails, the pointer is restored to the previous valid generation and the candidate is discarded.
+
+Before staging, Distribution estimates the backup size (personal state, personal skills and the component Git stores) plus a 256 MB margin and refuses, with a plain message and no change, when the disk cannot hold it.
 
 Temporary restore transaction checkpoints are not retained LKG generations and are deleted after successful restore or successful rollback of a failed restore.
 
@@ -42,9 +44,14 @@ Temporary restore transaction checkpoints are not retained LKG generations and a
 
 ### CAPTURE
 
-Untracked/non-software local files default to preservation unless an explicit rule classifies them otherwise. This includes unknown custom user files.
+Capture is an include list (`capture_scope: update-state-v1`), not a list of exclusions. It covers what an update can change and the member's personal state:
 
-Workspace `assets/` and `outputs/` are explicitly CAPTURE data regardless of size. Slice 4.1 tests this with multi-megabyte binary content; there is no size-based exemption.
+- `operator/**` (profile, context, memory, goals, decisions, inbox, Brain state);
+- `.aiverse/**` (extension registry and settings);
+- project `connections/**` and `automations/**`;
+- per workspace: top-level files such as `WORKSPACE.yaml`, and `brain/`, `memory/`, `data/`, `context/`, `decisions/`, `inbox/`, `skills/`, `automations/`, `knowledge/`, `plans/`.
+
+Everything else in the project is a member creation (workspace `assets/` and `outputs/`, apps, models, renders, research, custom files). The updater is forbidden to change those (`user-owned-immutable-to-updater` in the ownership contract), so copying them on every update protected nothing while needing many gigabytes. They are listed by top-level path in `coverage.outside_update_scope`, are never copied, and restore never rewinds or deletes them. A restore from an older whole-folder backup also leaves them alone. Members should keep their creations in their own backup (Time Machine, iCloud or similar).
 
 The private reusable personal capability root (`AI_VERSE_LOCAL_SKILLS_ROOT`, otherwise `~/.aiverse/local-skills`) is captured as user-owned state.
 

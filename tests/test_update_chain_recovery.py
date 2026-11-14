@@ -44,6 +44,8 @@ class MultiHopRecoveryTests(unittest.TestCase):
             self.revisions.append(self.git("rev-parse", "HEAD").strip())
         self.git("checkout", "--detach", self.revisions[0])
         (self.project / "custom-user.txt").write_text("member data v1\n", encoding="utf-8")
+        (self.project / "operator" / "memory").mkdir(parents=True)
+        (self.project / "operator" / "memory" / "note.md").write_text("memory v1\n", encoding="utf-8")
 
         self.releases = [self._release(f"fixture-chain-r{i}", rev) for i, rev in enumerate(self.revisions, 1)]
         self.by_id = {r.id: r for r in self.releases}
@@ -173,14 +175,15 @@ class MultiHopRecoveryTests(unittest.TestCase):
         self.assertEqual([hop["to"] for hop in result["transition_path"]], [r2.id, r3.id])
         self.assertTrue((self.project / "custom-user.txt").exists())
 
-        # One retained recovery point: the verified state just before the last hop.
+        # Two retained recovery points; the current one is the state just before the last hop.
         generations = [p for p in self.app.last_known_good.generations.iterdir() if p.is_dir()]
-        self.assertEqual(len(generations), 1)
+        self.assertEqual(len(generations), 2)
         pointer, _, manifest = self.app.last_known_good.load_current()
         self.assertEqual(manifest["release_set_id"], r2.id)
 
         # After the walk, the member changes things; restore must undo only up to the recovery point.
         (self.project / "custom-user.txt").write_text("changed after update\n", encoding="utf-8")
+        (self.project / "operator" / "memory" / "note.md").write_text("memory changed\n", encoding="utf-8")
         preview = self.run_with_patches(self.app.restore)
         self.assertTrue(preview["safe_to_apply"], preview)
         restored = self.run_with_patches(lambda: self.app.restore(apply=True))
@@ -188,7 +191,9 @@ class MultiHopRecoveryTests(unittest.TestCase):
         self.assertEqual(restored["release_set_id"], r2.id)
         self.assertEqual(self.installed(), r2.id)
         self.assertEqual(self.git("rev-parse", "HEAD").strip(), self.revisions[1])
-        self.assertEqual((self.project / "custom-user.txt").read_text(encoding="utf-8"), "member data v1\n")
+        self.assertEqual((self.project / "operator" / "memory" / "note.md").read_text(encoding="utf-8"), "memory v1\n")
+        # Member creations are outside the update backup and are never rewound.
+        self.assertEqual((self.project / "custom-user.txt").read_text(encoding="utf-8"), "changed after update\n")
         # Restoring does not consume the retained recovery point.
         self.assertEqual(self.app.last_known_good.load_current()[0]["generation_id"], pointer["generation_id"])
 

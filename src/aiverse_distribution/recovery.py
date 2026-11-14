@@ -34,6 +34,21 @@ _SECURITY_NAMES = {
 _SECURITY_SUFFIXES = {".pem", ".key", ".p12", ".pfx"}
 _DERIVED_DIRS = {"node_modules", "__pycache__", ".pytest_cache"}
 
+# The update backup holds only what an update can change or what is personal state
+# (memory, profile, goals, project context and notes, data, settings, personal skills).
+# Member creations such as renders, images, models and apps are never touched by an
+# update (they are user-owned and immutable to the updater), so copying them on every
+# update protects nothing and can need many gigabytes. Listing what to include keeps
+# the backup small for every member however much they create.
+CAPTURE_SCOPE = "update-state-v1"
+RETAINED_GENERATIONS = 2
+_PROJECT_STATE_ROOTS = {"operator", ".aiverse", "connections", "automations"}
+_WORKSPACE_STATE_DIRS = {
+    "brain", "memory", "data", "context", "decisions", "inbox",
+    "skills", "automations", "knowledge", "plans",
+}
+_FREE_SPACE_MARGIN = 256 * 1024 * 1024
+
 
 def _sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
@@ -75,6 +90,36 @@ def _rebuild_reason(rel: Path) -> Optional[str]:
     if any(part in _DERIVED_DIRS for part in rel.parts):
         return "dependency/cache material is rebuildable"
     return None
+
+
+def _in_update_scope(rel_text: str, is_dir: bool) -> bool:
+    """True when a project path belongs in the update backup (see CAPTURE_SCOPE)."""
+    parts = rel_text.split("/")
+    if parts[0] in _PROJECT_STATE_ROOTS:
+        return True
+    if parts[0] == "workspaces":
+        if len(parts) <= 2:
+            return True
+        if len(parts) == 3 and not is_dir:
+            return True
+        return parts[2] in _WORKSPACE_STATE_DIRS
+    return False
+
+
+def _checkpoint_scope(tracked: set[str]) -> Callable[[str, bool], bool]:
+    """Restore checkpoints also cover tracked software, which a restore rewrites."""
+    tracked_dirs: set[str] = set()
+    for item in tracked:
+        parts = item.split("/")
+        for depth in range(1, len(parts)):
+            tracked_dirs.add("/".join(parts[:depth]))
+
+    def scope(rel_text: str, is_dir: bool) -> bool:
+        if _in_update_scope(rel_text, is_dir):
+            return True
+        return rel_text in tracked_dirs if is_dir else rel_text in tracked
+
+    return scope
 
 
 def _tracked_paths(root: Path) -> set[str]:
@@ -122,6 +167,42 @@ def _copy_regular(source: Path, target: Path) -> dict[str, Any]:
     return {"sha256": expected, "size": source.stat().st_size}
 
 
+def _scoped_bytes(root: Path, scope: Callable[[str, bool], bool]) -> int:
+    total = 0
+    pruned: set[str] = set()
+    for absolute, rel, is_dir in _iter_tree(root):
+        rel_text = rel.as_posix()
+        if any(rel_text == prefix or rel_text.startswith(prefix + "/") for prefix in pruned):
+            continue
+        if absolute.is_symlink() or _security_reason(rel) or _rebuild_reason(rel) or not scope(rel_text, is_dir):
+            if is_dir:
+                pruned.add(rel_text)
+            continue
+        if not is_dir:
+            try:
+                total += absolute.stat().st_size
+            except OSError:
+                pass
+    return total
+
+
+def _git_store_bytes(source: Path) -> int:
+    objects = source / ".git" / "objects"
+    total = 0
+    if objects.is_dir():
+        for base, _dirs, files in os.walk(objects):
+            for name in files:
+                try:
+                    total += (Path(base) / name).stat().st_size
+                except OSError:
+                    pass
+    return total
+
+
+def _human_gb(value: int) -> str:
+    return f"{max(value, 0) / (1024 ** 3):.1f} GB"
+
+
 class LastKnownGoodStore:
     """One rotating Distribution-owned whole-install recovery point.
 
@@ -153,6 +234,25 @@ class LastKnownGoodStore:
         configured = os.environ.get("AI_VERSE_LOCAL_SKILLS_ROOT")
         return Path(configured).expanduser().resolve() if configured else (Path.home() / ".aiverse" / "local-skills").resolve()
 
+    def _require_free_space(self, *, root: Path, lock: Dict[str, Any], local_skills: Path) -> None:
+        """Refuse before copying anything when the disk cannot hold the backup."""
+        needed = _scoped_bytes(root, _in_update_scope)
+        if local_skills.exists():
+            needed += _scoped_bytes(local_skills, lambda _rel, _is_dir: True)
+        for receipt in (lock.get("components") or {}).values():
+            source = receipt.get("source") if isinstance(receipt, dict) else None
+            if source:
+                needed += _git_store_bytes(Path(source).expanduser())
+        needed += _FREE_SPACE_MARGIN
+        self.root.mkdir(parents=True, exist_ok=True)
+        free = shutil.disk_usage(self.root).free
+        if free < needed:
+            raise DistributionError(
+                f"Not enough free disk space to make the safety copy before updating. "
+                f"About {_human_gb(needed)} is needed and {_human_gb(free)} is free. "
+                "Free some space and run the update again. Nothing was changed."
+            )
+
     def _stage_capture_root(
         self,
         *,
@@ -161,6 +261,8 @@ class LastKnownGoodStore:
         root_kind: str,
         tracked: Optional[set[str]],
         capture_tracked: bool,
+        scope: Optional[Callable[[str, bool], bool]] = None,
+        outside_scope: Optional[list[dict[str, str]]] = None,
     ) -> tuple[list[dict[str, Any]], list[dict[str, str]], list[dict[str, str]]]:
         captured: list[dict[str, Any]] = []
         rebuild: list[dict[str, str]] = []
@@ -187,6 +289,12 @@ class LastKnownGoodStore:
                 if is_dir:
                     rebuild.append({"root": root_kind, "path": rel_text, "reason": derived})
                     pruned_dirs.add(rel_text)
+                continue
+            if scope is not None and not scope(rel_text, is_dir):
+                if is_dir:
+                    pruned_dirs.add(rel_text)
+                if outside_scope is not None:
+                    outside_scope.append({"root": root_kind, "path": rel_text})
                 continue
             if is_dir:
                 continue
@@ -261,6 +369,8 @@ class LastKnownGoodStore:
         root = root.expanduser().resolve()
         if health.get("ok") is not True:
             raise DistributionError("current installation is not healthy enough to become a Last-Known-Good recovery point")
+        local_skills = self._personal_skills_root()
+        self._require_free_space(root=root, lock=lock, local_skills=local_skills)
         generation_id = f"lkg-{uuid.uuid4().hex}"
         stage = self.root / f".candidate-{generation_id}"
         if stage.exists():
@@ -269,14 +379,16 @@ class LastKnownGoodStore:
         try:
             project_tracked = _tracked_paths(root)
             capture_dir = stage / "capture"
+            outside_scope: list[dict[str, str]] = []
             project_capture, project_rebuild, project_excluded = self._stage_capture_root(
                 source_root=root,
                 destination_root=capture_dir / "project",
                 root_kind="project",
                 tracked=project_tracked,
                 capture_tracked=False,
+                scope=_in_update_scope,
+                outside_scope=outside_scope,
             )
-            local_skills = self._personal_skills_root()
             local_capture: list[dict[str, Any]] = []
             local_rebuild: list[dict[str, str]] = []
             local_excluded: list[dict[str, str]] = []
@@ -300,6 +412,7 @@ class LastKnownGoodStore:
             manifest: Dict[str, Any] = {
                 "schema_version": 1,
                 "contract": LKG_CONTRACT,
+                "capture_scope": CAPTURE_SCOPE,
                 "generation_id": generation_id,
                 "created_at": now_iso(),
                 "release_set_id": release.id,
@@ -314,6 +427,7 @@ class LastKnownGoodStore:
                         {"root": "distribution", "path": "venvs", "reason": "Distribution virtual environments are rebuilt from exact software"},
                     ],
                     "external_excluded": project_excluded + local_excluded,
+                    "outside_update_scope": outside_scope,
                 },
                 "root_paths": {
                     "project": str(root),
@@ -369,6 +483,16 @@ class LastKnownGoodStore:
             if _sha256_file(bundle) != entry.get("bundle_sha256"):
                 raise DistributionError(f"LKG software bundle failed integrity verification: {entry.get('component_id')}")
         return manifest
+
+    @staticmethod
+    def _is_scoped_generation(directory: Path) -> bool:
+        """Only small update-state backups are kept as the second copy; an older
+        whole-folder backup is retired on the next update to free its space."""
+        try:
+            manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return False
+        return manifest.get("capture_scope") == CAPTURE_SCOPE
 
     def _read_pointer(self) -> Optional[Dict[str, Any]]:
         if not self.current_path.exists():
@@ -428,19 +552,26 @@ class LastKnownGoodStore:
                 "manifest_sha256": manifest_sha,
                 "promoted_at": now_iso(),
             }
+            if previous_pointer and previous_pointer.get("generation_id"):
+                pointer["previous_generation_id"] = previous_pointer["generation_id"]
+                pointer["previous_manifest_sha256"] = previous_pointer.get("manifest_sha256")
             self._atomic_json(self.current_path, pointer)
             loaded = self.load_current()
             if loaded is None or loaded[0]["generation_id"] != generation_id:
                 raise DistributionError("LKG pointer promotion could not be verified")
+            keep = {generation_id}
+            previous_id = (previous_pointer or {}).get("generation_id")
+            if RETAINED_GENERATIONS > 1 and previous_id and self._is_scoped_generation(self.generations / previous_id):
+                keep.add(previous_id)
             try:
                 for item in list(self.generations.iterdir()):
-                    if item.name != generation_id:
+                    if item.name not in keep:
                         if item.is_dir():
                             shutil.rmtree(item)
                         else:
                             item.unlink()
             except Exception as cleanup_exc:
-                # Do not report a successful rotation while more than one retained generation remains.
+                # Do not report a successful rotation while an obsolete generation remains.
                 if previous_pointer:
                     self._atomic_json(self.current_path, previous_pointer)
                 else:
@@ -456,14 +587,22 @@ class LastKnownGoodStore:
                 "generation_id": generation_id,
                 "created_at": manifest["created_at"],
                 "release_set_id": manifest["release_set_id"],
-                "retained_generations": 1,
+                "retained_generations": len(keep),
             }
         except Exception:
             if stage.exists():
                 shutil.rmtree(stage, ignore_errors=True)
             raise
 
-    def _capture_index_for_root(self, root: Path, *, root_kind: str, tracked: Optional[set[str]], capture_tracked: bool) -> Dict[str, str]:
+    def _capture_index_for_root(
+        self,
+        root: Path,
+        *,
+        root_kind: str,
+        tracked: Optional[set[str]],
+        capture_tracked: bool,
+        scope: Optional[Callable[[str, bool], bool]] = None,
+    ) -> Dict[str, str]:
         result: Dict[str, str] = {}
         if not root.exists():
             return result
@@ -477,6 +616,10 @@ class LastKnownGoodStore:
                     pruned.add(rel_text)
                 continue
             if _rebuild_reason(rel):
+                if is_dir:
+                    pruned.add(rel_text)
+                continue
+            if scope is not None and not scope(rel_text, is_dir):
                 if is_dir:
                     pruned.add(rel_text)
                 continue
@@ -513,8 +656,11 @@ class LastKnownGoodStore:
                 root_kind="project",
                 tracked=_tracked_paths(current_root),
                 capture_tracked=False,
+                scope=_in_update_scope,
             )
-            target_project = target_by_root["project"]
+            target_project = {
+                path: digest for path, digest in target_by_root["project"].items() if _in_update_scope(path, False)
+            }
             changed += sum(1 for key in current_project.keys() & target_project.keys() if current_project[key] != target_project[key])
             added += len(current_project.keys() - target_project.keys())
             removed += len(target_project.keys() - current_project.keys())
@@ -610,8 +756,15 @@ class LastKnownGoodStore:
         for kind, root in roots.items():
             root.mkdir(parents=True, exist_ok=True)
             tracked = _tracked_paths(root) if kind == "project" else None
-            current = self._capture_index_for_root(root, root_kind=kind, tracked=tracked, capture_tracked=(kind != "project"))
+            scope = _in_update_scope if kind == "project" else None
+            current = self._capture_index_for_root(
+                root, root_kind=kind, tracked=tracked, capture_tracked=(kind != "project"), scope=scope
+            )
             targets = target_by_root[kind]
+            if scope is not None:
+                # Backups made before CAPTURE_SCOPE also hold member creations; restore
+                # never rewinds those, so newer renders and projects are left alone.
+                targets = {path: entry for path, entry in targets.items() if scope(path, False)}
             for rel_text in sorted(current.keys() - targets.keys(), reverse=True):
                 target = self._safe_destination(root, _safe_relative(rel_text))
                 try:
@@ -635,12 +788,14 @@ class LastKnownGoodStore:
         checkpoint.mkdir(parents=True)
         root = Path(lock["root"]).expanduser().resolve()
         capture_dir = checkpoint / "capture"
+        project_scope = _checkpoint_scope(_tracked_paths(root))
         project, rebuild, excluded = self._stage_capture_root(
             source_root=root,
             destination_root=capture_dir / "project",
             root_kind="project",
             tracked=None,
             capture_tracked=True,
+            scope=project_scope,
         )
         local_root = self._personal_skills_root()
         local: list[dict[str, Any]] = []
@@ -661,6 +816,7 @@ class LastKnownGoodStore:
             "receipt": json.loads(json.dumps(lock)),
             "root": str(root),
             "root_paths": {"project": str(root), "local-skills": str(local_root)},
+            "capture_scope": CAPTURE_SCOPE,
             "capture": project + local,
             "rebuild": rebuild + local_rebuild,
             "excluded": excluded + local_excluded,
@@ -678,7 +834,10 @@ class LastKnownGoodStore:
             target_by_root[entry["root"]][entry["path"]] = entry
         for kind, root in roots.items():
             root.mkdir(parents=True, exist_ok=True)
-            current = self._capture_index_for_root(root, root_kind=kind, tracked=None, capture_tracked=True)
+            scope = None
+            if kind == "project" and payload.get("capture_scope") == CAPTURE_SCOPE:
+                scope = _checkpoint_scope(set(target_by_root[kind]))
+            current = self._capture_index_for_root(root, root_kind=kind, tracked=None, capture_tracked=True, scope=scope)
             targets = target_by_root[kind]
             for rel_text in sorted(current.keys() - targets.keys(), reverse=True):
                 self._safe_destination(root, _safe_relative(rel_text)).unlink(missing_ok=True)
