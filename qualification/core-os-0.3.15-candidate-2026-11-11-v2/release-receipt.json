@@ -52,12 +52,12 @@
       "install_order": 30,
       "descriptor": {
         "path": "release/component-release.json",
-        "source_revision": "0fdf94f64d6283912e2418706a10db4cdc1340d5",
+        "source_revision": "1e7bd0298d385c63adf79b5c2f6dddead846deee",
         "sha256": "a91704ecf805eba88bdb7a3707ad825ef94a6a45c612814f237d1d5f2f3e1c6b"
       },
       "owner_acceptance": {
         "kind": "component-release-descriptor-native-ci",
-        "evidence_revision": "0fdf94f64d6283912e2418706a10db4cdc1340d5",
+        "evidence_revision": "1e7bd0298d385c63adf79b5c2f6dddead846deee",
         "workflow": "Test",
         "run_id": 43010986784,
         "result": "success"
@@ -180,7 +180,7 @@
       },
       {
         "repository": "aiverse-filmmakers/AI-Verse-Memory",
-        "revision": "0fdf94f64d6283912e2418706a10db4cdc1340d5",
+        "revision": "1e7bd0298d385c63adf79b5c2f6dddead846deee",
         "path": "release/component-release.json",
         "sha256": "a91704ecf805eba88bdb7a3707ad825ef94a6a45c612814f237d1d5f2f3e1c6b"
       },
@@ -262,7 +262,7 @@
       {
         "component_id": "ai-verse-memory",
         "path": "release/component-release.json",
-        "source_revision": "0fdf94f64d6283912e2418706a10db4cdc1340d5",
+        "source_revision": "1e7bd0298d385c63adf79b5c2f6dddead846deee",
         "sha256": "a91704ecf805eba88bdb7a3707ad825ef94a6a45c612814f237d1d5f2f3e1c6b"
       },
       {
