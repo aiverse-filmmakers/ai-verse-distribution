@@ -44,7 +44,7 @@
       },
       {
         "repository": "aiverse-filmmakers/ai-verse-distribution",
-        "revision": "a542611a1fe2812b2f4664900ba7ee3249abb403",
+        "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
         "path": "compatibility/matrix.json",
         "sha256": "34e7266bdc32acf511f03467b512e369820a47e2478d1e89a6a209894ddac166"
       }
@@ -154,12 +154,12 @@
   ],
   "distribution": {
     "repository": "aiverse-filmmakers/ai-verse-distribution",
-    "candidate_revision": "a542611a1fe2812b2f4664900ba7ee3249abb403",
+    "candidate_revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
     "candidate_definition": {
       "repository": "aiverse-filmmakers/ai-verse-distribution",
-      "revision": "a542611a1fe2812b2f4664900ba7ee3249abb403",
+      "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
       "path": "src/aiverse_distribution/catalog/core_candidates.json",
-      "sha256": "cd16a89c5e6ff8bc4eab80a6262ca7fc26d185f5dafda6dd9d4a4921967e67a5"
+      "sha256": "160b2511fcfe38e7cae4cdd1fd29d9537498bb8a02f49f7a3508a26c85c51bcb"
     }
   },
   "drift": {
@@ -222,13 +222,13 @@
     "dependency_locks": [
       {
         "repository": "aiverse-filmmakers/ai-verse-distribution",
-        "revision": "a542611a1fe2812b2f4664900ba7ee3249abb403",
+        "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
         "path": "src/aiverse_distribution/dependency_locks/ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/lock.json",
         "sha256": "0af6c9763fa04170b0bc6226764bb1c78db5296b5586a91d9d2851e27da98ea3"
       },
       {
         "repository": "aiverse-filmmakers/ai-verse-distribution",
-        "revision": "a542611a1fe2812b2f4664900ba7ee3249abb403",
+        "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
         "path": "src/aiverse_distribution/dependency_locks/ai-verse-data/f8978f8f7a1bc94edecddc2662112233289159a3/package-lock.json",
         "sha256": "fa5c3e0f8df2c98fa48c4f7f163caff31a1ef16dc3e27223c217c38c6ff9ade3"
       }
