@@ -21,7 +21,7 @@ from aiverse_distribution.release_catalog import Catalog
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT = "core-os-0.3.16-candidate-2026-11-14-v2"
+CURRENT = "core-os-0.3.17-candidate-2026-11-15"
 SYSTEM = "aiverse-filmmakers/AI-Verse-System"
 DISTRIBUTION = "aiverse-filmmakers/ai-verse-distribution"
 
