@@ -1,0 +1,150 @@
+{
+ "schema_version": "ai-verse.release-preservation/v1",
+ "source_release_set": "core-os-0.3.16-candidate-2026-11-14-v2",
+ "target_release_set": "core-os-0.3.17-candidate-2026-11-15",
+ "target_distribution_revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
+ "supported_platforms": [
+  "linux",
+  "macos",
+  "windows"
+ ],
+ "safe_for_update": true,
+ "platform_acceptance": {
+  "linux": "pass",
+  "macos": "pass",
+  "windows": "pass"
+ },
+ "clean_install": "pass",
+ "upgrade": "pass",
+ "restart_recovery": "pass",
+ "state_preservation": {
+  "brain": "pass",
+  "memory": "pass",
+  "data": "pass",
+  "skills": "pass",
+  "bots": "not-applicable",
+  "token": "not-applicable",
+  "workspace": "pass",
+  "user_files": "pass"
+ },
+ "authority_preservation": "pass",
+ "migration": {
+  "status": "none",
+  "owner_evidence": []
+ },
+ "rollback": {
+  "software_rollback": "blocked"
+ },
+ "negative_tests": {
+  "unsupported_migration": "pass",
+  "user_file_collision": "pass",
+  "disabled_component": "pass",
+  "permission_floor": "pass",
+  "brain_ownership": "pass",
+  "partial_failure": "pass",
+  "wrong_release_sha": "pass"
+ },
+ "evidence": [
+  {
+   "kind": "clean-machine-os-0317-candidate-acceptance",
+   "status": "pass",
+   "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
+   "tested_revision": "e61d1a9f4e7bb96d20b5753a02d8b710152c0b2c",
+   "run_id": 43719474516,
+   "job_id": 132828116069,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43719474516/job/132828116069",
+   "platform": "linux"
+  },
+  {
+   "kind": "distribution-unit-regression-and-fail-closed-suite",
+   "status": "pass",
+   "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
+   "tested_revision": "e61d1a9f4e7bb96d20b5753a02d8b710152c0b2c",
+   "run_id": 43719474545,
+   "job_id": 132828115936,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43719474545/job/132828115936",
+   "platform": "linux"
+  },
+  {
+   "kind": "distribution-composed-regression",
+   "status": "pass",
+   "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
+   "tested_revision": "e61d1a9f4e7bb96d20b5753a02d8b710152c0b2c",
+   "run_id": 43719474514,
+   "job_id": 132828116501,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43719474514/job/132828116501",
+   "platform": "linux"
+  },
+  {
+   "kind": "clean-machine-os-0317-candidate-acceptance",
+   "status": "pass",
+   "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
+   "tested_revision": "e61d1a9f4e7bb96d20b5753a02d8b710152c0b2c",
+   "run_id": 43719474516,
+   "job_id": 132828116089,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43719474516/job/132828116089",
+   "platform": "macos"
+  },
+  {
+   "kind": "distribution-unit-regression-and-fail-closed-suite",
+   "status": "pass",
+   "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
+   "tested_revision": "e61d1a9f4e7bb96d20b5753a02d8b710152c0b2c",
+   "run_id": 43719474545,
+   "job_id": 132828115941,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43719474545/job/132828115941",
+   "platform": "macos"
+  },
+  {
+   "kind": "distribution-composed-regression",
+   "status": "pass",
+   "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
+   "tested_revision": "e61d1a9f4e7bb96d20b5753a02d8b710152c0b2c",
+   "run_id": 43719474514,
+   "job_id": 132828116684,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43719474514/job/132828116684",
+   "platform": "macos"
+  },
+  {
+   "kind": "clean-machine-os-0317-candidate-acceptance",
+   "status": "pass",
+   "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
+   "tested_revision": "e61d1a9f4e7bb96d20b5753a02d8b710152c0b2c",
+   "run_id": 43719474516,
+   "job_id": 132828116075,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43719474516/job/132828116075",
+   "platform": "windows"
+  },
+  {
+   "kind": "distribution-unit-regression-and-fail-closed-suite",
+   "status": "pass",
+   "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
+   "tested_revision": "e61d1a9f4e7bb96d20b5753a02d8b710152c0b2c",
+   "run_id": 43719474545,
+   "job_id": 132828115813,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43719474545/job/132828115813",
+   "platform": "windows"
+  },
+  {
+   "kind": "distribution-composed-regression",
+   "status": "pass",
+   "revision": "de1f654d582215e9b3a697e828fd59ab12ecba3f",
+   "tested_revision": "e61d1a9f4e7bb96d20b5753a02d8b710152c0b2c",
+   "run_id": 43719474514,
+   "job_id": 132828116692,
+   "url": "https://github.com/aiverse-filmmakers/ai-verse-distribution/actions/runs/43719474514/job/132828116692",
+   "platform": "windows"
+  }
+ ],
+ "semantics": {
+  "acceptance_evidence_only": true,
+  "duplicates_canonical_state": false
+ },
+ "coverage_notes": {
+  "revision_binding": "Immutable candidate definition de1f654d582215e9b3a697e828fd59ab12ecba3f; actual executable qualification and unit/composed regressions tested exact PR head e61d1a9f4e7bb96d20b5753a02d8b710152c0b2c, merged as 33c8076eb0c98b2f91403d7f47bd62068bba0583. Changes after definition are the candidate evidence binding and the chat skill probe choice (skills shipped in every profile); production lifecycle code is unchanged.",
+  "candidate_acceptance": "All three supported platforms passed fresh install, owner status/doctor/health, populated member update from 0.3.16, optional helper lifecycle/preservation with the 0.3.17 learning helper bytes, the 0.3.17 friendly label, and library skills listed in the OS folder's .claude/skills and .agents/skills after install and after update with OS capabilities intact.",
+  "restart_recovery": "Fail closed recovery unit and composed regressions passed on all three platforms. No separate populated platform updater interruption drill is claimed.",
+  "test_admission": "Pre promotion populated update used contained synthetic admission only inside the disposable test tool stack. It is not shipped and is not reused as promotion evidence.",
+  "prior_attempt": "The first qualification run of this candidate failed on all three platforms because the definition still bound the 0.3.16 learning helper file digests; the definition was corrected to the 0.3.17 bytes and evidence refrozen before this passing run."
+ }
+}

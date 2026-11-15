@@ -10,11 +10,11 @@ class RepositoryNetworkWorkflowTests(unittest.TestCase):
     def test_workflow_pins_exact_network_and_runs_read_only_harness(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         for revision in (
-            "ab566751980efb1f4574bf1e5c7afbea271f3862",
-            "8084d51ba32bbcb8273f833431ebfb03b6eddbf1",
+            "c9bbf02ffd37467034d5c7a2e0381cde30f4da74",
+            "86c9acc63ba0f69e8460bbd55a39416bb5ad1be8",
             "32cae304861bb0c897a64dd0931bead516d22833",
             "1e7bd0298d385c63adf79b5c2f6dddead846deee",
-            "493f6a6dcc38683b6b922ef315ff58beafb3bbb0",
+            "1e1bc98ed47d73c5f6b15096219edb75462a033d",
             "67b8b061429153b991b61d4099aad101d10c3d90",
         ):
             self.assertIn(f"ref: {revision}", text)
