@@ -39,7 +39,7 @@
       {
         "component_id": "ai-verse-memory",
         "descriptor_sha256": "a91704ecf805eba88bdb7a3707ad825ef94a6a45c612814f237d1d5f2f3e1c6b",
-        "descriptor_source_revision": "1e7bd0298d385c63adf79b5c2f6dddead846deee",
+        "descriptor_source_revision": "0fdf94f64d6283912e2418706a10db4cdc1340d5",
         "native_run_id": 43010986784,
         "native_workflow": "Test",
         "revision": "5a853e31628837adaf7135f46f75f24ae748bd46"

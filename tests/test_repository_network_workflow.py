@@ -13,7 +13,7 @@ class RepositoryNetworkWorkflowTests(unittest.TestCase):
             "c9bbf02ffd37467034d5c7a2e0381cde30f4da74",
             "86c9acc63ba0f69e8460bbd55a39416bb5ad1be8",
             "32cae304861bb0c897a64dd0931bead516d22833",
-            "1e7bd0298d385c63adf79b5c2f6dddead846deee",
+            "0fdf94f64d6283912e2418706a10db4cdc1340d5",
             "1e1bc98ed47d73c5f6b15096219edb75462a033d",
             "67b8b061429153b991b61d4099aad101d10c3d90",
         ):
